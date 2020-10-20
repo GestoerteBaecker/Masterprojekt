@@ -7,6 +7,15 @@ import mavsdk
 import pymavlink
 import pynmea
 import serial
+import time
+
+
+# Zeitpunkt der Messung
+class Daten:
+    def __init__(self, daten, timestamp=time.time()):
+        self.daten = daten
+        self.timestamp = timestamp
+
 
 class Sensor:
 
@@ -14,6 +23,9 @@ class Sensor:
         self.com = COM
         self.baudrate = baudrate
         self.timeout = timeout
+        self.ser = serial.Serial(self.com, self.baudrate)
+
+
 
     # herstellen der Verbindung
     @staticmethod
@@ -24,7 +36,7 @@ class Sensor:
 
     # schließen der Verbindung
     def kill(self):
-        pass
+        self.ser.close()
 
 
     # Daten auslesen

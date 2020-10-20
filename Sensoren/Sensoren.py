@@ -53,6 +53,11 @@ class Sensor:
     async def read(self):
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren?
         # https://stackoverflow.com/questions/1092531/event-system-in-python
+        # vllt in echtem multiproessing auslagern. innerhalb dieser methode multiprocessing starten
+        #   kann über Methode stop_reading() gestoppt werden (sollte auch bei kill und beim Destruktor ausgelöst werden)!!
+        # Vorgehen: read()-Methode ist eine decorated Methode, die in der außerhalb liegenden Funktion (die dekorierte normale außerhalb liegende @-Funktion) im Multithreading aufgerufen wird
+        # oder die im Multithreading aufgerufene Funktion (die das eigentliche lesen des Sensors übernimmt) wird als nestes Funktion definiert (der Prozess, in der diese nestedFunktion gegeben wird)
+        # wird als self.-Attribut gespeichert und kann demnach manipuliert werden (wie oben beschrieben in kill und del)
         pass
 
 
@@ -103,6 +108,3 @@ class Distanzmesser(Sensor):
     def __init__(self):
         super().__init__()
 """
-
-
-if __name__ == '__main__':

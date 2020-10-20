@@ -19,7 +19,8 @@ for eintrag in zeiger.fetchall():
     koords = [float(koord) for koord in eintrag[0][6:-1].split()]
     print(koords[0], koords[1])
 
-
+# spatial functions: https://dev.mysql.com/doc/refman/5.6/en/spatial-relation-functions-object-shapes.html
+	
 #zeiger.execute("SELECT * FROM geom.test;")
 """
 #Beschreibung der Curser.description:

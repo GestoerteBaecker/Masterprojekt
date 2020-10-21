@@ -1,6 +1,8 @@
 import multiprocessing
 
-#
+#https://stackoverflow.com/questions/42651798/start-multiprocessing-process-of-method-in-class-from-init
+
+# WICHTIG: https://stackoverflow.com/questions/29009790/python-how-to-do-multiprocessing-inside-of-a-class
 
 """
 import random

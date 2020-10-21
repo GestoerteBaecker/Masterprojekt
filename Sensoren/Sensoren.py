@@ -3,6 +3,7 @@
 
 import asyncio
 import dronekit
+import multiprocessing
 import pynmea
 import pyodbc
 import serial
@@ -28,13 +29,17 @@ class Sensor:
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser = serial.Serial(self.com, self.baudrate)
+        # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
+        self.datastream = False
         # ID für die Daten-Objekte (für Datenbank)
         self.id = 0
         # hier werden die ausgelesenen Daten zwischengespeichert (Liste von Daten-Objekten)
         self.daten = None
+        self.db_verb = None
         self.db_zeiger = None
         self.db_table = None
         self.db_database = None
+        self.listen_process = None
 
 
     # herstellen der Verbindung
@@ -47,6 +52,9 @@ class Sensor:
     # schließen der Verbindung
     def kill(self):
         self.ser.close()
+        self.abort_datastream()
+        self.db_zeiger.close()
+        self.db_verb.close()
 
 
     # liest die spezifischen Daten jedes Sensor (muss je Sensor implementiert werden)
@@ -56,8 +64,17 @@ class Sensor:
         # TODO
 
 
+    # Abbruch des Datenstreams (diese Variable wird innerhalb der entsprechenden Methode getestet)
+    def close_datastream(self):
+        self.datastream = False
+        if not self.listen_process:
+            self.listen_process.close() # TODO: geht das schließen von prozessen so?
+            self.listen_process = None
+
+
     # liest die Daten parallel in einem gesonderten Prozess
-    def read_infinite_datastream(self):
+    def read_infinite_datastream(self, db_daten_einpflegen=True):
+        self.datastream = True
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren?
         # https://stackoverflow.com/questions/1092531/event-system-in-python
         # vllt in echtem multiproessing auslagern. innerhalb dieser methode multiprocessing starten
@@ -65,15 +82,24 @@ class Sensor:
         # Vorgehen: read()-Methode ist eine decorated Methode, die in der außerhalb liegenden Funktion (die dekorierte normale außerhalb liegende @-Funktion) im Multithreading aufgerufen wird
         # oder die im Multithreading aufgerufene Funktion (die das eigentliche lesen des Sensors übernimmt) wird als nestes Funktion definiert (der Prozess, in der diese nestedFunktion gegeben wird)
         # wird als self.-Attribut gespeichert und kann demnach manipuliert werden (wie oben beschrieben in kill und del)
-        pass
+        def nested_read(datenstream=self.datastream, db_daten_einpflegen=db_daten_einpflegen):
+            while datenstream:
+                # self.read_sensor_data()...
+                pass
+            else:
+                # kill process(self.read_sensor_data())...
+                pass
+            pass
+        self.listen_process = multiprocessing.Process(target=nested_read)
+        self.listen_process.start()
 
 
     # Verbindung zur Datenbank herstellen
     def connect_to_db(self, table="geom", database="geom", server="localhost", uid="root", password="8Bleistift8"):
         self.db_table = table
         self.db_database = database
-        verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; DATABASE=" + database + "; UID=" + uid + ";PASSWORD=" + password + ";")
-        self.db_zeiger = verb.cursor()
+        self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; DATABASE=" + database + "; UID=" + uid + ";PASSWORD=" + password + ";")
+        self.db_zeiger = self.db_verb.cursor()
 
 
     # Daten in die Datenbank schreiben
@@ -82,7 +108,7 @@ class Sensor:
         db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + "(id, zeit, daten) VALUES ("
         async for komp in self.daten:
             db_string = db_praefix + str(komp.id) + ", " + str(komp.timestamp) + ", " + str(komp.daten) + ");"
-            self.zeiger.execute(db_string)
+            self.db_zeiger.execute(db_string)
         self.daten = []
 
 

@@ -29,7 +29,11 @@ class Sensor:
         self.com = COM
         self.baudrate = baudrate
         self.timeout = timeout
-        self.ser = serial.Serial(self.com, self.baudrate)
+        try:
+            self.ser = serial.Serial(self.com, self.baudrate)
+        except:
+            self.ser = None
+            print("Fehler bei der Verbindung mit der Schnittstelle")
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
         self.datastream = False
         # ID für die Daten-Objekte (für Datenbank)
@@ -73,8 +77,8 @@ class Sensor:
             self.listen_process = None
 
 
-    # liest die Daten parallel in einem gesonderten Prozess
-    def read_infinite_datastream(self, db_daten_einpflegen=True):
+    # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
+    def read_datastream(self, db_daten_einpflegen=True):
         self.datastream = True
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren?
         # https://stackoverflow.com/questions/1092531/event-system-in-python
@@ -83,7 +87,7 @@ class Sensor:
         # Vorgehen: read()-Methode ist eine decorated Methode, die in der außerhalb liegenden Funktion (die dekorierte normale außerhalb liegende @-Funktion) im Multithreading aufgerufen wird
         # oder die im Multithreading aufgerufene Funktion (die das eigentliche lesen des Sensors übernimmt) wird als nestes Funktion definiert (der Prozess, in der diese nestedFunktion gegeben wird)
         # wird als self.-Attribut gespeichert und kann demnach manipuliert werden (wie oben beschrieben in kill und del)
-        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen):
+        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen): #TODO: Ausführung parallel möglich?
             while self.datastream:
                 daten = self.read_sensor_data()
                 self.daten.append(daten)
@@ -93,7 +97,6 @@ class Sensor:
                 self.listen_process.kill()
                 self.listen_process.join()  # zusammenführen des Prozesses zum Hauptprozess
                 self.listen_process = None
-            pass
         self.listen_process = multiprocessing.Process(target=nested_read, args=(self, db_daten_einpflegen))
         self.listen_process.start()
 

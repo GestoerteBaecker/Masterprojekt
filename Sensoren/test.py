@@ -1,37 +1,43 @@
+import threading
+import random
+
+
+a = 10000
+datastream = None
+def worker():
+    while True:
+        global a
+        a = random.random()
+        #print(a)
+
+
 class A:
 
-    c = 0
+    global datastream
 
     def __init__(self):
-        pass
+        self.datastream_check = False
 
-    def test(self):
-        print(type(self).__name__)
+    def close(self):
+        self.datastream_check = False
 
+    def read_datastream(self):
+        self.datastream_check = True
 
-class B(A):
-
-    def __init__(self):
-        super().__init__()
-        self.id = A.c
-        A.c += 1
-
-
-class C(A):
-
-    def __init__(self):
-        super().__init__()
-        self.id = A.c
-        A.c += 1
+        def nested_read(self):
+            while self.datastream_check:
+                print(datastream)
+            else:
+                self.listen_process.kill()
+                self.listen_process.join()
+                self.listen_process = None
+        self.listen_process = threading.Thread(target=nested_read, args=(self, ), daemon=True).start()
+        #self.listen_process.start()
 
 
-for i in range(20):
-    obj = B()
+if __name__ == '__main__':
+    datastream = threading.Thread(target=worker, daemon=True).start()
+    #datastream.start()
 
-objekte = []
-for i in range(20):
-    obj = C()
-    objekte.append(obj)
-
-print(objekte[15].id)
-objekte[15].test()
+    a = A()
+    a.read_datastream()

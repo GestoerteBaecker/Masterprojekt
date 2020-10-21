@@ -49,8 +49,15 @@ class Sensor:
         self.ser.close()
 
 
-    # Daten auslesen
-    async def read(self):
+    # liest die spezifischen Daten jedes Sensor (muss je Sensor implementiert werden)
+    # Bei Echolot z.B.: Trennung jeder Datenzeile und Einfügen der Daten in eine Daten-Objekt
+    def read_sensor_data(self):
+        self.daten = None
+        # TODO
+
+
+    # liest die Daten parallel in einem gesonderten Prozess
+    def read_infinite_datastream(self):
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren?
         # https://stackoverflow.com/questions/1092531/event-system-in-python
         # vllt in echtem multiproessing auslagern. innerhalb dieser methode multiprocessing starten
@@ -72,8 +79,9 @@ class Sensor:
     # Daten in die Datenbank schreiben
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
     async def push_db(self):
+        db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + "(id, zeit, daten) VALUES ("
         async for komp in self.daten:
-            db_string = "INSERT INTO " + self.db_database + "." + self.db_table + "(id, zeit, daten) VALUES (" + str(komp.id) + ", " + str(komp.timestamp) + ", " + str(komp.daten) + ");"
+            db_string = db_praefix + str(komp.id) + ", " + str(komp.timestamp) + ", " + str(komp.daten) + ");"
             self.zeiger.execute(db_string)
         self.daten = []
 

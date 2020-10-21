@@ -5,17 +5,22 @@ class A:
     def __init__(self):
         pass
 
+    def test(self):
+        print(type(self).__name__)
 
-class B:
+
+class B(A):
 
     def __init__(self):
+        super().__init__()
         self.id = A.c
         A.c += 1
 
 
-class C:
+class C(A):
 
     def __init__(self):
+        super().__init__()
         self.id = A.c
         A.c += 1
 
@@ -29,3 +34,4 @@ for i in range(20):
     objekte.append(obj)
 
 print(objekte[15].id)
+objekte[15].test()

@@ -2,12 +2,13 @@
 # und einspeisen in eine Datenbank
 
 import asyncio
-import dronekit
+#import dronekit
 import multiprocessing
-import pynmea
+import pynmea2
 import pyodbc
 import serial
 import time
+import utm
 
 
 # Rohdaten der einzelnen Sensoren
@@ -52,7 +53,7 @@ class Sensor:
     # schließen der Verbindung
     def kill(self):
         self.ser.close()
-        self.abort_datastream()
+        self.close_datastream()
         self.db_zeiger.close()
         self.db_verb.close()
 
@@ -105,13 +106,18 @@ class Sensor:
         self.db_zeiger = self.db_verb.cursor()
 
 
+    # setzt eine Liste von Daten zusammen, mit denen die Daten-Objekte über Cursor.execute() in die DB enigepflegt werden können
+    # WICHTIG: auf den Aufbau der Datenbank achten! Columns id, zeit und vor allem wie daten aufgebaut ist
+    def make_db_command(self, datenpaket):
+        return str()
+
+
     # Daten in die Datenbank schreiben
-    # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
+    # Trennung zwischen Lesen der Sensordaten und Schreiben in die DB, da bei Fehlfunktionen nicht in die Datenbank geschrieben werden soll
     async def push_db(self):
-        db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + "(id, zeit, daten) VALUES ("
+        db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
         async for komp in self.daten:
-            db_string = db_praefix + str(komp.id) + ", " + str(komp.timestamp) + ", " + str(komp.daten) + ");"
-            self.db_zeiger.execute(db_string)
+            self.db_zeiger.execute(db_praefix + self.make_db_command(komp))
         self.daten = []
 
 
@@ -127,8 +133,16 @@ class Echolot(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
+    def __init__(self, COM=0, baudrate=19200, timeout=0):
         super().__init__(COM, baudrate, timeout)
+
+
+    # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
+    def make_db_command(self, datenpaket):
+        db_string_praefix = "(id, zeit, tiefe) VALUES ("
+        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, datenpaket.daten]
+        db_string_daten = ", ".join(str(x) for x in db_string_daten)
+        return db_string_praefix + db_string_daten + ");"
 
 
     def read_sensor_data(self):
@@ -154,16 +168,30 @@ class GNSS(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
+    def __init__(self, COM=0, baudrate=115200, timeout=0):
         super().__init__(COM, baudrate, timeout)
 
 
-class Pixhawk(Sensor):
+    # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
+    def read_sensor_data(self):
+        nmea = self.ser.readline()
+        nmea = nmea.decode("utf-8")
+        nmea = pynmea2.parse(nmea)
+        # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
+        if nmea.sentencetype == "GGA":
+            # die self.daten sind hier erstmal nur die Koordinaten in utm
+            koords = utm.fromlatlon(nmea.latitude, nmea.longitude)
+            daten = [koords[2]*10**6+koords[0], koords[1]]
+            db_objekt = Daten(GNSS.id, daten, time.time())
+            return db_objekt  # Datenobjekt mit entsprechenden Einträgen
 
-    id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
-        super().__init__(COM, baudrate, timeout)
+    # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als Float
+    def make_db_command(self, datenpaket):
+        db_string_praefix = "(id, zeit, east, north) VALUES ("
+        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, *(datenpaket.daten)]
+        db_string_daten = ", ".join(str(x) for x in db_string_daten)
+        return db_string_praefix + db_string_daten + ");"
 
 
 class Distanzmesser(Sensor):
@@ -173,3 +201,12 @@ class Distanzmesser(Sensor):
     def __init__(self, COM=0, baudrate=0, timeout=0):
         super().__init__(COM, baudrate, timeout)
 
+
+"""
+class Pixhawk(Sensor):
+
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
+"""

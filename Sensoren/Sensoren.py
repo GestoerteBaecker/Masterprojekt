@@ -58,17 +58,17 @@ class Sensor:
 
 
     # liest die spezifischen Daten jedes Sensor (muss je Sensor implementiert werden)
-    # Bei Echolot z.B.: Trennung jeder Datenzeile und Einfügen der Daten in eine Daten-Objekt
+    # Bei Echolot z.B.: Trennung jeder Datenzeile und Einfügen der Daten in ein Daten-Objekt
     def read_sensor_data(self):
-        self.daten = None
-        # TODO
+        pass # Implementierung in abgeleiteter Klasse
 
 
     # Abbruch des Datenstreams (diese Variable wird innerhalb der entsprechenden Methode getestet)
     def close_datastream(self):
         self.datastream = False
         if not self.listen_process:
-            self.listen_process.close() # TODO: geht das schließen von prozessen so?
+            self.listen_process.kill() # TODO: geht das schließen von prozessen so?
+            self.listen_process.join() # zusammenführen des Prozesses zum Hauptprozess
             self.listen_process = None
 
 
@@ -82,15 +82,18 @@ class Sensor:
         # Vorgehen: read()-Methode ist eine decorated Methode, die in der außerhalb liegenden Funktion (die dekorierte normale außerhalb liegende @-Funktion) im Multithreading aufgerufen wird
         # oder die im Multithreading aufgerufene Funktion (die das eigentliche lesen des Sensors übernimmt) wird als nestes Funktion definiert (der Prozess, in der diese nestedFunktion gegeben wird)
         # wird als self.-Attribut gespeichert und kann demnach manipuliert werden (wie oben beschrieben in kill und del)
-        def nested_read(datenstream=self.datastream, db_daten_einpflegen=db_daten_einpflegen):
-            while datenstream:
-                # self.read_sensor_data()...
-                pass
+        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen):
+            while self.datastream:
+                daten = self.read_sensor_data()
+                self.daten.append(daten)
+                if db_daten_einpflegen and len(self.daten) == 10:
+                    self.push_db()
             else:
-                # kill process(self.read_sensor_data())...
-                pass
+                self.listen_process.kill()
+                self.listen_process.join()  # zusammenführen des Prozesses zum Hauptprozess
+                self.listen_process = None
             pass
-        self.listen_process = multiprocessing.Process(target=nested_read)
+        self.listen_process = multiprocessing.Process(target=nested_read, args=(self, db_daten_einpflegen))
         self.listen_process.start()
 
 
@@ -112,33 +115,61 @@ class Sensor:
         self.daten = []
 
 
-"""
 class IMU(Sensor):
 
-    def __init__(self):
-        super().__init__()
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
 
 
 class Echolot(Sensor):
 
-    def __init__(self):
-        super().__init__()
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
+
+
+    def read_sensor_data(self):
+        eol = b'\r' # Enddefinition einer Zeile
+        line = bytearray()
+        # lese so viele Zeichen aus dem seriellen Port bis das Zeichen \r gelesen wird
+        # und das Gelesene ins bytearray line
+        while True:
+            c = self.ser.read()
+            if c:
+                line += c
+                if line[-1:] == eol:
+                    break
+            else:
+                break
+        tiefe = bytes(line).decode("UTF-8").split()[2]
+        db_objekt = Daten(Echolot.id, tiefe, time.time())
+
+        return db_objekt # Datenobjekt mit entsprechenden Einträgen
 
 
 class GNSS(Sensor):
 
-    def __init__(self):
-        super().__init__()
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
 
 
 class Pixhawk(Sensor):
 
-    def __init__(self):
-        super().__init__()
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
 
 
 class Distanzmesser(Sensor):
 
-    def __init__(self):
-        super().__init__()
-"""
+    id = 0
+
+    def __init__(self, COM=0, baudrate=0, timeout=0):
+        super().__init__(COM, baudrate, timeout)
+

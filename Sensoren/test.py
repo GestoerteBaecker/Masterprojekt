@@ -1,21 +1,20 @@
 import threading
 import random
-import multiprocessing
+from multiprocessing import Process, Pipe
+import time
 
-
-b = 10000
 datastream = None
-def worker():
+def worker(conn):
     while True:
-        global b
         b = random.random()
-
+        print('SEND: ',b)
+        conn.send(b)
+        time.sleep(1)
 
 
 class A:
 
     global datastream
-    global b
 
     def __init__(self):
         self.datastream_check = False
@@ -23,28 +22,25 @@ class A:
     def close(self):
         self.datastream_check = False
 
-    def nested_read(self):
+    def nested_read(self,conn):
         while self.datastream_check:
-            print(b)
+            print('REC: ',conn.recv())
+            time.sleep(1)
         else:
             self.listen_process.kill()
             self.listen_process.join()
             self.listen_process = None
 
+
     def read_datastream(self):
         self.datastream_check = True
-
-
-        self.listen_process = multiprocessing.Process(target=self.nested_read)
+        self.listen_process = Process(target=self.nested_read(parent_conn,))
         self.listen_process.start()
 
 
 if __name__ == '__main__':
-    """
-    datastream = multiprocessing.Process(target=worker)
+    parent_conn,child_conn=Pipe()
+    datastream = Process(target=worker,args=(child_conn,))
     datastream.start()
-
     a = A()
-    a.read_datastream()"""
-    worker()
-    #print(b)
+    a.read_datastream()

@@ -33,12 +33,12 @@ class A:
         self.datastream_check = True
 
 
-        self.listen_process = threading.Thread(target=self.nested_read)
+        self.listen_process = multiprocessing.Process(target=self.nested_read)
         self.listen_process.start()
 
 
 if __name__ == '__main__':
-    datastream = threading.Thread(target=worker)
+    datastream = multiprocessing.Process(target=worker)
     datastream.start()
 
     a = A()

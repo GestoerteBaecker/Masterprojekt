@@ -3,7 +3,6 @@ import random
 from multiprocessing import Process, Pipe
 import time
 
-datastream = None
 def worker(conn):
     while True:
         b = random.random()
@@ -11,10 +10,7 @@ def worker(conn):
         conn.send(b)
         time.sleep(1)
 
-
 class A:
-
-    global datastream
 
     def __init__(self):
         self.datastream_check = False
@@ -39,8 +35,20 @@ class A:
 
 
 if __name__ == '__main__':
-    parent_conn,child_conn=Pipe()
+    parent_conn, child_conn=Pipe()
     datastream = Process(target=worker,args=(child_conn,))
     datastream.start()
     a = A()
     a.read_datastream()
+
+    time.sleep(10)
+    a.close()
+    # worker()
+    # print(b)
+
+
+
+
+
+
+

@@ -30,23 +30,14 @@ class A:
 
     def read_datastream(self):
         self.datastream_check = True
-<<<<<<< HEAD
         self.listen_process = Process(target=self.nested_read(parent_conn,))
-=======
-
-
-        self.listen_process = multiprocessing.Process(target=self.nested_read)
->>>>>>> 00aed82... versuch multiprocessing - gescheitert
         self.listen_process.start()
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
+
     parent_conn, child_conn=Pipe()
     datastream = Process(target=worker,args=(child_conn,))
-=======
-    datastream = multiprocessing.Process(target=worker)
->>>>>>> 00aed82... versuch multiprocessing - gescheitert
     datastream.start()
     a = A()
     a.read_datastream()
@@ -56,6 +47,27 @@ if __name__ == '__main__':
     # worker()
     # print(b)
 
+
+"""
+import threading
+import time
+
+def infiniteloop1():
+    while True:
+        print('Loop 1')
+        time.sleep(1)
+
+def infiniteloop2():
+    while True:
+        print('Loop 2')
+        time.sleep(1)
+
+thread1 = threading.Thread(target=infiniteloop1)
+thread1.start()
+
+thread2 = threading.Thread(target=infiniteloop2)
+thread2.start()
+"""
 
 
 

@@ -1,19 +1,21 @@
 import threading
 import random
+import multiprocessing
 
 
-a = 10000
+b = 10000
 datastream = None
 def worker():
     while True:
-        global a
-        a = random.random()
-        #print(a)
+        global b
+        b = random.random()
+
 
 
 class A:
 
     global datastream
+    global b
 
     def __init__(self):
         self.datastream_check = False
@@ -21,23 +23,28 @@ class A:
     def close(self):
         self.datastream_check = False
 
+    def nested_read(self):
+        while self.datastream_check:
+            print(b)
+        else:
+            self.listen_process.kill()
+            self.listen_process.join()
+            self.listen_process = None
+
     def read_datastream(self):
         self.datastream_check = True
 
-        def nested_read(self):
-            while self.datastream_check:
-                print(datastream)
-            else:
-                self.listen_process.kill()
-                self.listen_process.join()
-                self.listen_process = None
-        self.listen_process = threading.Thread(target=nested_read, args=(self, ), daemon=True).start()
-        #self.listen_process.start()
+
+        self.listen_process = multiprocessing.Process(target=self.nested_read)
+        self.listen_process.start()
 
 
 if __name__ == '__main__':
-    datastream = threading.Thread(target=worker, daemon=True).start()
-    #datastream.start()
+    """
+    datastream = multiprocessing.Process(target=worker)
+    datastream.start()
 
     a = A()
-    a.read_datastream()
+    a.read_datastream()"""
+    worker()
+    #print(b)

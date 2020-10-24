@@ -118,6 +118,7 @@ class Sensor:
     # Daten in die Datenbank schreiben
     # Trennung zwischen Lesen der Sensordaten und Schreiben in die DB, da bei Fehlfunktionen nicht in die Datenbank geschrieben werden soll
     async def push_db(self):
+        #TODO: in eigenen Thread auslagern  oder async lassen
         db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
         async for komp in self.daten:
             self.db_zeiger.execute(db_praefix + self.make_db_command(komp))

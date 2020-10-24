@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
 # https://stackoverflow.com/questions/9747994/kill-a-daemon-thread-whilst-the-script-is-still-running
 # -> im Hauptthread nur alle Kindthreads starten, da nur er OS-Befehle abgreifen (Abbruch durch User und so...), der Hauptthread muss dann warten bis die anderen fertig sind
-
+# https://www.youtube.com/watch?v=KYu4bts4dPI
 
 # andere Möglichkeiten
 # https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop

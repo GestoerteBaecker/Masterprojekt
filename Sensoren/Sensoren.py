@@ -9,7 +9,6 @@
 # jedes Mal, wenn die dekorierte Funktion aufgerufen wird, wird stattdessen die @Funktion aufgerufen, in der die dekorierte Funktion übergeben wird
 # -> hier kann zB aubgefragt werden, ob eine Variable (gerade ausgelesene Daten des Sensors) über ein Pipe/Queue an den Pixhawk/GUI überliefert wird
 
-import asyncio
 import pynmea2
 import pyodbc
 import queue
@@ -38,11 +37,13 @@ class Sensor:
         self.baudrate = baudrate
         self.timeout = timeout
         self.taktrate = taktrate # Frequenz der Beobachtung
+        # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
+        self.verbindung_hergestellt = False #TODO: tracking des Zustands dieser Variablen über GUI und Pixhawk
         try:
             self.ser = serial.Serial(self.com, self.baudrate)
+            self.verbindung_hergestellt = True
         except:
             self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
-            #TODO: Thread starten der alle 20 sek nach Verbinung sucht udn abbricht, sobald eine gefunden wurde
             print("Fehler bei der Verbindung mit der Schnittstelle")
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
         self.datastream = False
@@ -58,6 +59,26 @@ class Sensor:
         self.db_database = None
         self.listen_process = None
         self.writing_process = None
+        self.db_schreiben_wiederaufnehmen = False # diese Variable zeigt an, ob jemals in die DB geschrieben wurde. Bei Verbindungsverlust des Sensors und gesetztem True wird
+        # das Schreiben in die DB wieder aufgenommen, bei False nicht
+
+
+    # suche Verbindung zum Sensor alle 10 sek
+    def verbindung_suchen(self):
+        def nested_verb_suchen(self):
+            while not self.verbindung_hergestellt:
+                try:
+                    self.ser = serial.Serial(self.com, self.baudrate)
+                    self.verbindung_hergestellt = True
+                    time.sleep(10)
+                except:
+                    self.ser = None
+                    print("Wiederholte Verbindungssuche vom Sensor {} fehlgeschlagen".format(type(self).__name__))
+            else:
+                if self.db_schreiben_wiederaufnehmen:
+                    self.read_datastream()
+                    self.start_pushing_db()
+        threading.Thread(target=nested_verb_suchen, args=(self, ), daemon=True).start()
 
 
     # herstellen der Verbindung
@@ -97,15 +118,19 @@ class Sensor:
 
 
     # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
-    def read_datastream(self, db_daten_einpflegen=True):
+    def read_datastream(self):
         self.datastream = True
 
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
         def nested_read(self):
             while self.datastream:
-                daten = self.read_sensor_data()
-                self.daten.put(daten)
-                time.sleep(self.taktrate)
+                try:
+                    daten = self.read_sensor_data()
+                    self.daten.put(daten)
+                    time.sleep(self.taktrate)
+                except:
+                    self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
+                    self.verbindung_hergestellt = False
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
                 # was sie tut, sobald self.datastream_check == False ist
@@ -133,10 +158,11 @@ class Sensor:
     # Daten in die Datenbank schreiben
     def start_pushing_db(self):
         self.writing_db = True
-        
+        self.db_schreiben_wiederaufnehmen = True
+
         def nested_db_hochladen(self):
-            while self.writing:
-                if not self.daten.empty():
+            while self.writing_db and self.datastream: # in DB schreiben, nur wenn auch der Sensor ausgelesen wird
+                if not self.daten.empty(): # ... und Daten zum Schreiben vorliegen
                     daten = self.daten.get()
                     db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
                     self.db_zeiger.execute(db_praefix + self.make_db_command(daten))

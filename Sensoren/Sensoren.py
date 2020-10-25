@@ -5,6 +5,10 @@
 # (Variablenscope) sollte Multithreading dem Multiprocessing vorgezogen werden (Multiprocessing hat getrennte Arbeitsspeicherbereiche
 # und ist eher für CPU-intensive Berechnungen wichtig, da das Programm auch physisch parallel ausgeführt wird
 
+# Decorator: sind nur Erweiterungsmöglichkeiten. Sie erweitern eine dekorierte Funktion um die Funktionalität der @Funktion
+# jedes Mal, wenn die dekorierte Funktion aufgerufen wird, wird stattdessen die @Funktion aufgerufen, in der die dekorierte Funktion übergeben wird
+# -> hier kann zB aubgefragt werden, ob eine Variable (gerade ausgelesene Daten des Sensors) über ein Pipe/Queue an den Pixhawk/GUI überliefert wird
+
 import asyncio
 import pynmea2
 import pyodbc
@@ -43,7 +47,7 @@ class Sensor:
         # ID für die Daten-Objekte (für Datenbank)
         self.id = 0
         # ein einziges Daten-Objekt
-        self.daten = None
+        self.daten = None #TODO: könnte auch eine Queue sein (FIFO); neuer Thread fügt die erst hinzugefügten Daten der DB hinzu
         self.db_verb = None
         self.db_zeiger = None
         self.db_table = None
@@ -60,8 +64,8 @@ class Sensor:
 
     # schließen der Verbindung
     def kill(self):
-        self.ser.close()
         self.close_datastream()
+        self.ser.close()
         self.db_zeiger.close()
         self.db_verb.close()
 
@@ -116,7 +120,7 @@ class Sensor:
 
     # Daten in die Datenbank schreiben
     def push_db(self):
-
+        #TODO: soll nur einmal ausgelöst werden und schmeißt ab dann asynchron jedes neue Daten-Objekt (aus einer Queue) in die DB
         def db_hochladen(self):
             db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
             self.db_zeiger.execute(db_praefix + self.make_db_command(self.daten))
@@ -184,7 +188,7 @@ class GNSS(Sensor):
         # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
         if nmea.sentencetype == "GGA":
             # die self.daten sind hier erstmal nur die Koordinaten in utm
-            koords = utm.fromlatlon(nmea.latitude, nmea.longitude)
+            koords = utm.from_latlon(nmea.latitude, nmea.longitude)
             daten = [koords[2]*10**6+koords[0], koords[1]]
             db_objekt = Daten(GNSS.id, daten, time.time())
             return db_objekt  # Datenobjekt mit entsprechenden Einträgen

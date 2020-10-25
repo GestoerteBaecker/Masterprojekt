@@ -45,6 +45,7 @@ class Sensor:
         except:
             self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
             print("Fehler bei der Verbindung mit der Schnittstelle")
+            self.verbindung_suchen()
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
         self.datastream = False
         # gibt an, ob gerade in die DB geschrieben wird
@@ -53,6 +54,7 @@ class Sensor:
         self.id = 0
         # ein einziges Daten-Objekt
         self.daten = queue.Queue() # ist eine threadsichere Liste; neuer Thread fügt die erst hinzugefügten Daten der DB hinzu
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT")] # DB-Felddefinition für die EInrichtung einer DB-Tabelle
         self.db_verb = None
         self.db_zeiger = None
         self.db_table = None
@@ -70,10 +72,10 @@ class Sensor:
                 try:
                     self.ser = serial.Serial(self.com, self.baudrate)
                     self.verbindung_hergestellt = True
-                    time.sleep(10)
                 except:
                     self.ser = None
-                    print("Wiederholte Verbindungssuche vom Sensor {} fehlgeschlagen".format(type(self).__name__))
+                    print("Wiederholte Verbindungssuche vom Sensor \"{}\" fehlgeschlagen".format(type(self).__name__))
+                time.sleep(10)
             else:
                 if self.db_schreiben_wiederaufnehmen:
                     self.read_datastream()
@@ -141,12 +143,18 @@ class Sensor:
 
 
     # Verbindung zur Datenbank herstellen
-    #TODO: Argument einfügen, das das Erstellen eines neuen Schemas und Tabelle ermöglicht
-    def connect_to_db(self, table="geom", database="geom", server="localhost", uid="root", password="8Bleistift8"):
-        self.db_table = table
+    # database nach dem Schema: 20201025_175800
+    def connect_to_db(self, server="localhost", uid="root", password="8Bleistift8", database=""):
+        self.db_table = type(self).__name__
         self.db_database = database
-        self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; DATABASE=" + database + "; UID=" + uid + ";PASSWORD=" + password + ";")
+        self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
         self.db_zeiger = self.db_verb.cursor()
+
+        # Anlegen einer Datenbank je Messkampagne und einer Tabelle je Sensor
+        self.db_zeiger.execute("CREATE SCHEMA IF NOT EXISTS `" + self.db_database + "`;")
+        connect_table_string = "CREATE TABLE `" + self.db_database + "`.`" + self.db_table + "` ("
+        temp = ", ".join([komp[0] + " " + komp[1] for komp in self.db_felder])
+        self.db_zeiger.execute(connect_table_string + temp + ");")
 
 
     # setzt eine Liste von Daten zusammen, mit denen die Daten-Objekte über Cursor.execute() in die DB enigepflegt werden können
@@ -164,8 +172,7 @@ class Sensor:
             while self.writing_db and self.datastream: # in DB schreiben, nur wenn auch der Sensor ausgelesen wird
                 if not self.daten.empty(): # ... und Daten zum Schreiben vorliegen
                     daten = self.daten.get()
-                    db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
-                    self.db_zeiger.execute(db_praefix + self.make_db_command(daten))
+                    self.db_zeiger.execute(self.make_db_command(daten))
                     self.db_zeiger.commit()
 
         self.writing_process = threading.Thread(target=nested_db_hochladen, args=(self, ), daemon=True)
@@ -178,6 +185,7 @@ class IMU(Sensor):
 
     def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), (), (), (), (), (), (), (), (), ()]  # DB-Felddefinition für die EInrichtung einer DB-Tabelle
 
 
 class Echolot(Sensor):
@@ -186,11 +194,12 @@ class Echolot(Sensor):
 
     def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("tiefe", "FLOAT")]
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
     def make_db_command(self, datenpaket):
-        db_string_praefix = "(id, zeit, tiefe) VALUES ("
+        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
         db_string_daten = [datenpaket.id, datenpaket.zeitstamp, datenpaket.daten]
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
         return db_string_praefix + db_string_daten + ");"
@@ -221,6 +230,7 @@ class GNSS(Sensor):
 
     def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("punkt", "POINT"), ("up", "FLOAT")]
 
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
@@ -239,8 +249,9 @@ class GNSS(Sensor):
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als Float
     def make_db_command(self, datenpaket):
-        db_string_praefix = "(id, zeit, east, north) VALUES ("
-        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, *(datenpaket.daten)]
+        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
+        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")')"
+        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, punkt_temp]
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
         return db_string_praefix + db_string_daten + ");"
 
@@ -251,13 +262,12 @@ class Distanzmesser(Sensor):
 
     def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("distanz", "FLOAT")]
 
 
-"""
-class Pixhawk(Sensor):
 
-    id = 0
-
-    def __init__(self, COM=0, baudrate=0, timeout=0):
-        super().__init__(COM, baudrate, timeout)
-"""
+# Nur zum Testen:
+if __name__ == "__main__":
+    gps = GNSS()
+    while True:
+        pass

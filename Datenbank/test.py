@@ -6,11 +6,14 @@ import pyodbc
 
 # WICHTIG: es gibt nur 2D Punkte, Tiefe muss als separates Attribut/Feld gespeichert werden
 
-verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=localhost; DATABASE=geom; UID=root; PASSWORD=8Bleistift8;")
+verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=localhost; UID=root; PASSWORD=8Bleistift8;")
 zeiger = verb.cursor()
 
-#zeiger.execute("select * from world.city order by world.city.Name")
-
+# DATABASE=geom;
+zeiger.execute("select * from `20201025_175800`.`gnss`;")
+for i in zeiger.fetchall():
+    print(i)
+"""
 zeiger.execute("SELECT ST_AsText(g) FROM geom.geom;")
 print(zeiger.description)
 for eintrag in zeiger.fetchall():
@@ -18,7 +21,7 @@ for eintrag in zeiger.fetchall():
     # das Feld ST_AsText(g) und nicht g heißt)
     koords = [float(koord) for koord in eintrag[0][6:-1].split()]
     print(koords[0], koords[1])
-
+"""
 # spatial functions: https://dev.mysql.com/doc/refman/5.6/en/spatial-relation-functions-object-shapes.html
 	
 #zeiger.execute("SELECT * FROM geom.test;")

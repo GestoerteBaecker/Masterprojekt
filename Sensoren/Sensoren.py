@@ -12,6 +12,7 @@
 import asyncio
 import pynmea2
 import pyodbc
+import queue
 import serial
 import threading
 import time
@@ -41,24 +42,28 @@ class Sensor:
             self.ser = serial.Serial(self.com, self.baudrate)
         except:
             self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
+            #TODO: Thread starten der alle 20 sek nach Verbinung sucht udn abbricht, sobald eine gefunden wurde
             print("Fehler bei der Verbindung mit der Schnittstelle")
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
         self.datastream = False
+        # gibt an, ob gerade in die DB geschrieben wird
+        self.writing_db = False
         # ID für die Daten-Objekte (für Datenbank)
         self.id = 0
         # ein einziges Daten-Objekt
-        self.daten = None #TODO: könnte auch eine Queue sein (FIFO); neuer Thread fügt die erst hinzugefügten Daten der DB hinzu
+        self.daten = queue.Queue() # ist eine threadsichere Liste; neuer Thread fügt die erst hinzugefügten Daten der DB hinzu
         self.db_verb = None
         self.db_zeiger = None
         self.db_table = None
         self.db_database = None
         self.listen_process = None
+        self.writing_process = None
 
 
     # herstellen der Verbindung
     @staticmethod
-    def connect(COM=0, baudrate=0, timeout=0):
-        sensor = Sensor(COM, baudrate, timeout)
+    def connect(COM=0, baudrate=0, timeout=0, taktrate=0):
+        sensor = Sensor(COM, baudrate, timeout, taktrate)
         return sensor
 
 
@@ -78,9 +83,17 @@ class Sensor:
 
     # Abbruch des Datenstreams (diese Variable wird innerhalb der entsprechenden Methode getestet)
     def close_datastream(self):
+        self.close_writing_db()
         self.datastream = False
         if not self.listen_process:
             self.listen_process = None
+
+
+    # beendet das Schreiben auf die DB
+    def close_writing_db(self):
+        self.writing_db = False
+        if not self.writing_process:
+            self.writing_process = None
 
 
     # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
@@ -88,18 +101,17 @@ class Sensor:
         self.datastream = True
 
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
-        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen):
+        def nested_read(self):
             while self.datastream:
-                self.daten = self.read_sensor_data()
-                if db_daten_einpflegen:
-                    self.push_db()
+                daten = self.read_sensor_data()
+                self.daten.put(daten)
                 time.sleep(self.taktrate)
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
                 # was sie tut, sobald self.datastream_check == False ist
                 pass
 
-        self.listen_process = threading.Thread(target=nested_read, args=(self, db_daten_einpflegen), daemon=True)
+        self.listen_process = threading.Thread(target=nested_read, args=(self, ), daemon=True)
         self.listen_process.start()
 
 
@@ -119,14 +131,19 @@ class Sensor:
 
 
     # Daten in die Datenbank schreiben
-    def push_db(self):
-        #TODO: soll nur einmal ausgelöst werden und schmeißt ab dann asynchron jedes neue Daten-Objekt (aus einer Queue) in die DB
-        def db_hochladen(self):
-            db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
-            self.db_zeiger.execute(db_praefix + self.make_db_command(self.daten))
-            self.db_zeiger.commit()
+    def start_pushing_db(self):
+        self.writing_db = True
+        
+        def nested_db_hochladen(self):
+            while self.writing:
+                if not self.daten.empty():
+                    daten = self.daten.get()
+                    db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
+                    self.db_zeiger.execute(db_praefix + self.make_db_command(daten))
+                    self.db_zeiger.commit()
 
-        threading.Thread(target=db_hochladen, args=(self, ), daemon=True).start()
+        self.writing_process = threading.Thread(target=nested_db_hochladen, args=(self, ), daemon=True)
+        self.writing_process.start()
 
 
 class IMU(Sensor):

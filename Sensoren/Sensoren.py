@@ -1,12 +1,15 @@
 # Skript zum Auslesen von Daten aller verbundenen Sensoren
 # und einspeisen in eine Datenbank
 
+# hier wird Multithreading benutzt: bei sehr zeitintensiven Berechnungen und gleichzeitiger Nutzung eines gemeinsamen Arbeitsspeichers
+# (Variablenscope) sollte Multithreading dem Multiprocessing vorgezogen werden (Multiprocessing hat getrennte Arbeitsspeicherbereiche
+# und ist eher für CPU-intensive Berechnungen wichtig, da das Programm auch physisch parallel ausgeführt wird
+
 import asyncio
-#import dronekit
-import multiprocessing
 import pynmea2
 import pyodbc
 import serial
+import threading
 import time
 import utm
 
@@ -24,21 +27,22 @@ class Daten:
 
 class Sensor:
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
+    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
         # alle Attribute mit default None werden zu einem späteren Zeitpunkt definiert und nicht in der Initialisierungsmethode
         self.com = COM
         self.baudrate = baudrate
         self.timeout = timeout
+        self.taktrate = taktrate # Frequenz der Beobachtung
         try:
             self.ser = serial.Serial(self.com, self.baudrate)
         except:
-            self.ser = None
+            self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
             print("Fehler bei der Verbindung mit der Schnittstelle")
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt
         self.datastream = False
         # ID für die Daten-Objekte (für Datenbank)
         self.id = 0
-        # hier werden die ausgelesenen Daten zwischengespeichert (Liste von Daten-Objekten)
+        # ein einziges Daten-Objekt
         self.daten = None
         self.db_verb = None
         self.db_zeiger = None
@@ -72,36 +76,31 @@ class Sensor:
     def close_datastream(self):
         self.datastream = False
         if not self.listen_process:
-            self.listen_process.kill() # TODO: geht das schließen von prozessen so?
-            self.listen_process.join() # zusammenführen des Prozesses zum Hauptprozess
             self.listen_process = None
 
 
     # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
     def read_datastream(self, db_daten_einpflegen=True):
         self.datastream = True
-        # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren?
-        # https://stackoverflow.com/questions/1092531/event-system-in-python
-        # vllt in echtem multiproessing auslagern. innerhalb dieser methode multiprocessing starten
-        #   kann über Methode stop_reading() gestoppt werden (sollte auch bei kill und beim Destruktor ausgelöst werden)!!
-        # Vorgehen: read()-Methode ist eine decorated Methode, die in der außerhalb liegenden Funktion (die dekorierte normale außerhalb liegende @-Funktion) im Multithreading aufgerufen wird
-        # oder die im Multithreading aufgerufene Funktion (die das eigentliche lesen des Sensors übernimmt) wird als nestes Funktion definiert (der Prozess, in der diese nestedFunktion gegeben wird)
-        # wird als self.-Attribut gespeichert und kann demnach manipuliert werden (wie oben beschrieben in kill und del)
-        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen): #TODO: Ausführung parallel möglich?
+
+        # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
+        def nested_read(self, db_daten_einpflegen=db_daten_einpflegen):
             while self.datastream:
-                daten = self.read_sensor_data()
-                self.daten.append(daten)
-                if db_daten_einpflegen and len(self.daten) == 10:
+                self.daten = self.read_sensor_data()
+                if db_daten_einpflegen:
                     self.push_db()
+                time.sleep(self.taktrate)
             else:
-                self.listen_process.kill()
-                self.listen_process.join()  # zusammenführen des Prozesses zum Hauptprozess
-                self.listen_process = None
-        self.listen_process = multiprocessing.Process(target=nested_read, args=(self, db_daten_einpflegen))
+                # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
+                # was sie tut, sobald self.datastream_check == False ist
+                pass
+
+        self.listen_process = threading.Thread(target=nested_read, args=(self, db_daten_einpflegen), daemon=True)
         self.listen_process.start()
 
 
     # Verbindung zur Datenbank herstellen
+    #TODO: Argument einfügen, das das Erstellen eines neuen Schemas und Tabelle ermöglicht
     def connect_to_db(self, table="geom", database="geom", server="localhost", uid="root", password="8Bleistift8"):
         self.db_table = table
         self.db_database = database
@@ -116,29 +115,30 @@ class Sensor:
 
 
     # Daten in die Datenbank schreiben
-    # Trennung zwischen Lesen der Sensordaten und Schreiben in die DB, da bei Fehlfunktionen nicht in die Datenbank geschrieben werden soll
-    async def push_db(self):
-        #TODO: in eigenen Thread auslagern  oder async lassen
-        db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
-        async for komp in self.daten:
-            self.db_zeiger.execute(db_praefix + self.make_db_command(komp))
-        self.daten = []
+    def push_db(self):
+
+        def db_hochladen(self):
+            db_praefix = "INSERT INTO " + self.db_database + "." + self.db_table
+            self.db_zeiger.execute(db_praefix + self.make_db_command(self.daten))
+            self.db_zeiger.commit()
+
+        threading.Thread(target=db_hochladen, args=(self, ), daemon=True).start()
 
 
 class IMU(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
-        super().__init__(COM, baudrate, timeout)
+    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
+        super().__init__(COM, baudrate, timeout, taktrate)
 
 
 class Echolot(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=19200, timeout=0):
-        super().__init__(COM, baudrate, timeout)
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2):
+        super().__init__(COM, baudrate, timeout, taktrate)
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
@@ -172,8 +172,8 @@ class GNSS(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=115200, timeout=0):
-        super().__init__(COM, baudrate, timeout)
+    def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
+        super().__init__(COM, baudrate, timeout, taktrate)
 
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
@@ -202,8 +202,8 @@ class Distanzmesser(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0):
-        super().__init__(COM, baudrate, timeout)
+    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
+        super().__init__(COM, baudrate, timeout, taktrate)
 
 
 """

@@ -133,6 +133,7 @@ class Sensor:
                 except:
                     self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
                     self.verbindung_hergestellt = False
+                    print("Verbindung zum Sensor \"{}\" abgebrochen".format(type(self).__name__))
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
                 # was sie tut, sobald self.datastream_check == False ist
@@ -144,8 +145,11 @@ class Sensor:
 
     # Verbindung zur Datenbank herstellen
     # database nach dem Schema: 20201025_175800
-    def connect_to_db(self, server="localhost", uid="root", password="8Bleistift8", database=""):
-        self.db_table = type(self).__name__
+    def connect_to_db(self, server="localhost", uid="root", password="8Bleistift8", database="", db_table=""):
+        if db_table == "":
+            self.db_table = type(self).__name__
+        else:
+            self.db_table = db_table
         self.db_database = database
         self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
         self.db_zeiger = self.db_verb.cursor()

@@ -29,7 +29,7 @@ class Daten:
         self.timestamp = timestamp
 
 
-class Sensor:
+class Sensor(object):
 
     def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
         # alle Attribute mit default None werden zu einem späteren Zeitpunkt definiert und nicht in der Initialisierungsmethode

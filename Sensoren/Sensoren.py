@@ -9,6 +9,7 @@
 # jedes Mal, wenn die dekorierte Funktion aufgerufen wird, wird stattdessen die @Funktion aufgerufen, in der die dekorierte Funktion übergeben wird
 # -> hier kann zB aubgefragt werden, ob eine Variable (gerade ausgelesene Daten des Sensors) über ein Pipe/Queue an den Pixhawk/GUI überliefert wird
 
+import datetime
 import pynmea2
 import pyodbc
 import queue
@@ -29,14 +30,15 @@ class Daten:
         self.timestamp = timestamp
 
 
-class Sensor(object):
+class Sensor:
 
-    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
+    def __init__(self, COM="COM0", baudrate=0, timeout=0, taktrate=0.2):
         # alle Attribute mit default None werden zu einem späteren Zeitpunkt definiert und nicht in der Initialisierungsmethode
         self.com = COM
+        self.Fehlerzaehler_pars = 0
         self.baudrate = baudrate
         self.timeout = timeout
-        self.taktrate = taktrate # Frequenz der Beobachtung
+        self.taktrate = taktrate/4 # Frequenz der Beobachtung
         # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
         self.verbindung_hergestellt = False #TODO: tracking des Zustands dieser Variablen über GUI und Pixhawk
         try:
@@ -93,6 +95,7 @@ class Sensor(object):
     # schließen der Verbindung
     def kill(self):
         self.close_datastream()
+        time.sleep(0.2)
         self.ser.close()
         self.db_zeiger.close()
         self.db_verb.close()
@@ -107,6 +110,7 @@ class Sensor(object):
     # Abbruch des Datenstreams (diese Variable wird innerhalb der entsprechenden Methode getestet)
     def close_datastream(self):
         self.close_writing_db()
+        time.sleep(0.2)
         self.datastream = False
         if not self.listen_process:
             self.listen_process = None
@@ -115,6 +119,7 @@ class Sensor(object):
     # beendet das Schreiben auf die DB
     def close_writing_db(self):
         self.writing_db = False
+        time.sleep(0.2)
         if not self.writing_process:
             self.writing_process = None
 
@@ -128,12 +133,14 @@ class Sensor(object):
             while self.datastream:
                 try:
                     daten = self.read_sensor_data()
-                    self.daten.put(daten)
+                    if daten:
+                        self.daten.put(daten)
                     time.sleep(self.taktrate)
-                except:
+                except Exception as e:
                     self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
                     self.verbindung_hergestellt = False
-                    print("Verbindung zum Sensor \"{}\" abgebrochen".format(type(self).__name__))
+                    print("Datenstrom zum Sensor \"{}\" abgebrochen".format(type(self).__name__))
+                    print(e)
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
                 # was sie tut, sobald self.datastream_check == False ist
@@ -145,7 +152,7 @@ class Sensor(object):
 
     # Verbindung zur Datenbank herstellen
     # database nach dem Schema: 20201025_175800
-    def connect_to_db(self, server="localhost", uid="root", password="8Bleistift8", database="", db_table=""):
+    def connect_to_db(self, db_table="",server="localhost", uid="root", password="EchoBoat", database="`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"):
         if db_table == "":
             self.db_table = type(self).__name__
         else:
@@ -155,8 +162,8 @@ class Sensor(object):
         self.db_zeiger = self.db_verb.cursor()
 
         # Anlegen einer Datenbank je Messkampagne und einer Tabelle je Sensor
-        self.db_zeiger.execute("CREATE SCHEMA IF NOT EXISTS `" + self.db_database + "`;")
-        connect_table_string = "CREATE TABLE `" + self.db_database + "`.`" + self.db_table + "` ("
+        self.db_zeiger.execute("CREATE SCHEMA IF NOT EXISTS " + self.db_database + ";")
+        connect_table_string = "CREATE TABLE " + self.db_database + ".`" + self.db_table + "` ("
         temp = ", ".join([komp[0] + " " + komp[1] for komp in self.db_felder])
         self.db_zeiger.execute(connect_table_string + temp + ");")
 
@@ -174,8 +181,8 @@ class Sensor(object):
 
         def nested_db_hochladen(self):
             while self.writing_db and self.datastream: # in DB schreiben, nur wenn auch der Sensor ausgelesen wird
-                if not self.daten.empty(): # ... und Daten zum Schreiben vorliegen
-                    daten = self.daten.get()
+                daten = self.daten.get()
+                if daten != None: # ... und Daten zum Schreiben vorliegen
                     self.db_zeiger.execute(self.make_db_command(daten))
                     self.db_zeiger.commit()
 
@@ -192,6 +199,7 @@ class IMU(Sensor):
         self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), (), (), (), (), (), (), (), (), ()]  # DB-Felddefinition für die EInrichtung einer DB-Tabelle
 
 
+
 class Echolot(Sensor):
 
     id = 0
@@ -204,7 +212,7 @@ class Echolot(Sensor):
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
     def make_db_command(self, datenpaket):
         db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
-        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, datenpaket.daten]
+        db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
         return db_string_praefix + db_string_daten + ");"
 
@@ -224,6 +232,7 @@ class Echolot(Sensor):
                 break
         tiefe = bytes(line).decode("UTF-8").split()[2]
         db_objekt = Daten(Echolot.id, tiefe, time.time())
+        Echolot.id += 1
 
         return db_objekt # Datenobjekt mit entsprechenden Einträgen
 
@@ -234,28 +243,34 @@ class GNSS(Sensor):
 
     def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
-        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("punkt", "POINT"), ("up", "FLOAT")]
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("punkt", "POINT"), ("H-DOP","FLOAT"), ("up", "FLOAT"), ("Qualitaet", "INT")]
 
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
     def read_sensor_data(self):
         nmea = self.ser.readline()
-        nmea = nmea.decode("utf-8")
-        nmea = pynmea2.parse(nmea)
-        # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
-        if nmea.sentencetype == "GGA":
-            # die self.daten sind hier erstmal nur die Koordinaten in utm
-            koords = utm.from_latlon(nmea.latitude, nmea.longitude)
-            daten = [koords[2]*10**6+koords[0], koords[1]]
-            db_objekt = Daten(GNSS.id, daten, time.time())
-            return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+        if nmea != b"":
+            nmea = nmea.decode("utf-8")
+            try:
+                nmea = pynmea2.parse(nmea)
+                # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
+                if nmea.sentence_type == "GGA":
+                    # die self.daten sind hier erstmal nur die Koordinaten in utm
+                    koords = utm.from_latlon(nmea.latitude, nmea.longitude)
+                    daten = [koords[2]*10**6+koords[0], koords[1], nmea.horizontal_dil, nmea.altitude, nmea.gps_qual] # Ausgeben von lat, lon, Höhe, Qualität,
+                    db_objekt = Daten(GNSS.id, daten, time.time())
+                    GNSS.id += 1
+                    return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+            except Exception as e:
+                print("Parsen fehlgeschlagen",self.db_table, e)
+                #TODO: Prio 99, Fehlerzähler + Ausgabe in GUI self.Fehlerzaehler_pars += 1
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als Float
     def make_db_command(self, datenpaket):
         db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
         punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")')"
-        db_string_daten = [datenpaket.id, datenpaket.zeitstamp, punkt_temp]
+        db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
         return db_string_praefix + db_string_daten + ");"
 
@@ -269,9 +284,20 @@ class Distanzmesser(Sensor):
         self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("distanz", "FLOAT")]
 
 
-
 # Nur zum Testen:
 if __name__ == "__main__":
-    gps = GNSS()
-    while True:
-        pass
+
+    gps2 = GNSS("COM10",115200,0,0.2)
+    gps2.connect_to_db("GNSS2")
+    gps2.read_datastream()
+    gps2.start_pushing_db()
+
+    gps1 = GNSS("COM11",115200,0,0.2)
+    gps1.connect_to_db("GNSS1")
+    gps1.read_datastream()
+    gps1.start_pushing_db()
+
+    time.sleep(600)
+    print("Kills ausführen")
+    gps1.kill()
+    gps2.kill()

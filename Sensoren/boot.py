@@ -139,6 +139,10 @@ class Boot:
             aktiv[self.Sensornamen[i]] = sensor.verbindung_hergestellt
         return aktiv
 
+    def postprocessing(self):
+        pass
+    #TODO: Synchronisation/Fusion der einzelnen Messwerte (Echolot und GNSS)
+
 # Zum Testen
 if __name__=="__main__":
 

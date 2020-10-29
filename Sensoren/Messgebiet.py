@@ -1,6 +1,6 @@
 import Sensoren
 
-class Messprogramm:
+class Messgebiet:
 
     def __init__(self, initale_position, initiale_ausdehnung, auflösung):
         """
@@ -9,6 +9,7 @@ class Messprogramm:
         :param auflösung:
         """
         self.quadtree = None
+        self.uferlinie = None
 
     def daten_einspeisen(self, punkt, datenpaket):
         pass

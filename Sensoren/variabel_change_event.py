@@ -12,6 +12,10 @@ class ObjectHoldingTheValue(object):
         except:
             pass
         super().__setattr__(key, value)
+
+
+    def settatr(self, key, value):
+        old_var = self._value
         if key == "_value":
             print(old_var, value)
 

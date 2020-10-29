@@ -152,7 +152,7 @@ class Sensor:
 
     # Verbindung zur Datenbank herstellen
     # database nach dem Schema: 20201025_175800
-    def connect_to_db(self, db_table="",server="localhost", uid="root", password="EchoBoat", database="`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"):
+    def connect_to_db(self, db_table="", database="`"+str((datetime.datetime.fromtimestamp(time.time())))+"`",server="localhost", uid="root", password="EchoBoat"):
         if db_table == "":
             self.db_table = type(self).__name__
         else:
@@ -279,9 +279,30 @@ class Distanzmesser(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "INT"), ("distanz", "FLOAT")]
+
+    def make_db_command(self, datenpaket):
+        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
+        db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
+        db_string_daten = ", ".join(str(x) for x in db_string_daten)
+        return db_string_praefix + db_string_daten + ");"
+
+    # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
+    def read_sensor_data(self):
+
+        try:
+            self.ser.write(b's0g\r\n')
+            Dist = int(self.ser.readline().decode("ascii")[4:]) / 10000
+            db_objekt = Daten(Distanzmesser.id, Dist, time.time())
+            Distanzmesser.id += 1
+            return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+
+        except Exception as e:
+                print("Parsen fehlgeschlagen", self.db_table, e)
+
+
 
 
 # Nur zum Testen:
@@ -297,7 +318,19 @@ if __name__ == "__main__":
     gps1.read_datastream()
     gps1.start_pushing_db()
 
+    dist = Distanzmesser("COMXX",19200,0,0.2)
+    dist.connect_to_db()
+    dist.read_datastream()
+    dist.start_pushing_db()
+
+    echo = Echolot("COM1",19200,0,0.2)
+    echo.connect_to_db()
+    echo.read_datastream()
+    echo.start_pushing_db()
+
     time.sleep(600)
     print("Kills ausführen")
     gps1.kill()
     gps2.kill()
+    dist.kill()
+    echo.kill()

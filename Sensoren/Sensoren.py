@@ -39,7 +39,6 @@ class Sensor:
         self.baudrate = baudrate
         self.timeout = timeout
         self.taktrate = taktrate/4 # Frequenz der Beobachtung
-        self.aktuelles_datenpaket = None # hier ist das im momentanen Leseschritt gelesene Datenpaket drin
         # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
         self.verbindung_hergestellt = False #TODO: tracking des Zustands dieser Variablen über GUI und Pixhawk
         try:
@@ -123,11 +122,6 @@ class Sensor:
         time.sleep(0.2)
         if not self.writing_process:
             self.writing_process = None
-            
-
-    # getter, holt das aktuell gelesene Datenpaket des Sensors
-    def get_current_data(self):
-        return self.aktuelles_datenpaket
 
 
     # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
@@ -139,7 +133,6 @@ class Sensor:
             while self.datastream:
                 try:
                     daten = self.read_sensor_data()
-                    self.aktuelles_datenpaket = daten
                     if daten:
                         self.daten.put(daten)
                     time.sleep(self.taktrate)

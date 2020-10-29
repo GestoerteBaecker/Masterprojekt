@@ -56,6 +56,7 @@ class Sensor:
         self.id = 0
         # ein einziges Daten-Objekt
         self.daten = queue.Queue() # ist eine threadsichere Liste; neuer Thread fügt die erst hinzugefügten Daten der DB hinzu
+        self.aktdaten = None
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE")] # DB-Felddefinition für die EInrichtung einer DB-Tabelle
         self.db_verb = None
         self.db_zeiger = None
@@ -133,6 +134,7 @@ class Sensor:
             while self.datastream:
                 try:
                     daten = self.read_sensor_data()
+                    self.aktdaten = daten
                     if daten:
                         self.daten.put(daten)
                     time.sleep(self.taktrate)

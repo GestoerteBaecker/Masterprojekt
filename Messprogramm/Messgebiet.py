@@ -1,5 +1,6 @@
 import Sensoren
 
+# Klasse, die Daten der Messung temporär speichert
 class Messgebiet:
 
     def __init__(self, initale_position, initiale_ausdehnung, auflösung):

@@ -4,7 +4,7 @@ import Pixhawk
 import threading
 import time
 
-
+# Klasse, die alle Funktionalitäten des Bootes umfasst
 class Boot:
 
     def __init__(self,GNSS1_COM="COM0", GNSS1_baud=0, GNSS1_timeout=0, GNSS1_takt=0.2, GNSS2_COM="COM0", GNSS2_baud=0, GNSS2_timeout=0, GNSS2_takt=0.2, ECHO_COM="COM0", ECHO_baud=0, ECHO_timeout=0, ECHO_takt=0.2, DIST_COM="COM0", DIST_baud=0, DIST_timeout=0, DIST_takt=1):

@@ -1,6 +1,7 @@
 from dronekit import connect, VehicleMode, LocationGlobal
 import utm
 
+# Klasse zum Ansteuern der Motoren
 class Pixhawk:
 
     def __init__(self,COM="COM0"):

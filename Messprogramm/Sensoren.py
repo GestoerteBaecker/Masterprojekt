@@ -5,10 +5,6 @@
 # (Variablenscope) sollte Multithreading dem Multiprocessing vorgezogen werden (Multiprocessing hat getrennte Arbeitsspeicherbereiche
 # und ist eher für CPU-intensive Berechnungen wichtig, da das Programm auch physisch parallel ausgeführt wird
 
-# Decorator: sind nur Erweiterungsmöglichkeiten. Sie erweitern eine dekorierte Funktion um die Funktionalität der @Funktion
-# jedes Mal, wenn die dekorierte Funktion aufgerufen wird, wird stattdessen die @Funktion aufgerufen, in der die dekorierte Funktion übergeben wird
-# -> hier kann zB aubgefragt werden, ob eine Variable (gerade ausgelesene Daten des Sensors) über ein Pipe/Queue an den Pixhawk/GUI überliefert wird
-
 import datetime
 import pynmea2
 import pyodbc

@@ -1,46 +1,67 @@
 import Sensoren
+import Pixhawk
 import threading
 import time
 
 
 class Boot:
 
-    def __init__(self,GNSS1_COM = False, GNSS1_baud = False, GNSS1_timeout = 0, GNSS1_takt = 0.2, GNSS2_COM = False, GNSS2_baud = False, GNSS2_timeout = 0, GNSS2_takt = 0.2, ECHO_COM = False, ECHO_baud = False, ECHO_timeout = 0, ECHO_takt = 0.2, DIST_COM = False, DIST_baud = False, DIST_timeout = False, DIST_takt = False):
+    def __init__(self,GNSS1_COM="COM0", GNSS1_baud=0, GNSS1_timeout=0, GNSS1_takt=0.2, GNSS2_COM="COM0", GNSS2_baud=0, GNSS2_timeout=0, GNSS2_takt=0.2, ECHO_COM="COM0", ECHO_baud=0, ECHO_timeout=0, ECHO_takt=0.2, DIST_COM="COM0", DIST_baud=0, DIST_timeout=0, DIST_takt=1):
 
         self.fortlaufende_aktualisierung = False        # Schlater, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
+        self.datenbankbeschreiben = False               # Schlater, ob die Datenbank mit Sensordaten beschrieben wird
         self.AktuelleSensordaten = {}
         self.Sensorliste = []
         self.Sensornamen = []
 
-        if GNSS1_COM:
+        if GNSS1_COM != "COM0":
             self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt)
             self.Sensorliste.append(self.GNSS1)
             self.Sensornamen.append("GNSS1")
 
-        if GNSS2_COM:
+        if GNSS2_COM != "COM0":
             self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt)
             self.Sensorliste.append(self.GNSS2)
             self.Sensornamen.append("GNSS2")
 
-        if ECHO_COM:
+        if ECHO_COM != "COM0":
             self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt)
             self.Sensorliste.append(self.Echo)
             self.Sensornamen.append("Echolot")
 
-        if DIST_COM:
+        if DIST_COM != "COM0":
             self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt)
             self.Sensorliste.append(self.DIST)
             self.Sensornamen.append("Distanz")
 
 
-    def Sensorwerteauslesen(self):
+    def Sensorwerte_auslesen(self):
 
         if not self.auslesen:
             self.auslesen = True
             for Sensor in self.Sensorliste:
                 Sensor.read_datastream()
 
+            self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
+
+    def Punkt_anfahren(self, e, n):
+        pass
+
+    def Datenbank_beschreiben(self):
+
+        self.Verbinden_mit_DB()
+
+        if not self.auslesen:
+            self.Sensorwerte_auslesen()
+            self.auslesen = True
+
+        if not self.datenbankbeschreiben:
+            for Sensor in self.Sensorliste:
+                Sensor.start_pushing_db()       # Daten permanent in Datenbank ablegen
+            self.datenbankbeschreiben = True
+
+        if not self.fortlaufende_aktualisierung:
             self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
 
     def Verbinden_mit_DB(self):
@@ -51,26 +72,11 @@ class Boot:
             except:
                 print("Für" + self.Sensornamen[i] + "konnte keine Datenbanktabelle angelegt werden")
 
-    def Punktanfahren(self, e, n):
-        pass
-
-    def Datenbankbeschreiben(self):
-
-        if not self.auslesen:
-            self.Sensorwerteauslesen()
-            self.auslesen = True
-
-        for Sensor in self.Sensorliste:
-            Sensor.start_pushing_db()       # Daten permanent in Datenbank ablegen
-
-        if not self.fortlaufende_aktualisierung:
-            self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
-
     def Datenaktualisierung(self):
 
         self.fortlaufende_aktualisierung = True
 
-        def uebderscheibungsfunktion(self):
+        def Uebderscheibungsfunktion(self):
 
             while self.fortlaufende_aktualisierung:
                 for i in range(0, len(self.Sensorliste)):
@@ -104,7 +110,7 @@ class Boot:
 
                 time.sleep(1)
 
-        self.writing_process = threading.Thread(target=uebderscheibungsfunktion, args=(self, ), daemon=True)
+        self.writing_process = threading.Thread(target=Uebderscheibungsfunktion, args=(self, ), daemon=True)
         self.writing_process.start()
 
     def Hinderniserkennung(self):
@@ -130,4 +136,12 @@ class Boot:
 # Zum Testen
 if __name__=="__main__":
 
-    Boot = Boot()
+    Boot = Boot(GNSS1_COM="COM10", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2, GNSS2_COM="COM11", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2, ECHO_COM="COM1", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2, DIST_COM="COM12", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
+
+    Boot.Sensorwerte_auslesen()
+    time.sleep(5)
+
+    Boot.Datenbank_beschreiben()
+    time.sleep(10)
+
+    Boot.Trennen()

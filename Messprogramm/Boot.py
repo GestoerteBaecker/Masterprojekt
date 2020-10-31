@@ -1,6 +1,8 @@
 import Sensoren
 import datetime
 import Pixhawk
+import pyodbc
+import statistics
 import threading
 import time
 
@@ -18,6 +20,14 @@ class Boot:
         self.AktuelleSensordaten = [] # hier stehen die Daten-Objekte drin
         self.Sensornamen = [] # hier sind die Namen der Sensoren in der Reihenfolge wie in self.Sensorliste drin
         self.aktualisierungsprozess = None # Thread mit Funktion, die die Sensordaten innerhalb dieser Klasse speichert
+        self.datenbankbeschreiben_thread = None
+        self.db_verbindung = None
+        self.db_zeiger = None
+        self.db_database = None
+        self.db_table = None
+        self.db_id = 0
+        takt = [GNSS1_takt, GNSS2_takt, ECHO_takt, DIST_takt]
+        self.db_takt = min(*takt)
 
         if GNSS1_COM != "COM0":
             self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt)
@@ -65,21 +75,61 @@ class Boot:
             self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
 
         if mode == 0:
-            pass
+
+            def Datenbank_Boot(self):
+                while self.datenbankbeschreiben:
+                    db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
+                    zeiten = []
+                    db_temp = ""
+                    for i, daten in enumerate(self.AktuelleSensordaten):
+                        zeiten.append(daten.timestamp) #TODO: Testen , ob die Zeitpunkte nicht zu weit auseinander liegen?
+                        db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(daten, id_zeit=False)
+                    zeit_mittel = statistics.mean(zeiten)
+                    self.db_id += 1
+                    db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
+                    self.db_zeiger.execute(db_text)
+                    self.db_zeiger.commit()
+                    time.sleep(self.db_takt/2)
+
+            if not self.datenbankbeschreiben:
+                self.datenbankbeschreiben = True
+                self.datenbankbeschreiben_thread = threading.Thread(target=Datenbank_Boot, args=(self, ))
+                self.datenbankbeschreiben_thread.start()
 
         elif mode == 1:
             if not self.datenbankbeschreiben:
+                self.datenbankbeschreiben = True
                 for Sensor in self.Sensorliste:
                     Sensor.start_pushing_db()       # Daten permanent in Datenbank ablegen
-                self.datenbankbeschreiben = True
 
-    def Verbinden_mit_DB(self, mode=0):
+    def Verbinden_mit_DB(self, mode=0, server="localhost", uid="root", password="EchoBoat"):
         """
         :param mode: 0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
             1 für separate DB-Tabellen je Sensor (ursprüngliches Vorhaben)
         """
         if mode == 0:
-            pass
+            self.db_database = "`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"
+            self.db_table = "Messkampagne"
+            self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
+            self.db_zeiger = self.db_verbindung.cursor()
+
+            # Anlegen einer Datenbank je Messkampagne und einer Tabelle
+            self.db_zeiger.execute("CREATE SCHEMA IF NOT EXISTS " + self.db_database + ";")
+            connect_table_string = "CREATE TABLE " + self.db_database + ".`" + self.db_table + "` ("
+            temp = "id INT, zeitpunkt DOUBLE"
+            spatial_index_check = False
+            spatial_index_name = ""  # Name des Punktes, auf das der Spatial Index gelegt wird
+            for i, sensor in enumerate(self.Sensorliste):
+                for j in range(len(sensor.db_felder)-2):
+                    spatial_string = ""
+                    if not spatial_index_check and type(sensor).__name__ == "GNSS":
+                        spatial_index_check = True
+                        spatial_string = " NOT NULL SRID 25832"
+                        spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
+                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + spatial_string + " " + sensor.db_felder[j+2][1]
+
+            temp = temp + ", SPATIAL INDEX(" + spatial_index_name + ")"
+            self.db_zeiger.execute(connect_table_string + temp + ");")
 
         elif mode == 1:
             for i, sensor in enumerate(self.Sensorliste):
@@ -100,7 +150,7 @@ class Boot:
                 for i in range(0, len(self.Sensorliste)):
                     sensor = self.Sensorliste[i]
                     self.AktuelleSensordaten[i] = sensor.aktdaten
-                time.sleep(0.1)
+                time.sleep(self.takt)
 
         self.aktualisierungsprozess = threading.Thread(target=Ueberscheibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()

@@ -1,4 +1,5 @@
 import Sensoren
+import datetime
 import Pixhawk
 import threading
 import time
@@ -13,6 +14,7 @@ class Boot:
         self.datenbankbeschreiben = False               # Schlater, ob die Datenbank mit Sensordaten beschrieben wird
         self.AktuelleSensordaten = {}
         self.Sensorliste = []
+        self.AktuelleSensordaten = {} # hier stehen die Daten-Objekte mit den jeweiligen Sensorennamen (wie GNSS1) als Schlüssekwörter drin
         self.Sensornamen = []
 
         if GNSS1_COM != "COM0":
@@ -132,6 +134,20 @@ class Boot:
 
     def RTL(self):
         pass
+
+    def Kalibrierung(self):
+        pass
+
+    # gibt ein Dict mit Wahrheitswerten zurück, je nachdem, ob der Sensor aktiv ist oder nicht, Schlüsselwert ist der Name des jeweiligen Sensors (echter Name, nicht Klassenname!)
+    def Lebenzeichen(self):
+        aktiv = dict()
+        for i, sensor in enumerate(self.Sensorliste):
+            aktiv[self.Sensornamen[i]] = sensor.verbindung_hergestellt
+        return aktiv
+
+    def postprocessing(self):
+        pass
+    #TODO: Synchronisation/Fusion der einzelnen Messwerte (Echolot und GNSS)
 
 # Zum Testen
 if __name__=="__main__":

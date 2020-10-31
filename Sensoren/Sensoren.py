@@ -88,7 +88,7 @@ class Sensor:
 
     # herstellen der Verbindung
     @staticmethod
-    def connect(COM=0, baudrate=0, timeout=0, taktrate=0):
+    def connect(COM="COM0", baudrate=0, timeout=0, taktrate=0):
         sensor = Sensor(COM, baudrate, timeout, taktrate)
         return sensor
 
@@ -247,7 +247,7 @@ class GNSS(Sensor):
 
     def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
-        self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT")]
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT NOT NULL SRID 25832"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT"), ("SPATIAL", "INDEX(punkt)")]
 
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden

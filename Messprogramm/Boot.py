@@ -197,7 +197,7 @@ class Boot:
     def Hydrographische_abfrage(self, punkt):
         """
         :param punkt: Punkt des Bootes
-        :return: Liste mit Vektor der größten Steigung (Richtung gemäß Vektor und Betrag ist Steigung in ) und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
+        :return: Liste mit Vektor der größten Steigung (Richtung gemäß Vektor und für Betrag gilt: arcsin(betrag) = Steigungswinkel) und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
         """
         punkte = self.Daten_abfrage(punkt)
         fläche = Flächenberechnung(punkte[0], punkte[1])
@@ -213,7 +213,7 @@ class Boot:
             a_matrix = numpy.matrix(numpy.column_stack((punkte[0], punkte[1], numpy.array(len(punkte[0])*[1]))))
             q = (a_matrix.getT().dot(a_matrix)).getI()
             x_dach = (q.dot(a_matrix.getT())).dot(punkte[2])
-            n = numpy.array([x_dach[0], x_dach[1], -1])
+            n = numpy.array([x_dach[0,0], x_dach[0,1], -1])
             n = n / numpy.linalg.norm(n)
             max_steigung = n
             max_steigung[2] = 0

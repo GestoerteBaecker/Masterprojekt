@@ -197,19 +197,26 @@ class Boot:
     def Hydrographische_abfrage(self, punkt):
         """
         :param punkt: Punkt des Bootes
-        :return: Liste mit Vektor der größten Steigung und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
+        :return: Liste mit Vektor der größten Steigung (Richtung gemäß Vektor und Betrag ist Steigung in ) und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
         """
         punkte = self.Daten_abfrage(punkt)
         fläche = Flächenberechnung(punkte[0], punkte[1])
+
         if fläche < 5: # dann sind nur Punkte enthalten, die vermutlich aus den momentanen Messungen herrühren
             pass
             # Ausgleichsgerade und Gradient auf Kurs projizieren
             max_steigung = None # Vektor
-            flächenhaft = False
+            flächenhaft = False #TODO: implementieren
         else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
             pass
             # Ausgleichsebene und finden der max. Steignug
-            max_steigung = None # Vektor
+            a_matrix = numpy.matrix(numpy.column_stack((punkte[0], punkte[1], numpy.array(len(punkte[0])*[1]))))
+            q = (a_matrix.getT().dot(a_matrix)).getI()
+            x_dach = (q.dot(a_matrix.getT())).dot(punkte[2])
+            n = numpy.array([x_dach[0], x_dach[1], -1])
+            n = n / numpy.linalg.norm(n)
+            max_steigung = n
+            max_steigung[2] = 0
             flächenhaft = True
         return [max_steigung, flächenhaft]
 
@@ -219,7 +226,7 @@ class Boot:
         x = []
         y = []
         tiefe = []
-        db_string = "SELECT "
+        db_string = "SELECT " #TODO: implementieren
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
 
 # Berechnet die Fläche des angeg. Polygons

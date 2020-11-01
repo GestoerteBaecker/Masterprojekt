@@ -111,7 +111,7 @@ class Boot:
         if mode == 0:
             self.db_database = "`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"
             self.db_table = "Messkampagne"
-            self.db_verb = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
+            self.db_verbindung = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
             self.db_zeiger = self.db_verbindung.cursor()
 
             # Anlegen einer Datenbank je Messkampagne und einer Tabelle
@@ -200,6 +200,19 @@ class Boot:
         :return: Liste mit Vektor der größten Steigung und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
         """
         punkte = self.Daten_abfrage(punkt)
+        fläche = Flächenberechnung(punkte[0], punkte[1])
+        if fläche < 5: # dann sind nur Punkte enthalten, die vermutlich aus den momentanen Messungen herrühren
+            pass
+            # Ausgleichsgerade und Gradient auf Kurs projizieren
+            max_steigung = None # Vektor
+            flächenhaft = False
+        else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
+            pass
+            # Ausgleichsebene und finden der max. Steignug
+            max_steigung = None # Vektor
+            flächenhaft = True
+        return [max_steigung, flächenhaft]
+
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab
     def Daten_abfrage(self, punkt, radius=20):

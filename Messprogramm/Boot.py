@@ -203,8 +203,26 @@ class Boot:
         fläche = Flächenberechnung(punkte[0], punkte[1])
 
         if fläche < 5: # dann sind nur Punkte enthalten, die vermutlich aus den momentanen Messungen herrühren
-            pass
-            # Ausgleichsgerade und Gradient auf Kurs projizieren
+            # Ausgleichsgerade und Gradient auf Kurs projizieren (<- Projektion ist implizit, da die zuletzt aufgenommenen Punkte auf dem Kurs liegen müssten)
+            n_pkt = int(len(punkte[0]) / 3) # Anzahl Punkte
+            p1 = numpy.array([punkte[0][0], punkte[1][0], punkte[2][0]])
+            p2 = numpy.array([punkte[0][1], punkte[1][1], punkte[2][1]])
+            r0 = p2 - p1
+            d12 = numpy.linalg.norm(r0)
+            r0 = r0 / d12
+            st0 = p1 - numpy.dot(r0, p1) * r0
+            x0 = numpy.concatenate([st0, r0]) # Unbekanntenvektor noch ohne Lambdas
+            L = []
+            temp = numpy.matrix(numpy.array([1, 0, 0] * n_pkt)).getT() # Erste Spalte der A-Matrix
+            A = temp
+            A = numpy.hstack((A, numpy.roll(temp, 1, 0)))
+            A = numpy.hstack((A, numpy.roll(temp, 2, 0))) # bis hierher sind die ersten 3 Spalten angelegt
+            A_spalte = numpy.matrix(numpy.array([0] * n_pkt * 3)) # Spalte mit Lambdas
+            for i in range(n_pkt):
+                
+                for j in range(3):
+                    L.append(punkte[j][i])
+            L = numpy.matrix(L)
             max_steigung = None # Vektor
             flächenhaft = False #TODO: implementieren
         else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
@@ -213,7 +231,7 @@ class Boot:
             a_matrix = numpy.matrix(numpy.column_stack((punkte[0], punkte[1], numpy.array(len(punkte[0])*[1]))))
             q = (a_matrix.getT().dot(a_matrix)).getI()
             x_dach = (q.dot(a_matrix.getT())).dot(punkte[2])
-            n = numpy.array([x_dach[0,0], x_dach[0,1], -1])
+            n = numpy.array([x_dach[0, 0], x_dach[0, 1], -1])
             n = n / numpy.linalg.norm(n)
             max_steigung = n
             max_steigung[2] = 0

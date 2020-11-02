@@ -214,17 +214,55 @@ class Boot:
             x0 = numpy.concatenate([st0, r0]) # Unbekanntenvektor noch ohne Lambdas
             L = []
             temp = numpy.matrix(numpy.array([1, 0, 0] * n_pkt)).getT() # Erste Spalte der A-Matrix
-            A = temp
+            A = temp # A-Matrix ist folgendermaßen aufgebaut: U in Spalten: erst 3 Komp. des Stützvektors, dann alle lambdas
+            #   je Punkt und zuletzt 3 Komp. des Richtungsvektors (immer die Ableitungen nach diesen)
+            #   in den Zeilen sind die Beobachtungen je die Komponenten der Punkte
             A = numpy.hstack((A, numpy.roll(temp, 1, 0)))
             A = numpy.hstack((A, numpy.roll(temp, 2, 0))) # bis hierher sind die ersten 3 Spalten angelegt
-            A_spalte = numpy.matrix(numpy.array([0] * n_pkt * 3)) # Spalte mit Lambdas
+            A_spalte_r0 = numpy.matrix(numpy.array([0] * n_pkt * 3)) # Spalte mit Lambdas (Abl. nach r0)
+            A_spalte_lamb = numpy.hstack((numpy.matrix(r0), numpy.matrix(numpy.array([0] * 3 * (n_pkt - 1))))).getT() # Spalte mit Komp. von r0 (Ableitungen nach den Lambdas)
+            lambdas = []
             for i in range(n_pkt):
-                
+                p = [] # gerade ausgelesener Punkt
                 for j in range(3):
-                    L.append(punkte[j][i])
-            L = numpy.matrix(L)
-            max_steigung = None # Vektor
-            flächenhaft = False #TODO: implementieren
+                    p.append(punkte[j][i])
+                L += p
+                p = numpy.array(p)
+                lamb = numpy.dot(r0, (p - st0)) / d12
+                lambdas.append(lamb)
+                A_spalte_r0[0, i*3] = lamb
+                x0 = numpy.append(x0, lamb)
+                A = numpy.hstack(A, numpy.roll(A_spalte_lamb, 3*i, 0))
+            A = numpy.hstack((A, A_spalte_r0))
+            A = numpy.hstack((A, numpy.roll(A_spalte_r0, 1, 0)))
+            A = numpy.hstack((A, numpy.roll(A_spalte_r0, 2, 0)))
+
+            # Einführung von Bedingungen an Stütz- und Richtungsvektor (Stütz senkrecht auf Richtung und Betrag von Richtung = 1)
+            A_bed_1 = numpy.matrix(numpy.hstack((numpy.hstack((r0, numpy.zeros((1, n_pkt))[0])), st0))) # st skalarpro r = 0
+            A_bed_2 = numpy.matrix(numpy.hstack((numpy.zeros((1, n_pkt + 3))[0], 2 * r0))) # r0 = 1
+            A = numpy.vstack((A, numpy.vstack((A_bed_1, A_bed_2))))
+            L += [0, 1]
+
+            # Kürzung der Beobachtungen
+            l = numpy.array([])
+            for i in range(n_pkt):
+                pkt0 = st0 + lambdas[i] * r0
+                l = numpy.hstack((l, pkt0))
+
+            # Einführung einer Gewichtsmatrix
+            p = numpy.identity(3 * n_pkt + 2)
+            p[3 * n_pkt, 3 * n_pkt] = 10000000
+            p[3 * n_pkt + 1, 3 * n_pkt + 1] = 10000000
+
+            # Auswertung
+            q = (A.getT().dot(A)).getI()
+            x_dach = (q.dot(A.getT())).dot(l)
+            X_dach = x0 + x_dach
+            r = X_dach[-3:len(X_dach)]
+            r = r / numpy.linalg.norm(r)
+            r[2] = 0
+            max_steigung = r # Vektor
+            flächenhaft = False
         else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
             pass
             # Ausgleichsebene und finden der max. Steignug

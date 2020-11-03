@@ -194,6 +194,7 @@ class Boot:
     #TODO: Synchronisation/Fusion der einzelnen Messwerte (Echolot und GNSS)
 
     # Berechnet das Gefälle unterhalb des Bootes
+    # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
     def Hydrographische_abfrage(self, punkt):
         """
         :param punkt: Punkt des Bootes
@@ -287,7 +288,7 @@ class Boot:
             max_steigung = n
             max_steigung[2] = 0
             flächenhaft = True
-        return [max_steigung, flächenhaft]
+        return [max_steigung, flächenhaft] #TODO: Ausgabe der Standardabweichung als Rauhigkeitsmaß
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab

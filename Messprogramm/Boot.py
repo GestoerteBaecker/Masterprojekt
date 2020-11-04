@@ -123,14 +123,16 @@ class Boot:
             for i, sensor in enumerate(self.Sensorliste):
                 for j in range(len(sensor.db_felder)-2):
                     spatial_string = ""
-                    if not spatial_index_check and type(sensor).__name__ == "GNSS":
-                        spatial_index_check = True
+                    if type(sensor).__name__ == "GNSS" and sensor.db_felder[j+2][1] == "POINT":
                         spatial_string = " NOT NULL SRID 25832"
-                        spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
-                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + spatial_string + " " + sensor.db_felder[j+2][1]
+                        if not spatial_index_check:
+                            spatial_index_check = True
+                            spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
+                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + " " + sensor.db_felder[j+2][1] + spatial_string
 
-            temp = temp + ", SPATIAL INDEX(" + spatial_index_name + ")"
             self.db_zeiger.execute(connect_table_string + temp + ");")
+            temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");"
+            self.db_zeiger.execute(temp)
 
         elif mode == 1:
             for i, sensor in enumerate(self.Sensorliste):

@@ -272,7 +272,7 @@ class GNSS(Sensor):
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als DOUBLE
     def make_db_command(self, datenpaket, id_zeit=True):
-        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")')"
+        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")', 25832)"
         if id_zeit:
             db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
         else:

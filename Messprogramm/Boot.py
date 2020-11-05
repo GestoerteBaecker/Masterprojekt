@@ -228,11 +228,11 @@ class Boot:
             p2 = numpy.array([punkte[0][-1], punkte[1][-1], punkte[2][-1]])
             r0 = p2 - p1
             d12 = numpy.linalg.norm(r0)
-            r0 = r0 / d12
-            st0 = p1 - numpy.dot(r0, p1) * r0
+            r0 = r0 / d12 # Richtungsvektor
+            st0 = p1 - numpy.dot(r0, p1) * r0 # Stützvektor, senkrecht auf Richtungsvektor
             L = []
             temp = numpy.matrix(numpy.array([1, 0, 0] * n_pkt)).getT()  # Erste Spalte der A-Matrix
-            A = temp  # A-Matrix ist folgendermaßen aufgebaut: U in Spalten: erst 3 Komp. des Stützvektors, dann alle lambdas
+            A = temp  # A-Matrix ist folgendermaßen aufgebaut: Unbekannte in Spalten: erst 3 Komp. des Stützvektors, dann alle lambdas
             #   je Punkt und zuletzt 3 Komp. des Richtungsvektors (immer die Ableitungen nach diesen)
             #   in den Zeilen sind die Beobachtungen je die Komponenten der Punkte
             A = numpy.hstack((A, numpy.roll(temp, 1, 0)))
@@ -291,8 +291,18 @@ class Boot:
             x_dach = x_dach[0:len(x_dach) - 2, 0]
             X_dach = x0 + x_dach
             r = numpy.array([X_dach[len(X_dach) - 3, 0], X_dach[len(X_dach) - 2, 0], X_dach[len(X_dach) - 1, 0]])
-            r[2] = 0
 
+            # "Standardabweichung": Mittlerer Abstand der Punkte von der Geraden, aber nur in z-Richtung!
+            v = []
+            n_u = len(punkte[0][0] - len(lambdas))
+            for i, lamb in enumerate(lambdas):
+                z_ist = punkte[2][i]
+                z_ausgl = X_dach[2, 0] + lamb * r0[2]
+                v.append(z_ist - z_ausgl)
+            v = numpy.array(v)
+            s0 = numpy.linalg.norm(v) / n_u
+
+            r[2] = 0
             max_steigung = r  # Vektor
             flächenhaft = False
         else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
@@ -305,7 +315,9 @@ class Boot:
             max_steigung = n
             max_steigung[2] = 0
             flächenhaft = True
-        return [max_steigung, flächenhaft] #TODO: Ausgabe der Standardabweichung als Rauhigkeitsmaß
+            v = punkte[2] - (x_dach[0, 0]*punkte[0] + x_dach[0, 1]*punkte[1] + x_dach[0, 2]) # L - (alle_x_als_vec * a + alle_y_als_vec * b + c), abc als Unbekannte in x_dach
+            s0 = numpy.linalg.norm(v) / (numpy.sqrt(len(punkte[0])) - 3)
+        return [max_steigung, flächenhaft, s0] #TODO: Ausgabe der Standardabweichung als Rauhigkeitsmaß
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab

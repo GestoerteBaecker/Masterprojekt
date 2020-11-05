@@ -175,6 +175,9 @@ class Boot:
     def Gewaesseraufnahme(self):
         pass
 
+    def Boot_stoppen(self):
+        pass
+
     def Trennen(self):
 
         for Sensor in self.Sensorliste:

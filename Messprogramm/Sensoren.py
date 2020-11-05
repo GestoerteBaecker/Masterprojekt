@@ -38,7 +38,7 @@ class Sensor:
         self.bytesize = bytesize
         self.parity = parity
         # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
-        self.verbindung_hergestellt = False #TODO: tracking des Zustands dieser Variablen über GUI und Pixhawk
+        self.verbindung_hergestellt = False
         try:
             if self.bytesize:
                 self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
@@ -46,7 +46,7 @@ class Sensor:
                 self.ser = serial.Serial(self.com, self.baudrate)
             self.verbindung_hergestellt = True
         except:
-            self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
+            self.ser = None
             print("Fehler bei der Verbindung mit der Schnittstelle")
             self.verbindung_suchen()
         # gibt an, ob momentan ein Datenstream Daten eines Sensors in self.daten schreibt

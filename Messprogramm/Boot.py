@@ -208,7 +208,6 @@ class Boot:
 
     def postprocessing(self):
         pass
-    #TODO: Synchronisation/Fusion der einzelnen Messwerte (Echolot und GNSS)
 
     # Berechnet das Gefälle unterhalb des Bootes
     # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
@@ -317,7 +316,7 @@ class Boot:
             flächenhaft = True
             v = punkte[2] - (x_dach[0, 0]*punkte[0] + x_dach[0, 1]*punkte[1] + x_dach[0, 2]) # L - (alle_x_als_vec * a + alle_y_als_vec * b + c), abc als Unbekannte in x_dach
             s0 = numpy.linalg.norm(v) / (numpy.sqrt(len(punkte[0])) - 3)
-        return [max_steigung, flächenhaft, s0] #TODO: Ausgabe der Standardabweichung als Rauhigkeitsmaß
+        return [max_steigung, flächenhaft, s0]
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab

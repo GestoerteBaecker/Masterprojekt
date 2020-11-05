@@ -168,7 +168,8 @@ class Sensor:
 
     # setzt eine Liste von Daten zusammen, mit denen die Daten-Objekte über Cursor.execute() in die DB enigepflegt werden können
     # WICHTIG: auf den Aufbau der Datenbank achten! Columns id, zeit und vor allem wie daten aufgebaut ist
-    def make_db_command(self, datenpaket):
+    # id_zeit: sagt aus, ob auch diese beiden Attribute in den String umgesetzt werden
+    def make_db_command(self, datenpaket, id_zeit=True):
         return str()
 
 
@@ -181,7 +182,8 @@ class Sensor:
             while self.writing_db and self.datastream: # in DB schreiben, nur wenn auch der Sensor ausgelesen wird
                 daten = self.daten.get()
                 if daten != None: # ... und Daten zum Schreiben vorliegen
-                    self.db_zeiger.execute(self.make_db_command(daten))
+                    db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
+                    self.db_zeiger.execute(db_string_praefix + self.make_db_command(daten) + ");")
                     self.db_zeiger.commit()
 
         self.writing_process = threading.Thread(target=nested_db_hochladen, args=(self, ), daemon=True)
@@ -208,11 +210,13 @@ class Echolot(Sensor):
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
-    def make_db_command(self, datenpaket):
-        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
-        db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten[0], datenpaket.daten[1]]
+    def make_db_command(self, datenpaket, id_zeit=True):
+        if id_zeit:
+            db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten[0], datenpaket.daten[1]]
+        else:
+            db_string_daten = [datenpaket.daten[0], datenpaket.daten[1]]
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_praefix + db_string_daten + ");"
+        return db_string_daten
 
 
     def read_sensor_data(self):
@@ -243,7 +247,7 @@ class GNSS(Sensor):
 
     def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
         super().__init__(COM, baudrate, timeout, taktrate)
-        self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT NOT NULL SRID 25832"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT"), ("SPATIAL", "INDEX(punkt)")]
+        self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT")]
 
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
@@ -267,12 +271,14 @@ class GNSS(Sensor):
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als DOUBLE
-    def make_db_command(self, datenpaket):
-        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
-        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")')"
-        db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
+    def make_db_command(self, datenpaket, id_zeit=True):
+        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")', 25832)"
+        if id_zeit:
+            db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
+        else:
+            db_string_daten = [punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])]  # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_praefix + db_string_daten + ");"
+        return db_string_daten
 
 
 class Distanzmesser(Sensor):
@@ -283,11 +289,13 @@ class Distanzmesser(Sensor):
         super().__init__(COM, baudrate, timeout, taktrate)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("distanz", "DOUBLE")]
 
-    def make_db_command(self, datenpaket):
-        db_string_praefix = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
-        db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
+    def make_db_command(self, datenpaket, id_zeit=True):
+        if id_zeit:
+            db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
+        else:
+            db_string_daten = [datenpaket.daten]
         db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_praefix + db_string_daten + ");"
+        return db_string_daten
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
     def read_sensor_data(self):

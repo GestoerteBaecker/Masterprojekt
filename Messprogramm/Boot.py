@@ -6,6 +6,7 @@ import pyodbc
 import statistics
 import threading
 import time
+import random
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
 # self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
@@ -17,9 +18,9 @@ class Boot:
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
         self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
-        self.Sensorliste = []                           # hier sind die Sensor-Objekte drin
-        self.AktuelleSensordaten = []                   # hier stehen die Daten-Objekte drin
-        self.Sensornamen = []                           # hier sind die Namen der Sensoren in der Reihenfolge wie in self.Sensorliste drin
+        self.Sensorliste = [None,None,None,None]                           # hier sind die Sensor-Objekte drin
+        self.AktuelleSensordaten = [None,None,None,None]                   # hier stehen die Daten-Objekte drin
+        self.Sensornamen = ["GNSS1","GNSS2","Echolot","Distanz"]                           # hier sind die Namen der Sensoren in der Reihenfolge wie in self.Sensorliste drin
         self.aktualisierungsprozess = None              # Thread mit Funktion, die die Sensordaten innerhalb dieser Klasse speichert
         self.datenbankbeschreiben_thread = None
         self.db_verbindung = None
@@ -30,28 +31,26 @@ class Boot:
         takt = [GNSS1_takt, GNSS2_takt, ECHO_takt, DIST_takt]
         self.db_takt = min(*takt)
 
-        if Pix_COM != "com0":
-            self.PixHawk = Pixhawk.Pixhawk(Pix_COM)
+        #if Pix_COM != "com0":
+        self.PixHawk = Pixhawk.Pixhawk(Pix_COM)
 
+        # COM0 als Testmodus
         if GNSS1_COM != "COM0":
             self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt)
-            self.Sensorliste.append(self.GNSS1)
-            self.Sensornamen.append("GNSS1")
+            self.Sensorliste[0] = self.GNSS1
 
         if GNSS2_COM != "COM0":
             self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt)
-            self.Sensorliste.append(self.GNSS2)
-            self.Sensornamen.append("GNSS2")
+            self.Sensorliste[1] = self.GNSS2
+
 
         if ECHO_COM != "COM0":
             self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt)
-            self.Sensorliste.append(self.Echo)
-            self.Sensornamen.append("Echolot")
+            self.Sensorliste[2] = self.Echo
 
         if DIST_COM != "COM0":
             self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt)
-            self.Sensorliste.append(self.DIST)
-            self.Sensornamen.append("Distanz")
+            self.Sensorliste[3] = self.DIST
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [None]
 
@@ -59,10 +58,12 @@ class Boot:
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
     def Sensorwerte_auslesen(self):
 
+
         if not self.auslesen:
             self.auslesen = True
             for sensor in self.Sensorliste:
-                sensor.read_datastream()
+                if sensor:
+                    sensor.read_datastream()
 
 
     # muss einmalig angestoßen werden
@@ -84,8 +85,9 @@ class Boot:
                     zeiten = []
                     db_temp = ""
                     for i, daten in enumerate(self.AktuelleSensordaten):
-                        zeiten.append(daten.timestamp) #TODO: Testen , ob die Zeitpunkte nicht zu weit auseinander liegen?
-                        db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(daten, id_zeit=False)
+                        if not None:
+                            zeiten.append(daten.timestamp) #TODO: Testen , ob die Zeitpunkte nicht zu weit auseinander liegen?
+                            db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(daten, id_zeit=False)
                     zeit_mittel = statistics.mean(zeiten)
                     self.db_id += 1
                     db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
@@ -122,14 +124,15 @@ class Boot:
             spatial_index_check = False
             spatial_index_name = ""  # Name des Punktes, auf das der Spatial Index gelegt wird
             for i, sensor in enumerate(self.Sensorliste):
-                for j in range(len(sensor.db_felder)-2):
-                    spatial_string = ""
-                    if type(sensor).__name__ == "GNSS" and sensor.db_felder[j+2][1] == "POINT":
-                        spatial_string = " NOT NULL SRID 25832"
-                        if not spatial_index_check:
-                            spatial_index_check = True
-                            spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
-                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + " " + sensor.db_felder[j+2][1] + spatial_string
+                if not None:
+                    for j in range(len(sensor.db_felder)-2):
+                        spatial_string = ""
+                        if type(sensor).__name__ == "GNSS" and sensor.db_felder[j+2][1] == "POINT":
+                            spatial_string = " NOT NULL SRID 25832"
+                            if not spatial_index_check:
+                                spatial_index_check = True
+                                spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
+                        temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + " " + sensor.db_felder[j+2][1] + spatial_string
 
             self.db_zeiger.execute(connect_table_string + temp + ");")
             temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");"
@@ -152,10 +155,29 @@ class Boot:
         def Ueberschreibungsfunktion(self):
             while self.fortlaufende_aktualisierung:
                 for i in range(0, len(self.Sensorliste)):
-                    sensor = self.Sensorliste[i]
-                    self.AktuelleSensordaten[i] = sensor.aktdaten
-                time.sleep(self.takt)
+                    if self.Sensorliste[i]:
+                        sensor = self.Sensorliste[i]
+                        self.AktuelleSensordaten[i] = sensor.aktdaten
 
+                    # Für Simulation
+                    else:                                             # TODO nur für simulation
+                        if i == 0:
+                            hoch = 5888475.95 + random.random()
+                            east = 446502.707 + random.random()
+                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [east, hoch, 2, 45.123, 4])
+                        if i == 1:
+                            hoch = 5888474.95 + random.random()
+                            east = 446502.71 + random.random()
+                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [east, hoch, 2, 45.123, 1])
+                        if i == 2:
+                            tiefe1 = 22.123 + random.random()
+                            tiefe2 = 23.986 + random.random()
+                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [tiefe1, tiefe2])
+                        if i == 3:
+                            dist = 10.678 + random.random()
+                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, dist)
+
+                time.sleep(self.db_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
@@ -166,10 +188,16 @@ class Boot:
         pass
 
     def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
+        try:
+            self.PixHawk.Geschwindigkeit_setzen(geschw)
+            self.PixHawk.Wegpunkt_anfahren(e, n)
+            print("Fahre Punkt mit Koordinaten E:", e, "N:", n, "an")
+        except:
+            print("Punktanfahren nicht möglich: Erneuter Verbindungsversuch mit PixHawk")
+            self.PixHawk.verbindung_hergestellt = False
+            self.PixHawk.Verbinden()
 
-        self.PixHawk.Geschwindigkeit_setzen(geschw)
-        self.PixHawk.Wegpunkt_anfahren(e, n)
-        print("Fahre Punkt mit Koordinaten E:", e, "N:", n, "an")
+            # todo: In Klasse Pixhawk verlegen
 
     def Wegberechnung(self):
         pass

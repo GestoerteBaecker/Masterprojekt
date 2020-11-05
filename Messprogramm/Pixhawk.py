@@ -1,7 +1,7 @@
 import dronekit as dronekit
 import utm
 import time
-import mavgen
+#import mavgen
 import threading
 
 # Klasse zum Ansteuern der Motoren

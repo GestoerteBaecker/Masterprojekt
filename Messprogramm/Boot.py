@@ -7,6 +7,8 @@ import statistics
 import threading
 import time
 import random
+import math
+import numpy
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
 # self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
@@ -181,8 +183,40 @@ class Boot:
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
+    def Uferpunktberechnung(self):
+        pass
+
+    def dauerhafte_Headingberechung(self):
+
+        Bootsmitte = [self.AktuelleSensordaten[0][0], self.AktuelleSensordaten[0][1]]
+        Bootsbug = [self.AktuelleSensordaten[1][0], self.AktuelleSensordaten[1][1]]
+
+        # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn berechnet)
+        heading_rad = numpy.arctan2((Bootsmitte[0]-Bootsbug[0]), (Bootsmitte[1]-Bootsbug[1]))
+
+        # Quadrantenabfrage
+
+        if Bootsbug[0] > Bootsmitte[0]:
+            if Bootsbug[1] > Bootsmitte[1]:
+                q_zuschl = 0  # Quadrant 1
+            else:
+                q_zuschl = 2*numpy.pi  # Quadrant 4
+        else:
+            if Bootsbug[1] > Bootsmitte[1]:
+                q_zuschl = numpy.pi  # Quadrant 2
+            else:
+                q_zuschl = numpy.pi  # Quadrant 3
+
+        heading_rad += q_zuschl
+        heading_gon = heading_rad * (200/numpy.pi)
+
+        return heading_gon
+
     def Hinderniserkennung(self):
         pass
+
+        # Entfernungswerte tracken und mit vorhereigen Messungen abgleichen
+        # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
 
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
         pass

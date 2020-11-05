@@ -7,7 +7,6 @@ import sys, os
 # Import der aufzurufenden Skripte
 import Karte
 import Boot
-import Pixhawk
 #import ____
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
@@ -24,9 +23,9 @@ class Anwendung(Frame):
         self.master.resizable(width=False, height=False)
 
         # Definieren eines Randabstandes des Fensters
-        randabstand = 50
+        randabstand = 10
         self.master.geometry('+%d+%d' % (randabstand, randabstand))
-        self.map_window=None
+        self.karte_window=None
 
         # Überschrift
         Label(self,text="EchoBoat Autopilot-Monitor",font='Helvetica 12 bold').grid(row=0,column=0,columnspan=8,pady=10)
@@ -54,7 +53,7 @@ class Anwendung(Frame):
         button_verbinden.grid(row=2, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
         button_daten_lesen=Button(self, text="Auslesen", command=lambda: self.boot_daten_lesen(),width=14)
         button_daten_lesen.grid(row=2, column=2, sticky="we", padx=10, pady=10)
-        button_db_starten=Button(self, text="in DB schreiben", command=lambda: self.boot_db_sarten(),width=14)
+        button_db_starten=Button(self, text="in DB schreiben", command=lambda: self.boot_db_starten(),width=14)
         button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=10)
         button_erkunden=Button(self, text="Erkunden", command=lambda: self.boot_erkunden(),width=14,font='Helvetica 9 bold')
         button_erkunden.grid(row=3, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
@@ -62,7 +61,7 @@ class Anwendung(Frame):
         button_aufnehmen.grid(row=4, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
 
         # Label der Verbindungsqualität
-        Label(self,text="Status").grid(row=5,column=0,pady=(20,0))
+        Label(self,text="Status").grid(row=5,column=0,pady=(10,0))
         self.con_qual_gnss1=Label(self, bg="red",width=3,height=2,relief="groove")
         self.con_qual_gnss1.grid(row=6, column=0, pady=10, padx=5)
         self.con_qual_gnss2=Label(self, bg="red",width=3,height=2,relief="groove")
@@ -77,7 +76,7 @@ class Anwendung(Frame):
         self.con_qual_imu.grid(row=11, column=0, pady=10, padx=5)
 
         # Label der Instrumentnamen
-        Label(self,text="Instrument",width=14).grid(row=5,column=1,pady=(20,0))
+        Label(self,text="Instrument",width=14).grid(row=5,column=1,pady=(10,0))
         label_gnss1=Label(self, text="GNSS1",bg="lightgrey",height=2,relief="groove")
         label_gnss1.grid(row=6, column=1, pady=5, sticky=W+E)
         label_gnss2=Label(self, text="GNSS2",bg="lightgrey",height=2,relief="groove")
@@ -92,7 +91,7 @@ class Anwendung(Frame):
         label_imu.grid(row=11, column=1, sticky=W+E)
 
         # Label der empfangenen Messwerte
-        Label(self,text="aktuelle Daten",width=14).grid(row=5,column=2,pady=(20,0))
+        Label(self,text="aktuelle Daten",width=14).grid(row=5,column=2,pady=(10,0))
         Label(self,text="-/-").grid(row=11,column=2)
 
         self.var_current_state1=StringVar()
@@ -122,11 +121,11 @@ class Anwendung(Frame):
 
         # Verbindung, Erkundung und Vermessung
         button_latestDB=Button(self, text="Letzter DB-Eintrag", command=lambda: self.boot_letzter_Eintrag(),width=14)
-        button_latestDB.grid(row=12, column=0, columnspan=2, sticky="we", padx=(30,10), pady=30)
+        button_latestDB.grid(row=12, column=0, columnspan=2, sticky="we", padx=(30,10), pady=20)
         button_rtl=Button(self, text="RTL", command=lambda: self.Boot_RTL(),width=14)
-        button_rtl.grid(row=12, column=2, sticky="we", padx=10, pady=30)
+        button_rtl.grid(row=12, column=2, sticky="we", padx=10, pady=20)
         button_stopp=Button(self, text="NOT-STOPP", command=lambda: self.boot_stopp(), width=14,bg="darkred",fg="white",font="Helvetica 10 bold")
-        button_stopp.grid(row=12, column=3, sticky="we", padx=10, pady=30)
+        button_stopp.grid(row=12, column=3, sticky="we", padx=10, pady=20)
 
 
         # Einfügen von Separatoren zur besseren Lesbarkeit zwischen den Zeilen
@@ -146,18 +145,18 @@ class Anwendung(Frame):
 
         # Abrufen der neuesten Daten und Stati
         self.verbindung_initialisiert=False
+        self.t=0
         self.status_und_daten_aktualisieren()
 
 
     def osm_tiles_lesen(self):
         # Öffnen der Datei
         tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
+        #try:
         self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-        self.map_window=Karte.Anwendung_Karte(self.position,tilefiles)
-        try:
-            self.map_window.karte_updaten()
-        except:
-            print("Karte kann nicht aktualisiert werden.")
+        self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
+       # except:
+           # print("Dateien ungültig")
 
     def aktuelle_methode(self, x):
         print(x)
@@ -165,11 +164,11 @@ class Anwendung(Frame):
     def boot_verbinden(self):
         try:
             self.verbindung_initialisiert = True
-            self.boot = Boot.Boot(Pix_COM="com7",
-                        GNSS1_COM="COM10", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2,
-                        GNSS2_COM="COM11", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2,
-                        ECHO_COM="COM1", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2,
-                        DIST_COM="COM12", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
+            self.boot = Boot.Boot(Pix_COM="com13", # com0, wenn kein Pixhawk angeschlossen ist
+                        GNSS1_COM="COM0", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2,
+                        GNSS2_COM="COM0", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2,
+                        ECHO_COM="COM0", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2,
+                        DIST_COM="COM11", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -180,7 +179,7 @@ class Anwendung(Frame):
     def boot_daten_lesen(self):
         try:
             self.datenlesen_initialisiert=True
-            self.boot.Sensorwerte_auslesen()
+            self.boot.Datenaktualisierung()
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -189,7 +188,7 @@ class Anwendung(Frame):
             messagebox.showerror(title="Fehler beim Daten lesen!", message=("Lesen der Daten konnte nicht initialisiert werden: "+str(e)+"\nTyp: "+str(exc_type)+"\nName: "+str(fname)+"\nZeile: "+str(exc_tb.tb_lineno)))
 
 
-    def boot_db_starte(self):
+    def boot_db_starten(self):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
@@ -207,15 +206,187 @@ class Anwendung(Frame):
 
     def status_und_daten_aktualisieren(self):
         # Abfrage, ob Verbindung initialisiert wurde
+        self.t+=1
         if self.verbindung_initialisiert==True:
 
             if self.boot.PixHawk.verbindung_hergestellt==True:
-                modus=str(self.boot.pixHawk.vehicle.mode).split(":")[1]
+                modus=str(self.boot.PixHawk.vehicle.mode).split(":")[1]
                 self.con_qual_pixhawk4.config(bg="orange")
 
-                if self.boot.pixHawk.vehicle.armed==False:armed="DISARMED"
+                if self.boot.PixHawk.vehicle.armed==False:armed="DISARMED"
 
-                elif self.boot.pixHawk.vehicle.armed==True: armed="ARMED"
+                elif self.boot.PixHawk.vehicle.armed==True: armed="ARMED"
+
+                self.var_current_px4.set(armed+"  |  "+modus)
+
+                if modus=="GUIDED" and armed=="ARMED":
+                    self.con_qual_pixhawk4.config(bg="green")
+            else:
+                self.con_qual_pixhawk4.config(bg="red") # TODO: Verbindung_hergestellt muss noch auf False gesetzt werden, wenn VErbindung getrennt
+                self.var_current_px4.set("No Data")
+
+            # E C H T E  D A T E N
+            if self.boot.Sensorliste[0]:
+                if self.boot.Sensorliste[0].verbindung_hergestellt == True:
+                #if self.datenlesen_initialisiert == True:
+                    try:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[0].daten[4] #TODO
+                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0]-32000000,self.boot.AktuelleSensordaten[0].daten[1] #TODO
+                        #gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
+                        gnss_heading=0
+                        if gnss_qual_indikator==4:
+                            self.con_qual_gnss1.config(bg="green")
+                            self.var_current_state1.set("RTK fix")
+                        elif gnss_qual_indikator==5:
+                            self.con_qual_gnss1.config(bg="yellow")
+                            self.var_current_state1.set(gnss_qual_indikator+": RTK float")
+                        else:
+                            self.var_current_state1.set(gnss_qual_indikator+": kein RTK")
+                            self.con_qual_gnss1.config(bg="orange")
+                        if self.karte_window!= None:
+                            try:
+                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading)
+                            except:
+                                print("Karte kann nicht aktualisiert werden.")
+                    except:
+                        self.con_qual_gnss1.config(bg="orange")
+                #else:
+                    #self.con_qual_gnss1.config(bg="red")
+
+
+            # S I M U L A T I O N
+            else:
+                try:
+                    gnss_qual_indikator = self.boot.AktuelleSensordaten[0].daten[4]  # TODO
+                    gnss_north, gnss_east = self.boot.AktuelleSensordaten[0].daten[0], \
+                                            self.boot.AktuelleSensordaten[0].daten[1]  # TODO
+                    # gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
+                    gnss_heading = 0
+                    if gnss_qual_indikator == 4:
+                        self.con_qual_gnss1.config(bg="dark blue")
+                        self.var_current_state1.set("RTK fix")
+                    elif gnss_qual_indikator == 5:
+                        self.con_qual_gnss1.config(bg="light blue")
+                        self.var_current_state1.set(str(gnss_qual_indikator) + ": RTK float")
+                    else:
+                        self.var_current_state1.set(str(gnss_qual_indikator) + ": kein RTK")
+                        self.con_qual_gnss1.config(bg="blue")
+                    if self.karte_window != None:
+                        try:
+                            self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading,self.t)
+                        except:
+                            print("Karte kann nicht aktualisiert werden.")
+                except:
+                    self.con_qual_gnss1.config(bg="blue")
+
+                if self.karte_window != None:
+                    try:
+                        self.karte_window.karte_updaten(None, None, None)
+                    except:
+                        print("Karte kann nicht aktualisiert werden.")
+
+            # E C H T E  D A T E N
+            if self.boot.Sensorliste[1]:
+                if self.boot.Sensorliste[1].verbindung_hergestellt == True:  # TODO: Was, wenn nur eine GNSS??
+                #if self.datenlesen_initialisiert == True:
+                    try:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4] #TODO
+                        if gnss_qual_indikator==4:
+                            self.con_qual_gnss2.config(bg="green")
+                            self.var_current_state2.set("RTK fix")
+                        elif gnss_qual_indikator==5:
+                            self.con_qual_gnss2.config(bg="yellow")
+                            self.var_current_state2.set(str(gnss_qual_indikator)+": RTK float")
+                        else:
+                            self.var_current_state2.set(str(gnss_qual_indikator)+": kein RTK")
+                            self.con_qual_gnss2.config(bg="orange")
+                    except:
+                        self.con_qual_gnss2.config(bg="orange")
+                #else:
+                    #self.con_qual_gnss2.config(bg="red")
+
+            # S I M U L A T I O N
+            else:
+                try:
+                    gnss_qual_indikator = self.boot.AktuelleSensordaten[1].daten[4]  # TODO
+                    if gnss_qual_indikator == 4:
+                        self.con_qual_gnss2.config(bg="dark blue")
+                        self.var_current_state1.set("RTK fix")
+                    elif gnss_qual_indikator == 5:
+                        self.con_qual_gnss2.config(bg="light blue")
+                        self.var_current_state2.set(str(gnss_qual_indikator) + ": RTK float")
+                    else:
+                        self.var_current_state2.set(str(gnss_qual_indikator) + ": kein RTK")
+                        self.con_qual_gnss2.config(bg="blue")
+                except:
+                    self.con_qual_gnss2.config(bg="blue")
+            #else:
+                #self.con_qual_gnss2.config(bg="red")
+
+            # E C H T E  D A T E N
+            if self.boot.Sensorliste[2]:
+                if self.boot.Sensorliste[2].verbindung_hergestellt == True:
+                    self.con_qual_echolot.config(bg="orange")
+                    try:
+                        t1 = int(self.boot.AktuelleSensordaten[2].daten[0]) #TODO
+                        t2 = int(self.boot.AktuelleSensordaten[2].daten[1]) #TODO
+                        self.con_qual_echolot.config(bg="green")
+                        self.var_current_depth.set(str(t1) + "  |  " + str(t2))
+                    except:
+                        self.con_qual_echolot.config(bg="orange")
+                else:
+                    self.con_qual_echolot.config(bg="red")
+
+            # S I M U L A T I O N
+            else:
+                self.con_qual_echolot.config(bg="blue")
+                try:
+                    t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2) #TODO
+                    t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2) #TODO
+                    self.con_qual_echolot.config(bg="dark blue")
+                    self.var_current_depth.set(str(t1) + "  |  " + str(t2))
+                except:
+                    self.con_qual_echolot.config(bg="blue")
+
+            # E C H T E  D A T E N
+            if self.boot.Sensorliste[3].verbindung_hergestellt == True:
+                self.con_qual_dimetix.config(bg="orange")
+                try:
+                    d = self.boot.AktuelleSensordaten[3].daten #TODO
+                    self.con_qual_dimetix.config(bg="green")
+                    self.var_current_distance.set(str(d))
+                except:
+                    self.con_qual_dimetix.config(bg="orange")
+            else:
+                self.con_qual_dimetix.config(bg="red")
+
+        self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
+
+    def alles_schliessen(self):
+        if self.karte_window:
+            self.karte_window.plt.close()
+            self.karte_window=None
+        self.master.destroy()
+
+# Hauptanwendung
+if __name__ == "__main__":
+    hauptfenster = Tk()
+    hauptfenster.title("EchoBoat - Autopilot Monitor")
+    anwendung = Anwendung(hauptfenster)
+    hauptfenster.mainloop()
+
+    """
+    def status_und_daten_aktualisieren(self):
+        # Abfrage, ob Verbindung initialisiert wurde
+        if self.verbindung_initialisiert==True:
+
+            if self.boot.PixHawk.verbindung_hergestellt==True:
+                modus=str(self.boot.PixHawk.vehicle.mode).split(":")[1]
+                self.con_qual_pixhawk4.config(bg="orange")
+
+                if self.boot.PixHawk.vehicle.armed==False:armed="DISARMED"
+
+                elif self.boot.PixHawk.vehicle.armed==True: armed="ARMED"
 
                 self.var_current_px4.set(armed+"  |  "+modus)
 
@@ -227,47 +398,61 @@ class Anwendung(Frame):
 
 
             if self.boot.GNSS1.verbindung_hergestellt == True:
-                if self.datenlesen_initialisiert == True:
+                #if self.datenlesen_initialisiert == True:
                     try:
-                        gps_qual_indikator=self.boot.AktuelleSensordaten[xy]
-                        if gps_qual_indikator==4:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[0].daten[4] #TODO
+                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0]-32000000,self.boot.AktuelleSensordaten[0].daten[1] #TODO
+                        #gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
+                        gnss_heading=0
+                        if gnss_qual_indikator==4:
                             self.con_qual_gnss1.config(bg="green")
                             self.var_current_state1.set("RTK fix")
-                        elif gps_qual_indikator==5:
+                        elif gnss_qual_indikator==5:
                             self.con_qual_gnss1.config(bg="yellow")
-                            self.var_current.state1.set(gps_qual_indikator+": RTK float")
+                            self.var_current_state1.set(gnss_qual_indikator+": RTK float")
                         else:
-                            self.var_current.state1.set(gps_qual_indikator+": kein RTK")
+                            self.var_current_state1.set(gnss_qual_indikator+": kein RTK")
                             self.con_qual_gnss1.config(bg="orange")
+                        if self.karte_window!= None:
+                            try:
+                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading)
+                            except:
+                                print("Karte kann nicht aktualisiert werden.")
                     except:
                         self.con_qual_gnss1.config(bg="orange")
-                else:
-                    self.con_qual_gnss1.config(bg="red")
-
-            if self.boot.GNSS2.verbindung_hergestellt == True:
-                if self.datenlesen_initialisiert == True:
+                #else:
+                    #self.con_qual_gnss1.config(bg="red")
+            else:
+                if self.karte_window != None:
                     try:
-                        gps_qual_indikator=self.boot.AktuelleSensordaten[xy]
-                        if gps_qual_indikator==4:
+                        self.karte_window.karte_updaten(None, None, None)
+                    except:
+                        print("Karte kann nicht aktualisiert werden.")
+
+            if self.boot.GNSS2.verbindung_hergestellt == True: # TODO: Was, wenn nur eine GNSS??
+                #if self.datenlesen_initialisiert == True:
+                    try:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4] #TODO
+                        if gnss_qual_indikator==4:
                             self.con_qual_gnss2.config(bg="green")
                             self.var_current_state2.set("RTK fix")
-                        elif gps_qual_indikator==5:
+                        elif gnss_qual_indikator==5:
                             self.con_qual_gnss2.config(bg="yellow")
-                            self.var_current.state2.set(gps_qual_indikator+": RTK float")
+                            self.var_current.state2.set(gnss_qual_indikator+": RTK float")
                         else:
-                            self.var_current.state2.set(gps_qual_indikator+": kein RTK")
+                            self.var_current.state2.set(gnss_qual_indikator+": kein RTK")
                             self.con_qual_gnss2.config(bg="orange")
                     except:
                         self.con_qual_gnss2.config(bg="orange")
-                else:
-                    self.con_qual_gnss2.config(bg="red")
+                #else:
+                    #self.con_qual_gnss2.config(bg="red")
 
             if self.boot.Echo.verbindung_hergestellt == True:
                 self.con_qual_echolot.config(bg="orange")
                 try:
-                    t1 = int(self.boot.AktuelleSensordaten[xy])
-                    t2 = int(self.boot.AktuelleSensordaten[xy])
-                    self.con_qual_Echolot.config(bg="green")
+                    t1 = int(self.boot.AktuelleSensordaten[2].daten[0]) #TODO
+                    t2 = int(self.boot.AktuelleSensordaten[2].daten[1]) #TODO
+                    self.con_qual_echolot.config(bg="green")
                     self.var_current_depth.set(str(t1) + "  |  " + str(t2))
                 except:
                     self.con_qual_echolot.config(bg="orange")
@@ -277,25 +462,12 @@ class Anwendung(Frame):
             if self.boot.DIST.verbindung_hergestellt == True:
                 self.con_qual_dimetix.config(bg="orange")
                 try:
-                    d = self.boot.AktuelleSensordaten[xy]
-                    self.con_qual_Dimetix.config(bg="green")
-                    self.var_current_depth.set(str(d))
+                    d = self.boot.AktuelleSensordaten[3].daten #TODO
+                    self.con_qual_dimetix.config(bg="green")
+                    self.var_current_distance.set(str(d))
                 except:
-                    self.con_qual_Dimetix.config(bg="orange")
+                    self.con_qual_dimetix.config(bg="orange")
             else:
                 self.con_qual_dimetix.config(bg="red")
 
-        self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
-
-    def alles_schliessen(self):
-        if self.map_window is not None:
-            self.map_window.plt.close()
-            self.map_window=None
-        self.master.destroy()
-
-# Hauptanwendung
-if __name__ == "__main__":
-    hauptfenster = Tk()
-    hauptfenster.title("EchoBoat - Autopilot Monitor")
-    anwendung = Anwendung(hauptfenster)
-    hauptfenster.mainloop()
+        self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt"""

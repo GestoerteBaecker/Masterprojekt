@@ -44,7 +44,7 @@ class Sensor:
                 self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
             else:
                 self.ser = serial.Serial(self.com, self.baudrate)
-            self.verbindung_hergestellt = True
+            self.vself.verbindung_hergestellt = True
         except:
             self.ser = None
             print("Fehler bei der Verbindung mit der Schnittstelle")
@@ -76,6 +76,7 @@ class Sensor:
                 try:
                     if self.bytesize:
                         self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+                        self.ser.write(b's0o\r\n')
                     else:
                         self.ser = serial.Serial(self.com, self.baudrate)
                     self.verbindung_hergestellt = True

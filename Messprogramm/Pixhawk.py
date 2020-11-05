@@ -1,7 +1,7 @@
 import dronekit as dronekit
 import utm
 import time
-import mavgen
+#import mavgen
 import threading
 
 # Klasse zum Ansteuern der Motoren
@@ -10,42 +10,46 @@ class Pixhawk:
     def __init__(self, COM):
 
         self.connection_string = COM
-        self.vehicle = ""
         self.verbindung_hergestellt = False
         self.initialisierung = False
 
-        try:
-            self.Verbinden()
+        def Initialisierungsfuntion(self):  # Wird aufgerufen, damit das Hauptprogramm nicht aufgehalten wird, wenn kein Pixhawk angeschlossen ist, oder der Verbindungsvorgang sehr lange dauert
+            try:
+                self.Verbinden()    # Methode führt die Verbindungsfunktion so lange aus, bis self.vehicle angelegt ist
 
-        except:
-            print("Es konnte keine Verbindung mit dem PixHawk hergestellt werden")
+            except:
+                print("Es konnte keine Verbindung mit dem PixHawk hergestellt werden")
 
-        while not self.vehicle.is_armable:              # Warten, bis der PixHawk bereit zum initialisieren ist
-            time.sleep(1)                               # Homeposition wird automatisch bei einer FIX-GNSS-Lösung erzeugt
+            while not hasattr(self, 'vehicle'):              # Warten, bis der PixHawk bereit zum initialisieren ist
+                time.sleep(1)                               # Homeposition wird automatisch bei einer FIX-GNSS-Lösung erzeugt
+            print('PixHawk verbunden')
+            try:
+                self.Initialisieren()
+                print("PixHawk verbunden und initialisiert")
 
-        try:
-            self.Initialisieren()
-            print("PixHawk verbunden und initialisiert")
+            except:
+                print("PixHawk konnte nicht initialisiert werden")
 
-        except:
-            print("PixHawk konnte nicht initialisiert werden")
-
+        self.listen_process = threading.Thread(target=Initialisierungsfuntion, args=(self,), daemon=True)
+        self.listen_process.start()
 
     def Verbinden(self):
 
-        def DauerhafteVerbindung(self):
+        while True:
+            if hasattr(self, 'vehicle'):
+                self.verbindung_hergestellt = True
+                break
+            else:
+                self.verbindung_hergestellt = False
 
-            while True:
-                if self.vehicle.mode: self.verbindung_hergestellt = True
-                else: self.verbindung_hergestellt = False
+            if not self.verbindung_hergestellt:
 
-                if not self.verbindung_hergestellt:
+                try:
                     self.vehicle = dronekit.connect(self.connection_string, wait_ready=True)
-                    self.verbindung_hergestellt = True
-                time.sleep(10)
-
-        self.listen_process = threading.Thread(target=DauerhafteVerbindung, args=(self,), daemon=True)
-        self.listen_process.start()
+                except:
+                    self.verbindung_hergestellt = False
+                    print("Wiederholte Verbindungssuche vom Sensor 'PixHawk' fehlgeschlagen")
+                    time.sleep(10)
 
     def Initialisieren(self):
 

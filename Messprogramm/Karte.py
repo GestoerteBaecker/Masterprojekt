@@ -10,18 +10,15 @@ import utm
 import random
 import threading
 
-# Import der aufzurufenden Skripte
-#import boot
-#import ____
-
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
-class Anwendung_Karte(Frame):
+class Anwendung_Karte():
     # Konstruktor  der GUI der Hauptanwendung zum Öffnen aller weiteren GUIs
-    def __init__(self,position=0,tilefiles=None):
+    def __init__(self,Monitor,position=0,tilefiles=None):
 
         # Übernehmen des Ordnerpfades und Fensterposition
         self.tilefiles=tilefiles
         self.position=position
+        self.monitor=Monitor
 
         # Abschluss der Initialisierung durch erstmaliges Laden der Karte
         self.karte_laden()
@@ -82,45 +79,50 @@ class Anwendung_Karte(Frame):
         self.figure.suptitle("EchoBoat - Autopilot Navigator")
         self.figure.patch.set_facecolor('white')
         self.figure.canvas.set_window_title('EchoBoat - Autopilot Navigator')
+        # Zum Abfangen von Fehlern beim Schließen der Karte
+        self.figure.canvas.mpl_connect('close_event',self.karte_geschlossen)
+
+        # Variablen für das spätere Boot setzen
+        self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
+        self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
+        self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
+        self.route_x,self.route_y=[],[]
+
         self.map=self.ax.imshow(np.asarray(self.cluster))
         # Abfragen und Setzen der Fenster-Position
         thismanager=plt.get_current_fig_manager()
         positionx,positiony=self.position
         thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self):
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
-        self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
-        self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
-        self.boat_route,=self.ax.plot([],[],'-',lw=1, color="grey")
-        self.route_x=[]
-        self.route_y=[]
+        self.gnss_north=gnss_north
+        self.gnss_east=gnss_east
+        self.gnss_heading=gnss_east
+        self.t=t
 
+        # Plotten der aktuellen Boot-Position inklusive Heading
+        self.plot_boat()
+        self.plot_boatroute()
 
-        t = 0
-        update_interval = 10
-        # Schleife plottet ständig die neuesten Daten
-        while True:
-            # Plotten der aktuellen Boot-Position inklusive Heading
-            self.plot_boat(t)
-            # Plotten der aktuellen Wegpunkte
-            # self.plot_waypoint()
-            if t%update_interval==0:
-                # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
-                self.plot_boatroute()
-            # Plotten der neuen Daten
-            self.figure.canvas.draw()
-            t+=1
-            plt.pause(0.2)
+        # Plotten der aktuellen Wegpunkte
+        # self.plot_waypoint()
 
+        #
+            # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
+            #
+        # Plotten der neuen Daten
+        self.figure.canvas.draw()
+        #t+=1
+        #plt.pause(0.2)
 
-    def plot_boat(self,t):
+    def plot_boat(self):
         try:
             # Einlesen der aktuellen Boot-Daten
-            heading_deg = 27+random.randint(-10,10)
-            heading_rad=math.radians(heading_deg)
-            boat_utm_x = 452049.974+t
-            boat_utm_y = 5885228.359+t
+            heading_deg = self.gnss_heading
+            heading_rad=math.radians(self.gnss_heading)
+            boat_utm_x = self.gnss_north
+            boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
             self.current_boat_position_x,self.current_boat_position_y=self.img_utm_trans(boat_utm_x,boat_utm_y)
@@ -167,6 +169,7 @@ class Anwendung_Karte(Frame):
 
         # Anwenden der Transformationsparameter
         boat_img_x=upperleft_img[0]-m*upperleft_utm[0]+m*boat_utm_x
+        print(boat_img_x)
         boat_img_y=upperleft_img[1]-m*upperleft_utm[1]+m*boat_utm_y
 
         return boat_img_x,boat_img_y
@@ -176,11 +179,16 @@ class Anwendung_Karte(Frame):
         x=1
 
     def plot_boatroute(self):
-        self.route_x.append(self.current_boat_position_x)
-        self.route_y.append(-self.current_boat_position_y)
-        if len(self.route_y)>1:
-            self.boat_route.set_xdata(self.route_x)
-            self.boat_route.set_ydata(self.route_y)
+        update_interval = 10
+        if self.t % update_interval == 0:
+            self.route_x.append(self.current_boat_position_x)
+            self.route_y.append(-self.current_boat_position_y)
+            if len(self.route_y)>1:
+                self.boat_route.set_xdata(self.route_x)
+                self.boat_route.set_ydata(self.route_y)
+
+    def karte_geschlossen(self,evt):
+        self.monitor.karte_window = None
 
 
 #if __name__=="__main__":

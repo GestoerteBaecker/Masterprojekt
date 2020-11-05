@@ -6,3 +6,6 @@ https://link.springer.com/article/10.1007/s11370-019-00310-w
 
 Matrizen in numpy:
 https://stackoverflow.com/questions/28578302/how-to-multiply-two-vector-and-get-a-matrix
+
+Spatial Indizes:
+https://stackoverflow.com/questions/62297352/mysql-8-is-not-using-spatial-index

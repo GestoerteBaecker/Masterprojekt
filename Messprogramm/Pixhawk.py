@@ -1,6 +1,8 @@
-import dronekit
+import dronekit as dronekit
 import utm
 import time
+import mavgen
+import threading
 
 # Klasse zum Ansteuern der Motoren
 class Pixhawk:
@@ -31,8 +33,19 @@ class Pixhawk:
 
     def Verbinden(self):
 
-        self.vehicle = dronekit.connect(self.connection_string, wait_ready=True)
-        self.verbindung_hergestellt = True
+        def DauerhafteVerbindung(self):
+
+            while True:
+                if self.vehicle.mode: self.verbindung_hergestellt = True
+                else: self.verbindung_hergestellt = False
+
+                if not self.verbindung_hergestellt:
+                    self.vehicle = dronekit.connect(self.connection_string, wait_ready=True)
+                    self.verbindung_hergestellt = True
+                time.sleep(10)
+
+        self.listen_process = threading.Thread(target=DauerhafteVerbindung, args=(self,), daemon=True)
+        self.listen_process.start()
 
     def Initialisieren(self):
 
@@ -40,6 +53,8 @@ class Pixhawk:
         self.vehicle.armed = True
         self.vehicle.mode = dronekit.VehicleMode("GUIDED")
         self.initialisierung = True
+
+        #todo: Takeoff einbauen?
 
     def Geschwindigkeit_setzen(self, v):  # v = Geschwindigkeit im m/s
 
@@ -55,6 +70,10 @@ class Pixhawk:
             except: print("PixHawk konnte nicht initialisiert werden")
 
             if self.initialisierung: self.Wegpunkt_anfahren()
+
+    def Notstop(self):
+        pass
+        #self.vehicle.send_mavlink("MAV_GOTO_DO_HOLD") #todo: richtige MAV-Link-Nachricht eifügen
 
     def Return_to_launch(self):
 

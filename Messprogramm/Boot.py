@@ -124,14 +124,16 @@ class Boot:
             for i, sensor in enumerate(self.Sensorliste):
                 for j in range(len(sensor.db_felder)-2):
                     spatial_string = ""
-                    if not spatial_index_check and type(sensor).__name__ == "GNSS":
-                        spatial_index_check = True
+                    if type(sensor).__name__ == "GNSS" and sensor.db_felder[j+2][1] == "POINT":
                         spatial_string = " NOT NULL SRID 25832"
-                        spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
-                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + spatial_string + " " + sensor.db_felder[j+2][1]
+                        if not spatial_index_check:
+                            spatial_index_check = True
+                            spatial_index_name = self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0]
+                    temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + " " + sensor.db_felder[j+2][1] + spatial_string
 
-            temp = temp + ", SPATIAL INDEX(" + spatial_index_name + ")"
             self.db_zeiger.execute(connect_table_string + temp + ");")
+            temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");"
+            self.db_zeiger.execute(temp)
 
         elif mode == 1:
             for i, sensor in enumerate(self.Sensorliste):
@@ -163,11 +165,11 @@ class Boot:
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
         pass
 
-    def Punkt_anfahren(self, e, n, geschw = 2):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.PixHawk.Geschwindigkeit_setzen(geschw)
         self.PixHawk.Wegpunkt_anfahren(e, n)
-        print("Fahre Punkt mit Koordinate E:", e, "N:", n, "an")
+        print("Fahre Punkt mit Koordinaten E:", e, "N:", n, "an")
 
     def Wegberechnung(self):
         pass
@@ -175,12 +177,20 @@ class Boot:
     def Gewaesseraufnahme(self):
         pass
 
+    def Boot_stoppen(self):
+
+        self.Punkt_anfahren(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], 0.5)
+        print("Notstopp! Letzte Posotion wird langsam angefahren")
+
+        #todo: Notstopp richtig implementieren
+
     def Trennen(self):
 
         for Sensor in self.Sensorliste:
             Sensor.kill()
 
-        self.PixHawk.Trennen()
+        if self.PixHawk:
+            self.PixHawk.Trennen()
 
     def RTL(self):
 
@@ -201,6 +211,7 @@ class Boot:
     #TODO: Synchronisation/Fusion der einzelnen Messwerte (Echolot und GNSS)
 
     # Berechnet das Gefälle unterhalb des Bootes
+    # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
     def Hydrographische_abfrage(self, punkt):
         """
         :param punkt: Punkt des Bootes
@@ -210,22 +221,91 @@ class Boot:
         fläche = Flächenberechnung(punkte[0], punkte[1])
 
         if fläche < 5: # dann sind nur Punkte enthalten, die vermutlich aus den momentanen Messungen herrühren
-            pass
-            # Ausgleichsgerade und Gradient auf Kurs projizieren
-            max_steigung = None # Vektor
-            flächenhaft = False #TODO: implementieren
+
+            # Ausgleichsgerade und Gradient auf Kurs projizieren (<- Projektion ist implizit, da die zuletzt aufgenommenen Punkte auf dem Kurs liegen müssten)
+            n_pkt = int(len(punkte[0]))  # Anzahl Punkte
+            p1 = numpy.array([punkte[0][0], punkte[1][0], punkte[2][0]])
+            p2 = numpy.array([punkte[0][-1], punkte[1][-1], punkte[2][-1]])
+            r0 = p2 - p1
+            d12 = numpy.linalg.norm(r0)
+            r0 = r0 / d12
+            st0 = p1 - numpy.dot(r0, p1) * r0
+            L = []
+            temp = numpy.matrix(numpy.array([1, 0, 0] * n_pkt)).getT()  # Erste Spalte der A-Matrix
+            A = temp  # A-Matrix ist folgendermaßen aufgebaut: U in Spalten: erst 3 Komp. des Stützvektors, dann alle lambdas
+            #   je Punkt und zuletzt 3 Komp. des Richtungsvektors (immer die Ableitungen nach diesen)
+            #   in den Zeilen sind die Beobachtungen je die Komponenten der Punkte
+            A = numpy.hstack((A, numpy.roll(temp, 1, 0)))
+            A = numpy.hstack((A, numpy.roll(temp, 2, 0)))  # bis hierher sind die ersten 3 Spalten angelegt
+            A_spalte_r0 = numpy.matrix(numpy.array([0.0] * n_pkt * 3))  # Spalte mit Lambdas (Abl. nach r0)
+            A_spalte_lamb = numpy.hstack((numpy.matrix(r0), numpy.matrix(
+                numpy.array([0] * 3 * (n_pkt - 1))))).getT()  # Spalte mit Komp. von r0 (Ableitungen nach den Lambdas)
+            lambdas = []
+            for i in range(n_pkt):
+                p = []  # gerade ausgelesener Punkt
+                for j in range(3):
+                    p.append(punkte[j][i])
+                L += p
+                p = numpy.array(p)
+                lamb = numpy.dot(r0, (p - st0)) / d12
+                lambdas.append(lamb)
+                A_spalte_r0[0, i * 3] = lamb
+                # x0 = numpy.append(x0, lamb)
+                A = numpy.hstack((A, numpy.roll(A_spalte_lamb, 3 * i, 0)))
+            A_spalte_r0 = A_spalte_r0.getT()
+            A = numpy.hstack((A, A_spalte_r0))
+            A = numpy.hstack((A, numpy.roll(A_spalte_r0, 1, 0)))
+            A = numpy.hstack((A, numpy.roll(A_spalte_r0, 2, 0)))
+
+            # Kürzung der Beobachtungen
+            l = numpy.array([])
+            for i in range(n_pkt):
+                pkt0 = st0 + lambdas[i] * r0
+                pkt = L[3 * i:3 * (i + 1)]
+                beob = numpy.array(pkt) - pkt0
+                l = numpy.hstack((l, beob))
+
+            # Einführung von Bedingungen an Stütz- und Richtungsvektor (Stütz senkrecht auf Richtung und Betrag von Richtung = 1)
+            A_trans = A.getT()
+            N = A_trans.dot(A)
+            # Bedingungen an die N-Matrix anfügen
+            A_bed_1 = numpy.matrix(
+                numpy.hstack((numpy.hstack((r0, numpy.zeros((1, n_pkt))[0])), st0)))  # st skalarpro r = 0
+            A_bed_2 = numpy.matrix(numpy.hstack((numpy.zeros((1, n_pkt + 3))[0], 2 * r0)))  # r0 = 1
+            N = numpy.hstack((N, A_bed_1.getT()))
+            N = numpy.hstack((N, A_bed_2.getT()))
+            A_bed_1 = numpy.hstack((A_bed_1, numpy.matrix(numpy.array([0, 0]))))
+            A_bed_2 = numpy.hstack((A_bed_2, numpy.matrix(numpy.array([0, 0]))))
+            N = numpy.vstack((N, A_bed_1))
+            N = numpy.vstack((N, A_bed_2))
+            # Anfügen der Widersprüche
+            w_senkrecht = 0 - numpy.dot(r0, st0)
+            w_betrag_r = 1 - (r0[0] ** 2 + r0[1] ** 2 + r0[2] ** 2)
+            n = A_trans.dot(l)
+            n = numpy.hstack((n, numpy.array([[w_senkrecht, w_betrag_r]])))
+
+            # Auswertung
+            x0 = numpy.matrix(numpy.hstack((numpy.hstack((st0, numpy.array(lambdas))), r0))).getT()
+            q = N.getI()
+            x_dach = numpy.matrix(q.dot(n.getT()))
+            x_dach = x_dach[0:len(x_dach) - 2, 0]
+            X_dach = x0 + x_dach
+            r = numpy.array([X_dach[len(X_dach) - 3, 0], X_dach[len(X_dach) - 2, 0], X_dach[len(X_dach) - 1, 0]])
+            r[2] = 0
+
+            max_steigung = r  # Vektor
+            flächenhaft = False
         else: # dann sind auch seitlich Messungen vorhanden und demnach ältere Messungen als nur die aus der unmittelbaren Fahrt
-            pass
             # Ausgleichsebene und finden der max. Steignug
             a_matrix = numpy.matrix(numpy.column_stack((punkte[0], punkte[1], numpy.array(len(punkte[0])*[1]))))
             q = (a_matrix.getT().dot(a_matrix)).getI()
             x_dach = (q.dot(a_matrix.getT())).dot(punkte[2])
-            n = numpy.array([x_dach[0,0], x_dach[0,1], -1])
+            n = numpy.array([x_dach[0, 0], x_dach[0, 1], -1])
             n = n / numpy.linalg.norm(n)
             max_steigung = n
             max_steigung[2] = 0
             flächenhaft = True
-        return [max_steigung, flächenhaft]
+        return [max_steigung, flächenhaft] #TODO: Ausgabe der Standardabweichung als Rauhigkeitsmaß
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab

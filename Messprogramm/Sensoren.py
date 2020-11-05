@@ -28,17 +28,22 @@ class Daten:
 
 class Sensor:
 
-    def __init__(self, COM="COM0", baudrate=0, timeout=0, taktrate=0.2):
+    def __init__(self, COM="COM0", baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None):
         # alle Attribute mit default None werden zu einem späteren Zeitpunkt definiert und nicht in der Initialisierungsmethode
         self.com = COM
         self.Fehlerzaehler_pars = 0
         self.baudrate = baudrate
         self.timeout = timeout
         self.taktrate = taktrate/4 # Frequenz der Beobachtung
+        self.bytesize = bytesize
+        self.parity = parity
         # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
         self.verbindung_hergestellt = False #TODO: tracking des Zustands dieser Variablen über GUI und Pixhawk
         try:
-            self.ser = serial.Serial(self.com, self.baudrate)
+            if self.bytesize:
+                self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+            else:
+                self.ser = serial.Serial(self.com, self.baudrate)
             self.verbindung_hergestellt = True
         except:
             self.ser = None #TODO: stetig nach Verbindung checken (vllt Signal zur GUI, ob der Sensor "lebt")
@@ -69,7 +74,10 @@ class Sensor:
         def nested_verb_suchen(self):
             while not self.verbindung_hergestellt:
                 try:
-                    self.ser = serial.Serial(self.com, self.baudrate)
+                    if self.bytesize:
+                        self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+                    else:
+                        self.ser = serial.Serial(self.com, self.baudrate)
                     self.verbindung_hergestellt = True
                 except:
                     self.ser = None
@@ -194,8 +202,8 @@ class IMU(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2):
-        super().__init__(COM, baudrate, timeout, taktrate)
+    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), (), (), (), (), (), (), (), (), ()]  # DB-Felddefinition für die EInrichtung einer DB-Tabelle
 
 
@@ -204,8 +212,8 @@ class Echolot(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2):
-        super().__init__(COM, baudrate, timeout, taktrate)
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=None, parity=None):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("tiefe1", "DOUBLE"), ("tiefe2", "DOUBLE")]
 
 
@@ -245,8 +253,8 @@ class GNSS(Sensor):
     #Todo: ids gnss richtig angeben
     id = 0
 
-    def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2):
-        super().__init__(COM, baudrate, timeout, taktrate)
+    def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2, bytesize=None, parity=None):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT")]
 
 
@@ -272,7 +280,7 @@ class GNSS(Sensor):
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als DOUBLE
     def make_db_command(self, datenpaket, id_zeit=True):
-        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")')"
+        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")', 25832)"
         if id_zeit:
             db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
         else:
@@ -285,8 +293,8 @@ class Distanzmesser(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2):
-        super().__init__(COM, baudrate, timeout, taktrate)
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=7, parity='E'):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("distanz", "DOUBLE")]
 
     def make_db_command(self, datenpaket, id_zeit=True):

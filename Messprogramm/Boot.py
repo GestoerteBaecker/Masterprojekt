@@ -29,6 +29,9 @@ class Boot:
         self.db_zeiger = None
         self.db_database = None
         self.db_table = None
+        self.heading = None
+        self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
+        self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
         self.db_id = 0
         takt = [GNSS1_takt, GNSS2_takt, ECHO_takt, DIST_takt]
         self.db_takt = min(*takt)
@@ -157,6 +160,8 @@ class Boot:
         def Ueberschreibungsfunktion(self):
             while self.fortlaufende_aktualisierung:
                 for i in range(0, len(self.Sensorliste)):
+
+                    # Sensordaten überschreiben
                     if self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
                         self.AktuelleSensordaten[i] = sensor.aktdaten
@@ -179,33 +184,48 @@ class Boot:
                             dist = 10.678 + random.random()
                             self.AktuelleSensordaten[i] = Sensoren.Daten(0, dist)
 
+                    # Abgeleitete Daten berechnen und überschreiben
+
+                    if self.Sensorliste[0] and self.Sensorliste[1]:         # Headingberechnung
+                        self.heading = self.Headingberechnung()
+
+                    if self.Sensorliste[0] and self.Sensorliste[1] and self.Sensorliste[3]:     #Uferpunktberechnung
+                        Uferpunkt = self.Uferpunktberechnung()
+                        self.Uferpunkte.append(Uferpunkt)
+                    
                 time.sleep(self.db_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
     def Uferpunktberechnung(self):
-        pass
 
-    def dauerhafte_Headingberechung(self):
+        strecke = self.AktuelleSensordaten[3].daten + self.Offset_GNSSmitte_Disto
 
-        Bootsmitte = [self.AktuelleSensordaten[0][0], self.AktuelleSensordaten[0][1]]
-        Bootsbug = [self.AktuelleSensordaten[1][0], self.AktuelleSensordaten[1][1]]
+        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading / (200 / numpy.pi))) * strecke
+        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading / (200 / numpy.pi))) * strecke
 
-        # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn berechnet)
+        return (e, n)
+
+    def Headingberechnung(self):
+
+        Bootsmitte = [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]]
+        Bootsbug = [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
+
+        # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
         heading_rad = numpy.arctan2((Bootsmitte[0]-Bootsbug[0]), (Bootsmitte[1]-Bootsbug[1]))
 
         # Quadrantenabfrage
 
         if Bootsbug[0] > Bootsmitte[0]:
             if Bootsbug[1] > Bootsmitte[1]:
-                q_zuschl = 0  # Quadrant 1
+                q_zuschl = 0                # Quadrant 1
             else:
-                q_zuschl = 2*numpy.pi  # Quadrant 4
+                q_zuschl = 2*numpy.pi       # Quadrant 4
         else:
             if Bootsbug[1] > Bootsmitte[1]:
-                q_zuschl = numpy.pi  # Quadrant 2
+                q_zuschl = numpy.pi         # Quadrant 2
             else:
-                q_zuschl = numpy.pi  # Quadrant 3
+                q_zuschl = numpy.pi         # Quadrant 3
 
         heading_rad += q_zuschl
         heading_gon = heading_rad * (200/numpy.pi)

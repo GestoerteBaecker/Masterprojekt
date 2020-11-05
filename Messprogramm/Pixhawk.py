@@ -72,8 +72,8 @@ class Pixhawk:
             if self.initialisierung: self.Wegpunkt_anfahren()
 
     def Notstop(self):
-
-        self.vehicle.send_mavlink("MAV_GOTO_DO_HOLD") #todo: richtige MAV-Link-Nachricht eifügen
+        pass
+        #self.vehicle.send_mavlink("MAV_GOTO_DO_HOLD") #todo: richtige MAV-Link-Nachricht eifügen
 
     def Return_to_launch(self):
 

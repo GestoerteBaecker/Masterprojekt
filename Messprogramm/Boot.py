@@ -163,7 +163,7 @@ class Boot:
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
         pass
 
-    def Punkt_anfahren(self, e, n, geschw = 2):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.PixHawk.Geschwindigkeit_setzen(geschw)
         self.PixHawk.Wegpunkt_anfahren(e, n)
@@ -176,7 +176,11 @@ class Boot:
         pass
 
     def Boot_stoppen(self):
-        pass
+
+        self.Punkt_anfahren(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], 0.5)
+        print("Notstopp! Letzte Posotion wird langsam angefahren")
+
+        #todo: Notstopp richtig implementieren
 
     def Trennen(self):
 

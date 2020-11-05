@@ -167,7 +167,7 @@ class Boot:
 
         self.PixHawk.Geschwindigkeit_setzen(geschw)
         self.PixHawk.Wegpunkt_anfahren(e, n)
-        print("Fahre Punkt mit Koordinate E:", e, "N:", n, "an")
+        print("Fahre Punkt mit Koordinaten E:", e, "N:", n, "an")
 
     def Wegberechnung(self):
         pass
@@ -183,7 +183,8 @@ class Boot:
         for Sensor in self.Sensorliste:
             Sensor.kill()
 
-        self.PixHawk.Trennen()
+        if self.PixHawk:
+            self.PixHawk.Trennen()
 
     def RTL(self):
 

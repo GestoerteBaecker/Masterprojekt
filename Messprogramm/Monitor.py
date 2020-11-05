@@ -26,7 +26,7 @@ class Anwendung(Frame):
         # Definieren eines Randabstandes des Fensters
         randabstand = 50
         self.master.geometry('+%d+%d' % (randabstand, randabstand))
-        self.map_window=None
+        self.karte_window=None
 
         # Überschrift
         Label(self,text="EchoBoat Autopilot-Monitor",font='Helvetica 12 bold').grid(row=0,column=0,columnspan=8,pady=10)
@@ -153,11 +153,7 @@ class Anwendung(Frame):
         # Öffnen der Datei
         tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
         self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-        self.map_window=Karte.Anwendung_Karte(self.position,tilefiles)
-        try:
-            self.map_window.karte_updaten()
-        except:
-            print("Karte kann nicht aktualisiert werden.")
+        self.karte_window=Karte.Anwendung_Karte(self.position,tilefiles)
 
     def aktuelle_methode(self, x):
         print(x)
@@ -229,16 +225,23 @@ class Anwendung(Frame):
             if self.boot.GNSS1.verbindung_hergestellt == True:
                 if self.datenlesen_initialisiert == True:
                     try:
-                        gps_qual_indikator=self.boot.AktuelleSensordaten[xy]
-                        if gps_qual_indikator==4:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[xy] #TODO
+                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[xy],self.boot.AktuelleSensordaten[xy] #TODO
+                        gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
+                        if gnss_qual_indikator==4:
                             self.con_qual_gnss1.config(bg="green")
                             self.var_current_state1.set("RTK fix")
-                        elif gps_qual_indikator==5:
+                        elif gnss_qual_indikator==5:
                             self.con_qual_gnss1.config(bg="yellow")
-                            self.var_current.state1.set(gps_qual_indikator+": RTK float")
+                            self.var_current.state1.set(gnss_qual_indikator+": RTK float")
                         else:
-                            self.var_current.state1.set(gps_qual_indikator+": kein RTK")
+                            self.var_current.state1.set(gnss_qual_indikator+": kein RTK")
                             self.con_qual_gnss1.config(bg="orange")
+                        if self.karte_window!= None:
+                            try:
+                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading)
+                            except:
+                                print("Karte kann nicht aktualisiert werden.")
                     except:
                         self.con_qual_gnss1.config(bg="orange")
                 else:
@@ -247,15 +250,15 @@ class Anwendung(Frame):
             if self.boot.GNSS2.verbindung_hergestellt == True:
                 if self.datenlesen_initialisiert == True:
                     try:
-                        gps_qual_indikator=self.boot.AktuelleSensordaten[xy]
-                        if gps_qual_indikator==4:
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[xy] #TODO
+                        if gnss_qual_indikator==4:
                             self.con_qual_gnss2.config(bg="green")
                             self.var_current_state2.set("RTK fix")
-                        elif gps_qual_indikator==5:
+                        elif gnss_qual_indikator==5:
                             self.con_qual_gnss2.config(bg="yellow")
-                            self.var_current.state2.set(gps_qual_indikator+": RTK float")
+                            self.var_current.state2.set(gnss_qual_indikator+": RTK float")
                         else:
-                            self.var_current.state2.set(gps_qual_indikator+": kein RTK")
+                            self.var_current.state2.set(gnss_qual_indikator+": kein RTK")
                             self.con_qual_gnss2.config(bg="orange")
                     except:
                         self.con_qual_gnss2.config(bg="orange")
@@ -265,8 +268,8 @@ class Anwendung(Frame):
             if self.boot.Echo.verbindung_hergestellt == True:
                 self.con_qual_echolot.config(bg="orange")
                 try:
-                    t1 = int(self.boot.AktuelleSensordaten[xy])
-                    t2 = int(self.boot.AktuelleSensordaten[xy])
+                    t1 = int(self.boot.AktuelleSensordaten[xy]) #TODO
+                    t2 = int(self.boot.AktuelleSensordaten[xy]) #TODO
                     self.con_qual_Echolot.config(bg="green")
                     self.var_current_depth.set(str(t1) + "  |  " + str(t2))
                 except:
@@ -277,7 +280,7 @@ class Anwendung(Frame):
             if self.boot.DIST.verbindung_hergestellt == True:
                 self.con_qual_dimetix.config(bg="orange")
                 try:
-                    d = self.boot.AktuelleSensordaten[xy]
+                    d = self.boot.AktuelleSensordaten[xy] #TODO
                     self.con_qual_Dimetix.config(bg="green")
                     self.var_current_depth.set(str(d))
                 except:
@@ -288,9 +291,9 @@ class Anwendung(Frame):
         self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 
     def alles_schliessen(self):
-        if self.map_window is not None:
-            self.map_window.plt.close()
-            self.map_window=None
+        if self.karte_window is not None:
+            self.karte_window.plt.close()
+            self.karte_window=None
         self.master.destroy()
 
 # Hauptanwendung

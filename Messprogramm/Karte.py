@@ -88,14 +88,15 @@ class Anwendung_Karte(Frame):
         positionx,positiony=self.position
         thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self):
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading):
         # Setzen einer leeren Variable für die Boot-Position
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="grey")
-        self.route_x=[]
-        self.route_y=[]
-
+        self.route_x,self.route_y=[],[]
+        self.gnss_north=gnss_north
+        self.gnss_east=gnss_east
+        self.gnss_heading=gnss_east
 
         t = 0
         update_interval = 10
@@ -113,14 +114,13 @@ class Anwendung_Karte(Frame):
             t+=1
             plt.pause(0.2)
 
-
     def plot_boat(self,t):
         try:
             # Einlesen der aktuellen Boot-Daten
-            heading_deg = 27+random.randint(-10,10)
-            heading_rad=math.radians(heading_deg)
-            boat_utm_x = 452049.974+t
-            boat_utm_y = 5885228.359+t
+            heading_deg = gnss_heading
+            heading_rad=math.radians(gnss_heading)
+            boat_utm_x = self.gnss_north
+            boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
             self.current_boat_position_x,self.current_boat_position_y=self.img_utm_trans(boat_utm_x,boat_utm_y)

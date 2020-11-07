@@ -349,16 +349,28 @@ class Anwendung(Frame):
                     self.con_qual_echolot.config(bg="blue")
 
             # E C H T E  D A T E N
-            if self.boot.Sensorliste[3].verbindung_hergestellt == True:
-                self.con_qual_dimetix.config(bg="orange")
+            if self.boot.Sensorliste[3]:
+                if self.boot.Sensorliste[3].verbindung_hergestellt == True:
+                    self.con_qual_dimetix.config(bg="orange")
+                    try:
+                        d = self.boot.AktuelleSensordaten[3].daten #TODO
+                        self.con_qual_dimetix.config(bg="green")
+                        self.var_current_distance.set(str(d))
+                    except:
+                        self.con_qual_dimetix.config(bg="orange")
+                else:
+                    self.con_qual_dimetix.config(bg="red")
+
+            # S I M U L A T I O N
+            else:
+                self.con_qual_dimetix.config(bg="blue")
                 try:
-                    d = self.boot.AktuelleSensordaten[3].daten #TODO
-                    self.con_qual_dimetix.config(bg="green")
+                    d = round(self.boot.AktuelleSensordaten[3].daten,3)
+                    self.con_qual_dimetix.config(bg="dark blue")
                     self.var_current_distance.set(str(d))
                 except:
-                    self.con_qual_dimetix.config(bg="orange")
-            else:
-                self.con_qual_dimetix.config(bg="red")
+                    self.con_qual_dimetix.config(bg="blue")
+
 
         self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 

@@ -32,6 +32,7 @@ class Boot:
         self.heading = None
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
         self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
+        self.DarstellungspunktGUI = None
         self.db_id = 0
         takt = [GNSS1_takt, GNSS2_takt, ECHO_takt, DIST_takt]
         self.db_takt = min(*takt)
@@ -192,14 +193,20 @@ class Boot:
                     if self.Sensorliste[0] and self.Sensorliste[1] and self.Sensorliste[3]:     #Uferpunktberechnung
                         Uferpunkt = self.Uferpunktberechnung()
                         self.Uferpunkte.append(Uferpunkt)
+
+                        # Für das Zeichnen des Headings in die GUI wir ein weit entferneter Punkt in Headingrichtung gebraucht. Dieser wird mit der Uferpunktfunktion berechnet.
+                        self.DarstellungspunktGUI = self.Uferpunktberechnung(dist=1000)
                     
                 time.sleep(self.db_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
-    def Uferpunktberechnung(self):
+    def Uferpunktberechnung(self, dist=None):
 
-        strecke = self.AktuelleSensordaten[3].daten + self.Offset_GNSSmitte_Disto
+        if not dist:                                    # Falls keine Dastanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
+            dist = self.AktuelleSensordaten[3].daten
+
+        strecke = dist + self.Offset_GNSSmitte_Disto
 
         e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading / (200 / numpy.pi))) * strecke
         n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading / (200 / numpy.pi))) * strecke
@@ -212,7 +219,7 @@ class Boot:
         Bootsbug = [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
 
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-        heading_rad = numpy.arctan((Bootsmitte[0]-Bootsbug[0])/ (Bootsmitte[1]-Bootsbug[1]))
+        heading_rad = numpy.arctan((Bootsmitte[0]-Bootsbug[0]) / (Bootsmitte[1]-Bootsbug[1]))
 
         # Quadrantenabfrage
 

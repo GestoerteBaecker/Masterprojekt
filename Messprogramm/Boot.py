@@ -85,7 +85,7 @@ class Boot:
                     zeiten = []
                     db_temp = ""
                     for i, daten in enumerate(self.AktuelleSensordaten):
-                        if not None:
+                        if daten: # wenn Daten vorliegen
                             zeiten.append(daten.timestamp) #TODO: Testen , ob die Zeitpunkte nicht zu weit auseinander liegen?
                             db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(daten, id_zeit=False)
                     zeit_mittel = statistics.mean(zeiten)
@@ -124,7 +124,7 @@ class Boot:
             spatial_index_check = False
             spatial_index_name = ""  # Name des Punktes, auf das der Spatial Index gelegt wird
             for i, sensor in enumerate(self.Sensorliste):
-                if not None:
+                if sensor: # wenn es den Sensor gibt (also nicht simuliert wird)
                     for j in range(len(sensor.db_felder)-2):
                         spatial_string = ""
                         if type(sensor).__name__ == "GNSS" and sensor.db_felder[j+2][1] == "POINT":
@@ -348,11 +348,20 @@ class Boot:
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab
+    #TODO: Testen wie lange es für 10000 Punkte dauert (sonst SRID auf 0 setzen oder https://dba.stackexchange.com/questions/214268/mysql-geo-spatial-query-is-very-slow-although-index-is-used)
     def Daten_abfrage(self, punkt, radius=20):
         x = []
         y = []
         tiefe = []
-        db_string = "SELECT " #TODO: implementieren
+        gnss_pkt = self.Sensornamen[0] + "_punkt" # Name des DB-Feldes des Punkts der ersten GNSS-Antenne
+        echolot_tiefe = "`" + self.Sensornamen[2] + "_tiefe1`"
+        db_string = "SELECT ST_X(" + self.db_table + "." + gnss_pkt + "), ST_Y(" + self.db_table + "." + gnss_pkt + "), " + echolot_tiefe + " FROM " + self.db_database + ".`" + self.db_table + ".` WHERE ST_Distance(" + self.db_table + "." + gnss_pkt + ", ST_POINTFROMTEXT('POINT(" + str(punkt[0]) + " " + str(punkt[1]) + ")', 25832)) <" + str(radius) + ";"
+        self.db_zeiger.execute(db_string)
+        self.db_zeiger.commit()
+        for pkt in self.db_zeiger.fetchall():
+            x.append(pkt[0])
+            y.append(pkt[1])
+            tiefe.append(pkt[2])
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
 
 # Berechnet die Fläche des angeg. Polygons

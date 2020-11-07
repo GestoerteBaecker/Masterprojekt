@@ -164,11 +164,11 @@ class Anwendung(Frame):
     def boot_verbinden(self):
         try:
             self.verbindung_initialisiert = True
-            self.boot = Boot.Boot(Pix_COM="com13", # com0, wenn kein Pixhawk angeschlossen ist
+            self.boot = Boot.Boot(Pix_COM="com0", # com0, wenn kein Pixhawk angeschlossen ist
                         GNSS1_COM="COM0", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2,
                         GNSS2_COM="COM0", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2,
                         ECHO_COM="COM0", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2,
-                        DIST_COM="COM11", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
+                        DIST_COM="COM0", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()

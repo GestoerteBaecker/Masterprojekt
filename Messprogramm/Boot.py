@@ -212,7 +212,7 @@ class Boot:
         Bootsbug = [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
 
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-        heading_rad = numpy.arctan2((Bootsmitte[0]-Bootsbug[0]), (Bootsmitte[1]-Bootsbug[1]))
+        heading_rad = numpy.arctan((Bootsmitte[0]-Bootsbug[0])/ (Bootsmitte[1]-Bootsbug[1]))
 
         # Quadrantenabfrage
 

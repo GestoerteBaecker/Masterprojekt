@@ -348,6 +348,9 @@ class Boot:
 
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab
+    # ST_Distance ist nicht sargable! (kann nicht zusammen mithilfe eines Index beschleunigt werden)
+    # https://stackoverflow.com/questions/35093608/spatial-index-not-being-used
+    # für Beschleunigung über PostGIS (PostgreSQL): https://gis.stackexchange.com/questions/123911/st-distance-doesnt-use-index-for-spatial-query
     #TODO: Testen wie lange es für 10000 Punkte dauert (sonst SRID auf 0 setzen oder https://dba.stackexchange.com/questions/214268/mysql-geo-spatial-query-is-very-slow-although-index-is-used)
     def Daten_abfrage(self, punkt, radius=20):
         x = []
@@ -355,7 +358,9 @@ class Boot:
         tiefe = []
         gnss_pkt = self.Sensornamen[0] + "_punkt" # Name des DB-Feldes des Punkts der ersten GNSS-Antenne
         echolot_tiefe = "`" + self.Sensornamen[2] + "_tiefe1`"
-        db_string = "SELECT ST_X(" + self.db_table + "." + gnss_pkt + "), ST_Y(" + self.db_table + "." + gnss_pkt + "), " + echolot_tiefe + " FROM " + self.db_database + ".`" + self.db_table + ".` WHERE ST_Distance(" + self.db_table + "." + gnss_pkt + ", ST_POINTFROMTEXT('POINT(" + str(punkt[0]) + " " + str(punkt[1]) + ")', 25832)) <" + str(radius) + ";"
+        p1 = [punkt[0] - radius / 2, punkt[1] - radius / 2]
+        p2 = [punkt[0] + radius / 2, punkt[1] + radius / 2]
+        db_string = "SELECT ST_X(" + self.db_table + "." + gnss_pkt + "), ST_Y(" + self.db_table + "." + gnss_pkt + "), " + echolot_tiefe + " FROM " + self.db_database + ".`" + self.db_table + "` WHERE MbrContains(ST_GeomFromText('LINESTRING(" + str(p1[0]) + " " + str(p1[1]) + ", " + str(p2[0]) + " " + str(p2[1]) + ")', 25832), " + self.db_table + "." + gnss_pkt + ");"
         self.db_zeiger.execute(db_string)
         self.db_zeiger.commit()
         for pkt in self.db_zeiger.fetchall():

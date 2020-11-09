@@ -164,11 +164,7 @@ class Anwendung(Frame):
     def boot_verbinden(self):
         try:
             self.verbindung_initialisiert = True
-            self.boot = Boot.Boot(Pix_COM="com13", # com0, wenn kein Pixhawk angeschlossen ist
-                        GNSS1_COM="COM0", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2,
-                        GNSS2_COM="COM0", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2,
-                        ECHO_COM="COM0", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2,
-                        DIST_COM="COM11", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
+            self.boot = Boot.Boot()
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -226,139 +222,129 @@ class Anwendung(Frame):
                 self.var_current_px4.set("No Data")
 
             # E C H T E  D A T E N
-            if self.boot.Sensorliste[0]:
-                if self.boot.Sensorliste[0].verbindung_hergestellt == True:
-                #if self.datenlesen_initialisiert == True:
+            if "GNSS1" in self.boot.Sensornamen:
+                index = self.boot.Sensornamen.index("GNSS1")
+                gnss = self.boot.Sensorliste[index]
+                if gnss.verbindung_hergestellt:
                     try:
                         gnss_qual_indikator=self.boot.AktuelleSensordaten[0].daten[4] #TODO
                         gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0]-32000000,self.boot.AktuelleSensordaten[0].daten[1] #TODO
                         #gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
                         gnss_heading=0
                         if gnss_qual_indikator==4:
-                            self.con_qual_gnss1.config(bg="green")
+                            if not gnss.simulation:
+                                self.con_qual_gnss1.config(bg="green")
+                            else:
+                                self.con_qual_gnss1.config(bg="dark blue")
                             self.var_current_state1.set("RTK fix")
                         elif gnss_qual_indikator==5:
-                            self.con_qual_gnss1.config(bg="yellow")
+                            if not gnss.simulation:
+                                self.con_qual_gnss1.config(bg="yellow")
+                            else:
+                                self.con_qual_gnss1.config(bg="light blue")
                             self.var_current_state1.set(gnss_qual_indikator+": RTK float")
                         else:
                             self.var_current_state1.set(gnss_qual_indikator+": kein RTK")
-                            self.con_qual_gnss1.config(bg="orange")
+                            if not gnss.simulation:
+                                self.con_qual_gnss1.config(bg="orange")
+                            else:
+                                self.con_qual_gnss1.config(bg="blue")
                         if self.karte_window!= None:
                             try:
                                 self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading)
                             except:
                                 print("Karte kann nicht aktualisiert werden.")
                     except:
-                        self.con_qual_gnss1.config(bg="orange")
+                        if not gnss.simulation:
+                            self.con_qual_gnss1.config(bg="orange")
+                        else:
+                            self.con_qual_gnss1.config(bg="blue")
                 #else:
                     #self.con_qual_gnss1.config(bg="red")
 
-
-            # S I M U L A T I O N
-            else:
-                try:
-                    gnss_qual_indikator = self.boot.AktuelleSensordaten[0].daten[4]  # TODO
-                    gnss_north, gnss_east = self.boot.AktuelleSensordaten[0].daten[0], \
-                                            self.boot.AktuelleSensordaten[0].daten[1]  # TODO
-                    # gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
-                    gnss_heading = 0
-                    if gnss_qual_indikator == 4:
-                        self.con_qual_gnss1.config(bg="dark blue")
-                        self.var_current_state1.set("RTK fix")
-                    elif gnss_qual_indikator == 5:
-                        self.con_qual_gnss1.config(bg="light blue")
-                        self.var_current_state1.set(str(gnss_qual_indikator) + ": RTK float")
-                    else:
-                        self.var_current_state1.set(str(gnss_qual_indikator) + ": kein RTK")
-                        self.con_qual_gnss1.config(bg="blue")
-                    if self.karte_window != None:
-                        try:
-                            self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading,self.t)
-                        except:
-                            print("Karte kann nicht aktualisiert werden.")
-                except:
-                    self.con_qual_gnss1.config(bg="blue")
-
-                if self.karte_window != None:
-                    try:
-                        self.karte_window.karte_updaten(None, None, None)
-                    except:
-                        print("Karte kann nicht aktualisiert werden.")
-
-            # E C H T E  D A T E N
-            if self.boot.Sensorliste[1]:
-                if self.boot.Sensorliste[1].verbindung_hergestellt == True:  # TODO: Was, wenn nur eine GNSS??
+            if "GNSS2" in self.boot.Sensornamen:
+                index = self.boot.Sensornamen.index("GNSS2")
+                # E C H T E  D A T E N
+                gnss2 = self.boot.Sensorliste[index]
+                if gnss2.verbindung_hergestellt:  # TODO: Was, wenn nur eine GNSS??
                 #if self.datenlesen_initialisiert == True:
                     try:
                         gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4] #TODO
                         if gnss_qual_indikator==4:
-                            self.con_qual_gnss2.config(bg="green")
+                            if not gnss2.simulation:
+                                self.con_qual_gnss2.config(bg="green")
+                            else:
+                                self.con_qual_gnss2.config(bg="dark blue")
                             self.var_current_state2.set("RTK fix")
                         elif gnss_qual_indikator==5:
-                            self.con_qual_gnss2.config(bg="yellow")
+                            if not gnss2.simulation:
+                                self.con_qual_gnss2.config(bg="yellow")
+                            else:
+                                self.con_qual_gnss2.config(bg="light blue")
                             self.var_current_state2.set(str(gnss_qual_indikator)+": RTK float")
                         else:
                             self.var_current_state2.set(str(gnss_qual_indikator)+": kein RTK")
-                            self.con_qual_gnss2.config(bg="orange")
+                            if not gnss2.simulation:
+                                self.con_qual_gnss2.config(bg="orange")
+                            else:
+                                self.con_qual_gnss2.config(bg="blue")
                     except:
-                        self.con_qual_gnss2.config(bg="orange")
+                        if not gnss2.simulation:
+                            self.con_qual_gnss2.config(bg="orange")
+                        else:
+                            self.con_qual_gnss2.config(bg="blue")
                 #else:
                     #self.con_qual_gnss2.config(bg="red")
 
-            # S I M U L A T I O N
-            else:
-                try:
-                    gnss_qual_indikator = self.boot.AktuelleSensordaten[1].daten[4]  # TODO
-                    if gnss_qual_indikator == 4:
-                        self.con_qual_gnss2.config(bg="dark blue")
-                        self.var_current_state1.set("RTK fix")
-                    elif gnss_qual_indikator == 5:
-                        self.con_qual_gnss2.config(bg="light blue")
-                        self.var_current_state2.set(str(gnss_qual_indikator) + ": RTK float")
-                    else:
-                        self.var_current_state2.set(str(gnss_qual_indikator) + ": kein RTK")
-                        self.con_qual_gnss2.config(bg="blue")
-                except:
-                    self.con_qual_gnss2.config(bg="blue")
-            #else:
-                #self.con_qual_gnss2.config(bg="red")
 
-            # E C H T E  D A T E N
-            if self.boot.Sensorliste[2]:
-                if self.boot.Sensorliste[2].verbindung_hergestellt == True:
-                    self.con_qual_echolot.config(bg="orange")
+            if "Echolot" in self.boot.Sensornamen:
+                index = self.boot.Sensornamen.index("Echolot")
+                # E C H T E  D A T E N
+                echolot = self.boot.Sensorliste[index]
+                if echolot.verbindung_hergestellt:
+                    if not echolot.simulation:
+                        self.con_qual_echolot.config(bg="orange")
+                    else:
+                        self.con_qual_echolot.config(bg="blue")
                     try:
                         t1 = int(self.boot.AktuelleSensordaten[2].daten[0]) #TODO
                         t2 = int(self.boot.AktuelleSensordaten[2].daten[1]) #TODO
-                        self.con_qual_echolot.config(bg="green")
+                        if not echolot.simulation:
+                            self.con_qual_echolot.config(bg="green")
+                        else:
+                            self.con_qual_echolot.config(bg="dark blue")
                         self.var_current_depth.set(str(t1) + "  |  " + str(t2))
                     except:
-                        self.con_qual_echolot.config(bg="orange")
+                        if not echolot.simulation:
+                            self.con_qual_echolot.config(bg="orange")
+                        else:
+                            self.con_qual_echolot.config(bg="blue")
                 else:
                     self.con_qual_echolot.config(bg="red")
 
-            # S I M U L A T I O N
-            else:
-                self.con_qual_echolot.config(bg="blue")
-                try:
-                    t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2) #TODO
-                    t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2) #TODO
-                    self.con_qual_echolot.config(bg="dark blue")
-                    self.var_current_depth.set(str(t1) + "  |  " + str(t2))
-                except:
-                    self.con_qual_echolot.config(bg="blue")
-
-            # E C H T E  D A T E N
-            if self.boot.Sensorliste[3].verbindung_hergestellt == True:
-                self.con_qual_dimetix.config(bg="orange")
-                try:
-                    d = self.boot.AktuelleSensordaten[3].daten #TODO
-                    self.con_qual_dimetix.config(bg="green")
-                    self.var_current_distance.set(str(d))
-                except:
-                    self.con_qual_dimetix.config(bg="orange")
-            else:
-                self.con_qual_dimetix.config(bg="red")
+            if "Distanz" in self.boot.Sensornamen:
+                index = self.boot.Sensornamen.index("Distanz")
+                # E C H T E  D A T E N
+                dimetix = self.boot.Sensorliste[index]
+                if dimetix.verbindung_hergestellt:
+                    if not dimetix.simulation:
+                        self.con_qual_dimetix.config(bg="orange")
+                    else:
+                        self.con_qual_dimetix.config(bg="blue")
+                    try:
+                        d = self.boot.AktuelleSensordaten[3].daten #TODO
+                        if not dimetix.simulation:
+                            self.con_qual_dimetix.config(bg="green")
+                        else:
+                            self.con_qual_dimetix.config(bg="dark blue")
+                        self.var_current_distance.set(str(d))
+                    except:
+                        if not dimetix.simulation:
+                            self.con_qual_dimetix.config(bg="orange")
+                        else:
+                            self.con_qual_dimetix.config(bg="blue")
+                else:
+                    self.con_qual_dimetix.config(bg="red")
 
         self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 

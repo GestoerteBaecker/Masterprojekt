@@ -1,6 +1,7 @@
 import Sensoren
 import datetime
 import numpy
+import json
 import Pixhawk
 import pyodbc
 import statistics
@@ -13,13 +14,13 @@ import random
 # -> d.h. damit zB self. datenbankbeschreiben True ist müssen mind. die anderen beiden auch True sein
 class Boot:
 
-    def __init__(self,Pix_COM="com0", GNSS1_COM="COM0", GNSS1_baud=0, GNSS1_timeout=0, GNSS1_takt=0.2, GNSS2_COM="COM0", GNSS2_baud=0, GNSS2_timeout=0, GNSS2_takt=0.2, ECHO_COM="COM0", ECHO_baud=0, ECHO_timeout=0, ECHO_takt=0.2, DIST_COM="COM0", DIST_baud=0, DIST_timeout=0, DIST_takt=1):
+    def __init__(self):
 
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
         self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
-        self.Sensorliste = [None,None,None,None]                           # hier sind die Sensor-Objekte drin
-        self.AktuelleSensordaten = [None,None,None,None]                   # hier stehen die Daten-Objekte drin
+        self.Sensorliste = []                           # hier sind die Sensor-Objekte drin
+        self.AktuelleSensordaten = []                   # hier stehen die Daten-Objekte drin
         self.Sensornamen = ["GNSS1","GNSS2","Echolot","Distanz"]                           # hier sind die Namen der Sensoren in der Reihenfolge wie in self.Sensorliste drin
         self.aktualisierungsprozess = None              # Thread mit Funktion, die die Sensordaten innerhalb dieser Klasse speichert
         self.datenbankbeschreiben_thread = None
@@ -28,31 +29,56 @@ class Boot:
         self.db_database = None
         self.db_table = None
         self.db_id = 0
-        takt = [GNSS1_takt, GNSS2_takt, ECHO_takt, DIST_takt]
-        self.db_takt = min(*takt)
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
 
-        #if Pix_COM != "com0":
-        self.PixHawk = Pixhawk.Pixhawk(Pix_COM)
+        self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
+        takt = []
+        sensorklassen = [Sensoren.GNSS, Sensoren.GNSS, Sensoren.Echolot, Sensoren.Distanzmesser]
 
+        for i, sensorname in enumerate(self.Sensornamen):
+            if sensorname in json_daten:
+                takt.append(json_daten[sensorname]["takt"])
+                com = json_daten[sensorname]["COM"]
+                baud = json_daten[sensorname]["baud"]
+                timeout = json_daten[sensorname]["timeout"]
+                taktzeit = json_daten[sensorname]["takt"]
+                bytesize = json_daten[sensorname]["bytesize"]
+                parity = json_daten[sensorname]["parity"]
+                simulation = json_daten[sensorname]["simulation"]
+                sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity, simulation)
+                self.Sensorliste.append(sensor)
+
+        """
         # COM0 als Testmodus
-        if GNSS1_COM != "COM0":
+        if "GNSS1" in json_daten:
             self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt, simulation=True)
-            self.Sensorliste[0] = self.GNSS1
+            self.Sensorliste.append(self.GNSS1)
+            self.Sensornamen.append("GNSS1")
+            takt.append(json_daten["GNSS1"]["takt"])
 
         if GNSS2_COM != "COM0":
             self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt, simulation=True)
-            self.Sensorliste[1] = self.GNSS2
+            self.Sensorliste.append(self.GNSS2)
+            self.Sensornamen.append("GNSS2")
+            takt.append(json_daten["GNSS2"]["takt"])
 
 
         if ECHO_COM != "COM0":
             self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt, simulation=True)
-            self.Sensorliste[2] = self.Echo
+            self.Sensorliste.append(self.Echo)
+            self.Sensornamen.append("Echolot")
+            takt.append(json_daten["GNSS1"]["takt"])
 
         if DIST_COM != "COM0":
             self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt, simulation=True)
-            self.Sensorliste[3] = self.DIST
+            self.Sensorliste.append(self.DIST)
+            self.Sensornamen.append("Distanz")
+            takt.append(json_daten["GNSS1"]["takt"])"""
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [None]
+        self.db_takt = min(*takt)
 
 
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
@@ -155,27 +181,8 @@ class Boot:
         def Ueberschreibungsfunktion(self):
             while self.fortlaufende_aktualisierung:
                 for i in range(0, len(self.Sensorliste)):
-                    if self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
                         self.AktuelleSensordaten[i] = sensor.aktdaten
-
-                    # Für Simulation
-                    else:                                             # TODO nur für simulation
-                        if i == 0:
-                            hoch = 5888475.95 + random.random()
-                            east = 446502.707 + random.random()
-                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [east, hoch, 2, 45.123, 4])
-                        if i == 1:
-                            hoch = 5888474.95 + random.random()
-                            east = 446502.71 + random.random()
-                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [east, hoch, 2, 45.123, 1])
-                        if i == 2:
-                            tiefe1 = 22.123 + random.random()
-                            tiefe2 = 23.986 + random.random()
-                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, [tiefe1, tiefe2])
-                        if i == 3:
-                            dist = 10.678 + random.random()
-                            self.AktuelleSensordaten[i] = Sensoren.Daten(0, dist)
 
                 time.sleep(self.db_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)

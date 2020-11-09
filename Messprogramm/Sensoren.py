@@ -209,8 +209,8 @@ class IMU(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None):
-        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
+    def __init__(self, COM=0, baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None, simulation=False):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity, simulation)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), (), (), (), (), (), (), (), (), ()]  # DB-Felddefinition für die EInrichtung einer DB-Tabelle
 
 
@@ -219,8 +219,8 @@ class Echolot(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=None, parity=None):
-        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=None, parity=None, simulation=False):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity, simulation)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("tiefe1", "DOUBLE"), ("tiefe2", "DOUBLE")]
 
 
@@ -264,8 +264,8 @@ class GNSS(Sensor):
     #Todo: ids gnss richtig angeben
     id = 0
 
-    def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2, bytesize=None, parity=None):
-        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
+    def __init__(self, COM=0, baudrate=115200, timeout=0, taktrate=0.2, bytesize=None, parity=None, simulation=False):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity, simulation)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("punkt", "POINT"), ("HDOP","DOUBLE"), ("up", "DOUBLE"), ("Qualitaet", "INT")]
 
 
@@ -313,8 +313,8 @@ class Distanzmesser(Sensor):
 
     id = 0
 
-    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=7, parity='E'):
-        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity)
+    def __init__(self, COM=0, baudrate=19200, timeout=0, taktrate=0.2, bytesize=7, parity='E', simulation=False):
+        super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity, simulation)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("distanz", "DOUBLE")]
 
     def make_db_command(self, datenpaket, id_zeit=True):
@@ -342,8 +342,6 @@ class Distanzmesser(Sensor):
             db_objekt = Daten(Distanzmesser.id, Dist, time.time())
             Distanzmesser.id += 1
             return db_objekt
-
-
 
 
 # Nur zum Testen:

@@ -36,20 +36,20 @@ class Boot:
 
         # COM0 als Testmodus
         if GNSS1_COM != "COM0":
-            self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt)
+            self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt, simulation=True)
             self.Sensorliste[0] = self.GNSS1
 
         if GNSS2_COM != "COM0":
-            self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt)
+            self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt, simulation=True)
             self.Sensorliste[1] = self.GNSS2
 
 
         if ECHO_COM != "COM0":
-            self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt)
+            self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt, simulation=True)
             self.Sensorliste[2] = self.Echo
 
         if DIST_COM != "COM0":
-            self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt)
+            self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt, simulation=True)
             self.Sensorliste[3] = self.DIST
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [None]

@@ -198,7 +198,7 @@ class Anwendung(Frame):
         pass
 
     def boot_trennen(self):
-        self.boot.Trennen()
+        self.boot.Trennen() #TODO: das hier muss beim Verlassen unbedingt aufgerufen werden!!!
 
     def status_und_daten_aktualisieren(self):
         # Abfrage, ob Verbindung initialisiert wurde
@@ -242,9 +242,9 @@ class Anwendung(Frame):
                                 self.con_qual_gnss1.config(bg="yellow")
                             else:
                                 self.con_qual_gnss1.config(bg="light blue")
-                            self.var_current_state1.set(gnss_qual_indikator+": RTK float")
+                            self.var_current_state1.set(str(gnss_qual_indikator)+": RTK float")
                         else:
-                            self.var_current_state1.set(gnss_qual_indikator+": kein RTK")
+                            self.var_current_state1.set(str(gnss_qual_indikator)+": kein RTK")
                             if not gnss.simulation:
                                 self.con_qual_gnss1.config(bg="orange")
                             else:

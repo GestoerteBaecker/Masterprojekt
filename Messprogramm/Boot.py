@@ -107,6 +107,7 @@ class Boot:
 
             def Datenbank_Boot(self):
                 while self.datenbankbeschreiben:
+                    t = time.time()
                     db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
                     zeiten = []
                     db_temp = ""
@@ -119,11 +120,12 @@ class Boot:
                     db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
                     self.db_zeiger.execute(db_text)
                     self.db_zeiger.commit()
-                    time.sleep(self.db_takt/2)
+                    schlafen = abs(self.db_takt - (time.time() - t))
+                    time.sleep(schlafen)
 
             if not self.datenbankbeschreiben:
                 self.datenbankbeschreiben = True
-                self.datenbankbeschreiben_thread = threading.Thread(target=Datenbank_Boot, args=(self, ))
+                self.datenbankbeschreiben_thread = threading.Thread(target=Datenbank_Boot, args=(self, ), daemon=True)
                 self.datenbankbeschreiben_thread.start()
 
         elif mode == 1:
@@ -221,8 +223,9 @@ class Boot:
 
     def Trennen(self):
 
-        for Sensor in self.Sensorliste:
-            Sensor.kill()
+        for sensor in self.Sensorliste:
+            sensor.kill()
+        self.datenbankbeschreiben = False
 
         if self.PixHawk:
             self.PixHawk.Trennen()

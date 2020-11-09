@@ -9,6 +9,7 @@ import datetime
 import pynmea2
 import pyodbc
 import queue
+import random
 import serial
 import threading
 import time
@@ -28,8 +29,9 @@ class Daten:
 
 class Sensor:
 
-    def __init__(self, COM="COM0", baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None):
+    def __init__(self, COM="COM0", baudrate=0, timeout=0, taktrate=0.2, bytesize=None, parity=None, simulation=False):
         # alle Attribute mit default None werden zu einem späteren Zeitpunkt definiert und nicht in der Initialisierungsmethode
+        self.simulation = simulation
         self.com = COM
         self.Fehlerzaehler_pars = 0
         self.baudrate = baudrate
@@ -40,11 +42,14 @@ class Sensor:
         # sagt aus, ob die Verbindung zum Sensor besteht (ob das serial.Serial()-Objekt besteht
         self.verbindung_hergestellt = False
         try:
-            if self.bytesize:
-                self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+            if not self.simulation:
+                if self.bytesize:
+                    self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+                else:
+                    self.ser = serial.Serial(self.com, self.baudrate)
+                self.verbindung_hergestellt = True
             else:
-                self.ser = serial.Serial(self.com, self.baudrate)
-            self.verbindung_hergestellt = True
+                self.verbindung_hergestellt = True
         except:
             self.ser = None
             print("Fehler bei der Verbindung mit der Schnittstelle")
@@ -102,7 +107,8 @@ class Sensor:
     def kill(self):
         self.close_datastream()
         time.sleep(0.2)
-        self.ser.close()
+        if not self.simulation:
+            self.ser.close()
         self.db_zeiger.close()
         self.db_verb.close()
 
@@ -233,16 +239,20 @@ class Echolot(Sensor):
         line = bytearray()
         # lese so viele Zeichen aus dem seriellen Port bis das Zeichen \r gelesen wird
         # und das Gelesene ins bytearray line
-        while True:
-            c = self.ser.read()
-            if c:
-                line += c
-                if line[-1:] == eol:
+        if not self.simulation:
+            while True:
+                c = self.ser.read()
+                if c:
+                    line += c
+                    if line[-1:] == eol:
+                        break
+                else:
                     break
-            else:
-                break
-        tiefe1 = bytes(line).decode("UTF-8").split()[1]
-        tiefe2 = bytes(line).decode("UTF-8").split()[2]
+            tiefe1 = bytes(line).decode("UTF-8").split()[1]
+            tiefe2 = bytes(line).decode("UTF-8").split()[2]
+        else:
+            tiefe1 = random.uniform(0,20)
+            tiefe2 = tiefe1 + random.uniform(-1,1)
         db_objekt = Daten(Echolot.id, [tiefe1, tiefe2], time.time())
         Echolot.id += 1
 
@@ -261,22 +271,31 @@ class GNSS(Sensor):
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
     def read_sensor_data(self):
-        nmea = self.ser.readline()
-        if nmea != b"":
-            nmea = nmea.decode("utf-8")
-            try:
-                nmea = pynmea2.parse(nmea)
-                # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
-                if nmea.sentence_type == "GGA":
-                    # die self.daten sind hier erstmal nur die Koordinaten in utm
-                    koords = utm.from_latlon(nmea.latitude, nmea.longitude)
-                    daten = [koords[2]*10**6+koords[0], koords[1], nmea.horizontal_dil, nmea.altitude, nmea.gps_qual] # Ausgeben von lat, lon, Höhe, Qualität,
-                    db_objekt = Daten(GNSS.id, daten, time.time())
-                    GNSS.id += 1
-                    return db_objekt  # Datenobjekt mit entsprechenden Einträgen
-            except Exception as e:
-                print("Parsen fehlgeschlagen",self.db_table, e)
-                #TODO: Prio 99, Fehlerzähler + Ausgabe in GUI self.Fehlerzaehler_pars += 1
+        if not self.simulation:
+            nmea = self.ser.readline()
+            if nmea != b"":
+                nmea = nmea.decode("utf-8")
+                try:
+                    nmea = pynmea2.parse(nmea)
+                    # auslesen der GNSS-Daten nur, wenn eine GGA-Nachricht vorliegt
+                    if nmea.sentence_type == "GGA":
+                        # die self.daten sind hier erstmal nur die Koordinaten in utm
+                        koords = utm.from_latlon(nmea.latitude, nmea.longitude)
+                        daten = [koords[2]*10**6+koords[0], koords[1], nmea.horizontal_dil, nmea.altitude, nmea.gps_qual] # Ausgeben von lat, lon, Höhe, Qualität,
+                        db_objekt = Daten(GNSS.id, daten, time.time())
+                        GNSS.id += 1
+                        return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+                except Exception as e:
+                    print("Parsen fehlgeschlagen",self.db_table, e)
+                    #TODO: Prio 99, Fehlerzähler + Ausgabe in GUI self.Fehlerzaehler_pars += 1
+        else:
+            lat = 53.5 + random.uniform(-0.1,0,1)
+            lon = 8 + random.uniform(-0.1,0,1)
+            koords = utm.from_latlon(lat, lon)
+            daten = [koords[2] * 10 ** 6 + koords[0], koords[1], 0, 0, random.randint(0,4)]  # Ausgeben von lat, lon, Höhe, Qualität,
+            db_objekt = Daten(GNSS.id, daten, time.time())
+            GNSS.id += 1
+            return db_objekt
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als DOUBLE
@@ -308,15 +327,21 @@ class Distanzmesser(Sensor):
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
     def read_sensor_data(self):
-        try:
-            self.ser.write(b's0g\r\n')
-            Dist = int(self.ser.readline().decode("ascii")[4:]) / 10000
+        if not self.simulation:
+            try:
+                self.ser.write(b's0g\r\n')
+                Dist = int(self.ser.readline().decode("ascii")[4:]) / 10000
+                db_objekt = Daten(Distanzmesser.id, Dist, time.time())
+                Distanzmesser.id += 1
+                return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+
+            except Exception as e:
+                    print("Fehler bei Distanzmessung", self.db_table, e)
+        else:
+            Dist = random.uniform(0,150)
             db_objekt = Daten(Distanzmesser.id, Dist, time.time())
             Distanzmesser.id += 1
-            return db_objekt  # Datenobjekt mit entsprechenden Einträgen
-
-        except Exception as e:
-                print("Fehler bei Distanzmessung", self.db_table, e)
+            return db_objekt
 
 
 

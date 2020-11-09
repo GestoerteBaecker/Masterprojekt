@@ -72,6 +72,7 @@ class Sensor:
         self.writing_process = None
         self.db_schreiben_wiederaufnehmen = False # diese Variable zeigt an, ob jemals in die DB geschrieben wurde. Bei Verbindungsverlust des Sensors und gesetztem True wird
         # das Schreiben in die DB wieder aufgenommen, bei False nicht
+        self.datastream_wiederaufnehmen = False # bestimmt, ob jemals Daten ausgelesen wurden, und ob nach einer unfreiwilligen Unterbrechung wieder damit begonnen werden soll
 
 
     # suche Verbindung zum Sensor alle 10 sek
@@ -88,10 +89,11 @@ class Sensor:
                 except:
                     self.ser = None
                     print("Wiederholte Verbindungssuche vom Sensor \"{}\" fehlgeschlagen".format(type(self).__name__))
-                time.sleep(10)
+                    time.sleep(10)
             else:
-                if self.db_schreiben_wiederaufnehmen:
+                if self.datastream_wiederaufnehmen:
                     self.read_datastream()
+                if self.db_schreiben_wiederaufnehmen:
                     self.start_pushing_db()
         threading.Thread(target=nested_verb_suchen, args=(self, ), daemon=True).start()
 
@@ -109,8 +111,9 @@ class Sensor:
         time.sleep(0.2)
         if not self.simulation:
             self.ser.close()
-        self.db_zeiger.close()
-        self.db_verb.close()
+        if self.db_zeiger:
+            self.db_zeiger.close()
+            self.db_verb.close()
 
 
     # liest die spezifischen Daten jedes Sensor (muss je Sensor implementiert werden)
@@ -136,27 +139,32 @@ class Sensor:
             self.writing_process = None
 
 
-    # liest die Daten parallel in einem gesonderten Prozess, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
+    # liest die Daten parallel in einem gesonderten Thread, zunächst unendlicher Stream, kann aber über self.close_datastream() abgebrochen werden
     def read_datastream(self):
         self.datastream = True
+        self.datastream_wiederaufnehmen = True
 
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
         def nested_read(self):
             while self.datastream:
                 try:
                     daten = self.read_sensor_data()
-                    self.aktdaten = daten
                     if daten:
+                        self.aktdaten = daten
                         self.daten.put(daten)
                     time.sleep(self.taktrate)
-                except Exception as e:
+                except Exception as e: # hierin werden Ausnahmen behandelt, bei denen die Verbindung zur seriellen Schnittstelle nachweislich abgebrochen wurde
                     self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
                     self.verbindung_hergestellt = False
-                    print("Datenstrom zum Sensor \"{}\" abgebrochen".format(type(self).__name__))
+                    self.verbindung_suchen()
+                    print("Datenstrom zum Sensor \"{}\" abgebrochen. Versuche neu zu verbinden.".format(type(self).__name__))
                     print(e)
+                except: #TODO: hierin werden Ausnahmen behandelt, bei der der Sensor nachweislich verbunden ist, aber zunächst keine Signale liefert (hierbei darf die Behandlung nicht in den read_data-Methoden der abgeleitetn Klassen erfolgen)
+                    print("Datenstrom zum Sensor \"{}\" kurzzeitig abgebrochen".format(type(self).__name__))
+                    time.sleep(self.taktrate)
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
-                # was sie tut, sobald self.datastream_check == False ist
+                # was sie tut, sobald self.datastream == False ist
                 pass
 
         self.listen_process = threading.Thread(target=nested_read, args=(self, ), daemon=True)
@@ -251,8 +259,8 @@ class Echolot(Sensor):
             tiefe1 = bytes(line).decode("UTF-8").split()[1]
             tiefe2 = bytes(line).decode("UTF-8").split()[2]
         else:
-            tiefe1 = random.uniform(0,20)
-            tiefe2 = tiefe1 + random.uniform(-1,1)
+            tiefe1 = random.uniform(0.0,20.0)
+            tiefe2 = tiefe1 + random.uniform(-1.0,1.0)
         db_objekt = Daten(Echolot.id, [tiefe1, tiefe2], time.time())
         Echolot.id += 1
 

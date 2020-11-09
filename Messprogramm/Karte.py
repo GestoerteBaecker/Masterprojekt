@@ -1,7 +1,6 @@
 from tkinter import *
-from tkinter import filedialog
-import tkinter.ttk as ttk
 from PIL import Image
+from pyproj import Proj, transform
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
@@ -10,18 +9,15 @@ import utm
 import random
 import threading
 
-# Import der aufzurufenden Skripte
-#import boot
-#import ____
-
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
-class Anwendung_Karte(Frame):
+class Anwendung_Karte():
     # Konstruktor  der GUI der Hauptanwendung zum Öffnen aller weiteren GUIs
-    def __init__(self,position=0,tilefiles=None):
+    def __init__(self,Monitor,position=0,tilefiles=None):
 
         # Übernehmen des Ordnerpfades und Fensterposition
         self.tilefiles=tilefiles
         self.position=position
+        self.monitor=Monitor
 
         # Abschluss der Initialisierung durch erstmaliges Laden der Karte
         self.karte_laden()
@@ -46,8 +42,8 @@ class Anwendung_Karte(Frame):
     def karte_laden(self):
         # Öffnen der Kacheln
 
-        self.xmax,self.ymax=-math.inf,-math.inf
-        self.xmin, self.ymin=math.inf,math.inf
+        self.xtile_num_max,self.ytile_num_max=-math.inf,-math.inf
+        self.xtile_num_min, self.ytile_num_min=math.inf,math.inf
         self.zoom=int(self.tilefiles[0].rsplit("/",1)[1].split("_")[0]) # Zoom-Angabe für erstes Bild
 
         # Schleife zum Finden der Bounding-Box
@@ -55,13 +51,13 @@ class Anwendung_Karte(Frame):
             xtile_num=int(tilefile.rsplit("/",1)[1].split("_")[1]) # Kachelname für Lat
             ytile_num=int(tilefile.rsplit("/", 1)[1].split("_")[2].split(".")[0]) # Kachelname für Lon
 
-            if xtile_num > self.xmax: self.xmax=xtile_num
-            if xtile_num < self.xmin: self.xmin=xtile_num
-            if ytile_num > self.ymax: self.ymax=ytile_num
-            if ytile_num < self.ymin: self.ymin=ytile_num
+            if xtile_num > self.xtile_num_max: self.xtile_num_max=xtile_num
+            if xtile_num < self.xtile_num_min: self.xtile_num_min=xtile_num
+            if ytile_num > self.ytile_num_max: self.ytile_num_max=ytile_num
+            if ytile_num < self.ytile_num_min: self.ytile_num_min=ytile_num
 
         # Anlegen eines neuen Bildes, in dem die Kacheln geladen werden
-        self.cluster = Image.new('RGB', ((self.xmax - self.xmin + 1) * 256-1, (self.ymax - self.ymin + 1) * 256-1)) # 256-1?
+        self.cluster = Image.new('RGB', ((self.xtile_num_max - self.xtile_num_min + 1) * 256-1, (self.ytile_num_max - self.ytile_num_min + 1) * 256-1)) # 256-1?
 
         # Schleife über alle Bilder öffnet die Kacheln und fügt es dem Bildcluster hinzu
         for tilefile in self.tilefiles:
@@ -70,7 +66,7 @@ class Anwendung_Karte(Frame):
             xtile=int(tilename.split("_")[1]) # Extrahieren der X-Tile
             ytile=int(tilename.split("_")[2].split(".")[0]) # Extrahieren der Y-Tile abzüglich Datei-Endung
 
-            self.cluster.paste(tileimg, box=((xtile - self.xmin) * 256, (ytile - self.ymin) * 256)) # Vorher 255
+            self.cluster.paste(tileimg, box=((xtile - self.xtile_num_min) * 256, (ytile - self.ytile_num_min) * 256)) # Vorher 255
             tileimg.close()
 
         # Dimension des Bildes
@@ -82,44 +78,80 @@ class Anwendung_Karte(Frame):
         self.figure.suptitle("EchoBoat - Autopilot Navigator")
         self.figure.patch.set_facecolor('white')
         self.figure.canvas.set_window_title('EchoBoat - Autopilot Navigator')
+        # Zum Abfangen von Fehlern beim Schließen der Karte
+        self.figure.canvas.mpl_connect('close_event',self.karte_geschlossen)
+
+        # Variablen für das spätere Boot setzen
+        self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
+        self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
+        self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
+        self.route_x,self.route_y=[],[]
+
+        # Anzeigen des Bildes
         self.map=self.ax.imshow(np.asarray(self.cluster))
         # Abfragen und Setzen der Fenster-Position
         thismanager=plt.get_current_fig_manager()
         positionx,positiony=self.position
         thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self,gnss_north,gnss_east,gnss_heading):
+        # Bestimmen der Transformationsparameter
+        # Umrechnung der (kleinsten und größten) Kachelnummern im Bild in Lat und Lon
+        xtile_deg_min,ytile_deg_min=self.num2deg(self.xtile_num_min,self.ytile_num_min,self.zoom)
+        xtile_deg_max,ytile_deg_max=self.num2deg(self.xtile_num_max+1,self.ytile_num_max+1,self.zoom) # +1, da rechte untere Ecke der Kachel gesucht ist
+
+        # Umrechnung von Lat und Lon in kartesische Koordinaten (beide WGS84)
+        osm_proj=Proj("epsg:4326") # Input-Proj
+        gnss_proj=Proj("epsg:3857") # Output-Proj
+
+        xtile_deg_min_proj, ytile_deg_min_proj = transform(osm_proj,gnss_proj,xtile_deg_min,ytile_deg_min)
+        xtile_deg_max_proj, ytile_deg_max_proj = transform(osm_proj,gnss_proj,xtile_deg_max,ytile_deg_max)
+
+        self.upperleft_wgs84=xtile_deg_min_proj,ytile_deg_min_proj
+        self.lowerright_wgs84=xtile_deg_max_proj,ytile_deg_max_proj
+
+        # Bildkoordinaten der Bildecken
+        self.upperleft_img=0,0
+        self.lowerright_img=self.img_width,self.img_height
+
+        # Transformationparameter zwischen den Systemen (img und wgs84)
+        delta_y_quell=self.lowerright_wgs84[1]-self.upperleft_wgs84[1]
+        delta_x_quell = self.lowerright_wgs84[0] - self.upperleft_wgs84[0]
+        delta_y_ziel=self.lowerright_img[1]-self.upperleft_img[1]
+        delta_x_ziel=self.lowerright_img[0]-self.upperleft_img[0]
+
+        s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
+        s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
+
+        self.m=s_ziel/s_quell
+
+
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
-        self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
-        self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
-        self.boat_route,=self.ax.plot([],[],'-',lw=1, color="grey")
-        self.route_x,self.route_y=[],[]
         self.gnss_north=gnss_north
         self.gnss_east=gnss_east
         self.gnss_heading=gnss_east
+        self.t=t
 
-        t = 0
-        update_interval = 10
-        # Schleife plottet ständig die neuesten Daten
-        while True:
-            # Plotten der aktuellen Boot-Position inklusive Heading
-            self.plot_boat(t)
-            # Plotten der aktuellen Wegpunkte
-            # self.plot_waypoint()
-            if t%update_interval==0:
-                # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
-                self.plot_boatroute()
-            # Plotten der neuen Daten
-            self.figure.canvas.draw()
-            t+=1
-            plt.pause(0.2)
+        # Plotten der aktuellen Boot-Position inklusive Heading
+        self.plot_boat()
 
-    def plot_boat(self,t):
+        # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
+        # Wird nicht ausgeführt, falls kein Signal vorhanden (also t=None)
+        if self.t: self.plot_boatroute()
+
+        # Plotten der aktuellen Wegpunkte
+        # self.plot_waypoint()
+
+        # Plotten der neuen Daten
+        self.figure.canvas.draw()
+        #plt.pause(0.2)
+
+    def plot_boat(self):
         try:
             # Einlesen der aktuellen Boot-Daten
-            heading_deg = gnss_heading
-            heading_rad=math.radians(gnss_heading)
-            boat_utm_x = self.gnss_north
+            heading_deg = self.gnss_heading
+            heading_rad=math.radians(self.gnss_heading)
+            boat_utm_x=self.gnss_north
             boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
@@ -132,9 +164,6 @@ class Anwendung_Karte(Frame):
             self.boat_position.set_ydata(-self.current_boat_position_y)
             self.boat_position.set_marker(marker=(3,0,-heading_deg))
 
-            # Plotten der neuen Daten
-            #self.figure.canvas.draw()
-
         # Wenn keine GPS-Daten vorhanden, Fehlermeldung ausgeben
         except:
             self.ax.text(.5, .5,'NO GPS DATA', horizontalalignment='center',
@@ -142,32 +171,15 @@ class Anwendung_Karte(Frame):
 
     def img_utm_trans(self,boat_utm_x,boat_utm_y):
 
-        # Umrechnung der Kachelnummern im Bild in Lat und Lon
-        xmin,ymin=self.num2deg(self.xmin,self.ymin,self.zoom)
-        xmax,ymax=self.num2deg(self.xmax+1,self.ymax+1,self.zoom) # +1, da rechte untere Ecke der Kachel gesucht ist
+        # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
+        gnss_proj=Proj("epsg:25832") # Input-Proj
+        osm_proj=Proj("epsg:3857") # Output-Proj
 
-        # UTM-Koordinaten der oberen linken und unteren rechten Bildecke
-        upperleft_utm=utm.from_latlon(xmin, ymin)[0:2]
-        lowerright_utm=utm.from_latlon(xmax, ymax)[0:2]
-
-        # Bildkoordinaten der Bildecken
-        upperleft_img=0,0
-        lowerright_img=self.img_width,self.img_height
-
-        # Transformationparameter zwischen den Systemen (img und utm)
-        delta_y_quell=lowerright_utm[1]-upperleft_utm[1]
-        delta_x_quell = lowerright_utm[0] - upperleft_utm[0]
-        delta_y_ziel=lowerright_img[1]-upperleft_img[1]
-        delta_x_ziel=lowerright_img[0]-upperleft_img[0]
-
-        s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
-        s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
-
-        m=s_ziel/s_quell
+        boat_wgs84_x, boat_wgs84_y = transform(gnss_proj,osm_proj,boat_utm_x,boat_utm_y)
 
         # Anwenden der Transformationsparameter
-        boat_img_x=upperleft_img[0]-m*upperleft_utm[0]+m*boat_utm_x
-        boat_img_y=upperleft_img[1]-m*upperleft_utm[1]+m*boat_utm_y
+        boat_img_x=self.upperleft_img[0]-self.m*self.upperleft_wgs84[0]+self.m*boat_wgs84_x
+        boat_img_y=self.upperleft_img[1]-self.m*self.upperleft_wgs84[1]+self.m*boat_wgs84_y
 
         return boat_img_x,boat_img_y
 
@@ -176,15 +188,13 @@ class Anwendung_Karte(Frame):
         x=1
 
     def plot_boatroute(self):
-        self.route_x.append(self.current_boat_position_x)
-        self.route_y.append(-self.current_boat_position_y)
-        if len(self.route_y)>1:
-            self.boat_route.set_xdata(self.route_x)
-            self.boat_route.set_ydata(self.route_y)
+        update_interval = 10
+        if self.t % update_interval == 0:
+            self.route_x.append(self.current_boat_position_x)
+            self.route_y.append(-self.current_boat_position_y)
+            if len(self.route_y)>1:
+                self.boat_route.set_xdata(self.route_x)
+                self.boat_route.set_ydata(self.route_y)
 
-
-#if __name__=="__main__":
-    #fenster=Tk()
-    #fenster.title("EchoBoat - Autopilot Navigator")
-    #anwendung=Anwendung_Karte(fenster)
-    #fenster.mainloop()
+    def karte_geschlossen(self,evt):
+        self.monitor.karte_window = None

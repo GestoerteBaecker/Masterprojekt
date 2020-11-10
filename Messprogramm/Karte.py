@@ -1,7 +1,6 @@
 from tkinter import *
-from tkinter import filedialog
-import tkinter.ttk as ttk
 from PIL import Image
+from pyproj import Proj, transform
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
@@ -41,10 +40,10 @@ class Anwendung_Karte():
 
 
     def karte_laden(self):
-        # Öffnen der Kacheln
+        self.grenzpolygon_vorhanden=False
 
-        self.xmax,self.ymax=-math.inf,-math.inf
-        self.xmin, self.ymin=math.inf,math.inf
+        self.xtile_num_max,self.ytile_num_max=-math.inf,-math.inf
+        self.xtile_num_min, self.ytile_num_min=math.inf,math.inf
         self.zoom=int(self.tilefiles[0].rsplit("/",1)[1].split("_")[0]) # Zoom-Angabe für erstes Bild
 
         # Schleife zum Finden der Bounding-Box
@@ -52,13 +51,13 @@ class Anwendung_Karte():
             xtile_num=int(tilefile.rsplit("/",1)[1].split("_")[1]) # Kachelname für Lat
             ytile_num=int(tilefile.rsplit("/", 1)[1].split("_")[2].split(".")[0]) # Kachelname für Lon
 
-            if xtile_num > self.xmax: self.xmax=xtile_num
-            if xtile_num < self.xmin: self.xmin=xtile_num
-            if ytile_num > self.ymax: self.ymax=ytile_num
-            if ytile_num < self.ymin: self.ymin=ytile_num
+            if xtile_num > self.xtile_num_max: self.xtile_num_max=xtile_num
+            if xtile_num < self.xtile_num_min: self.xtile_num_min=xtile_num
+            if ytile_num > self.ytile_num_max: self.ytile_num_max=ytile_num
+            if ytile_num < self.ytile_num_min: self.ytile_num_min=ytile_num
 
         # Anlegen eines neuen Bildes, in dem die Kacheln geladen werden
-        self.cluster = Image.new('RGB', ((self.xmax - self.xmin + 1) * 256-1, (self.ymax - self.ymin + 1) * 256-1)) # 256-1?
+        self.cluster = Image.new('RGB', ((self.xtile_num_max - self.xtile_num_min + 1) * 256-1, (self.ytile_num_max - self.ytile_num_min + 1) * 256-1)) # 256-1?
 
         # Schleife über alle Bilder öffnet die Kacheln und fügt es dem Bildcluster hinzu
         for tilefile in self.tilefiles:
@@ -67,7 +66,7 @@ class Anwendung_Karte():
             xtile=int(tilename.split("_")[1]) # Extrahieren der X-Tile
             ytile=int(tilename.split("_")[2].split(".")[0]) # Extrahieren der Y-Tile abzüglich Datei-Endung
 
-            self.cluster.paste(tileimg, box=((xtile - self.xmin) * 256, (ytile - self.ymin) * 256)) # Vorher 255
+            self.cluster.paste(tileimg, box=((xtile - self.xtile_num_min) * 256, (ytile - self.ytile_num_min) * 256)) # Vorher 255
             tileimg.close()
 
         # Dimension des Bildes
@@ -82,17 +81,55 @@ class Anwendung_Karte():
         # Zum Abfangen von Fehlern beim Schließen der Karte
         self.figure.canvas.mpl_connect('close_event',self.karte_geschlossen)
 
+        self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+        self.coords=[]
+
         # Variablen für das spätere Boot setzen
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
+        self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=5, color="red")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
         self.route_x,self.route_y=[],[]
+        self.grenzpolygon_x,self.grenzpolygon_y=[],[]
 
+
+        # Anzeigen des Bildes
         self.map=self.ax.imshow(np.asarray(self.cluster))
         # Abfragen und Setzen der Fenster-Position
         thismanager=plt.get_current_fig_manager()
         positionx,positiony=self.position
         thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+
+        # Bestimmen der Transformationsparameter
+        # Umrechnung der (kleinsten und größten) Kachelnummern im Bild in Lat und Lon
+        xtile_deg_min,ytile_deg_min=self.num2deg(self.xtile_num_min,self.ytile_num_min,self.zoom)
+        xtile_deg_max,ytile_deg_max=self.num2deg(self.xtile_num_max+1,self.ytile_num_max+1,self.zoom) # +1, da rechte untere Ecke der Kachel gesucht ist
+
+        # Umrechnung von Lat und Lon in kartesische Koordinaten (beide WGS84)
+        osm_proj=Proj("epsg:4326") # Input-Proj
+        gnss_proj=Proj("epsg:3857") # Output-Proj
+
+        xtile_deg_min_proj, ytile_deg_min_proj = transform(osm_proj,gnss_proj,xtile_deg_min,ytile_deg_min)
+        xtile_deg_max_proj, ytile_deg_max_proj = transform(osm_proj,gnss_proj,xtile_deg_max,ytile_deg_max)
+
+        self.upperleft_wgs84=xtile_deg_min_proj,ytile_deg_min_proj
+        self.lowerright_wgs84=xtile_deg_max_proj,ytile_deg_max_proj
+
+        # Bildkoordinaten der Bildecken
+        self.upperleft_img=0,0
+        self.lowerright_img=self.img_width,self.img_height
+
+        # Transformationparameter zwischen den Systemen (img und wgs84)
+        delta_y_quell=self.lowerright_wgs84[1]-self.upperleft_wgs84[1]
+        delta_x_quell = self.lowerright_wgs84[0] - self.upperleft_wgs84[0]
+        delta_y_ziel=self.lowerright_img[1]-self.upperleft_img[1]
+        delta_x_ziel=self.lowerright_img[0]-self.upperleft_img[0]
+
+        s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
+        s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
+
+        self.m_utm_img=s_ziel/s_quell
+
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
@@ -103,17 +140,18 @@ class Anwendung_Karte():
 
         # Plotten der aktuellen Boot-Position inklusive Heading
         self.plot_boat()
-        self.plot_boatroute()
 
+        # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
+        # Wird nicht ausgeführt, falls kein Signal vorhanden (also t=None)
+        if self.t: self.plot_boatroute()
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 
-        #
-            # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
-            #
+        # Plotten des Polygons:
+
+
         # Plotten der neuen Daten
         self.figure.canvas.draw()
-        #t+=1
         #plt.pause(0.2)
 
     def plot_boat(self):
@@ -121,11 +159,11 @@ class Anwendung_Karte():
             # Einlesen der aktuellen Boot-Daten
             heading_deg = self.gnss_heading
             heading_rad=math.radians(self.gnss_heading)
-            boat_utm_x = self.gnss_north
+            boat_utm_x=self.gnss_north
             boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
-            self.current_boat_position_x,self.current_boat_position_y=self.img_utm_trans(boat_utm_x,boat_utm_y)
+            self.current_boat_position_x,self.current_boat_position_y=self.utm_img_trans(boat_utm_x,boat_utm_y)
 
             # Setzen der Punkte im Plot auf neue Werte
             self.current_boat_heading.set_xdata([self.current_boat_position_x, self.current_boat_position_x+math.sin(heading_rad)*100])
@@ -134,65 +172,104 @@ class Anwendung_Karte():
             self.boat_position.set_ydata(-self.current_boat_position_y)
             self.boat_position.set_marker(marker=(3,0,-heading_deg))
 
-            # Plotten der neuen Daten
-            #self.figure.canvas.draw()
-
         # Wenn keine GPS-Daten vorhanden, Fehlermeldung ausgeben
         except:
             self.ax.text(.5, .5,'NO GPS DATA', horizontalalignment='center',
                             verticalalignment='center', size=15, color="red",transform=self.ax.transAxes)
 
-    def img_utm_trans(self,boat_utm_x,boat_utm_y):
+    # Transformation von UTM-Koordinaten zu Bildkoordinaten
+    def utm_img_trans(self,boat_utm_x,boat_utm_y):
 
-        # Umrechnung der Kachelnummern im Bild in Lat und Lon
-        xmin,ymin=self.num2deg(self.xmin,self.ymin,self.zoom)
-        xmax,ymax=self.num2deg(self.xmax+1,self.ymax+1,self.zoom) # +1, da rechte untere Ecke der Kachel gesucht ist
+        # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
+        gnss_proj=Proj("epsg:25832") # Input-Proj
+        osm_proj=Proj("epsg:3857") # Output-Proj
 
-        # UTM-Koordinaten der oberen linken und unteren rechten Bildecke
-        upperleft_utm=utm.from_latlon(xmin, ymin)[0:2]
-        lowerright_utm=utm.from_latlon(xmax, ymax)[0:2]
+        boat_wgs84_x, boat_wgs84_y = transform(gnss_proj,osm_proj,boat_utm_x,boat_utm_y)
 
-        # Bildkoordinaten der Bildecken
-        upperleft_img=0,0
-        lowerright_img=self.img_width,self.img_height
+        # Anwenden der Transformationsparameter
+        boat_img_x=self.upperleft_img[0]-self.m_utm_img*self.upperleft_wgs84[0]+self.m_utm_img*boat_wgs84_x
+        boat_img_y=self.upperleft_img[1]-self.m_utm_img*self.upperleft_wgs84[1]+self.m_utm_img*boat_wgs84_y
 
-        # Transformationparameter zwischen den Systemen (img und utm)
-        delta_y_quell=lowerright_utm[1]-upperleft_utm[1]
-        delta_x_quell = lowerright_utm[0] - upperleft_utm[0]
-        delta_y_ziel=lowerright_img[1]-upperleft_img[1]
-        delta_x_ziel=lowerright_img[0]-upperleft_img[0]
+        return boat_img_x,boat_img_y
+
+    # Transformation von Bildkoordinaten zu UTM-Koordinaten
+    def img_utm_trans(self,grenzpoly_x,grenzpoly_y):
+
+        grenzpolygon_utm=[]
+
+        delta_y_ziel=self.lowerright_wgs84[1]-self.upperleft_wgs84[1]
+        delta_x_ziel = self.lowerright_wgs84[0] - self.upperleft_wgs84[0]
+        delta_y_quell=self.lowerright_img[1]-self.upperleft_img[1]
+        delta_x_quell=self.lowerright_img[0]-self.upperleft_img[0]
 
         s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
         s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
 
-        m=s_ziel/s_quell
+        self.m_img_utm = s_ziel / s_quell
 
         # Anwenden der Transformationsparameter
-        boat_img_x=upperleft_img[0]-m*upperleft_utm[0]+m*boat_utm_x
-        print(boat_img_x)
-        boat_img_y=upperleft_img[1]-m*upperleft_utm[1]+m*boat_utm_y
+        for i in range(len(grenzpoly_x)):
+            grenzpolygon_wgs84_x=self.upperleft_wgs84[0]-self.m_img_utm*self.upperleft_img[0]+self.m_img_utm*grenzpoly_x[i]
+            grenzpolygon_wgs84_y=self.upperleft_wgs84[1]-self.m_img_utm*self.upperleft_img[1]+self.m_img_utm*-(grenzpoly_y[i])
 
-        return boat_img_x,boat_img_y
+            # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
+            osm_proj=Proj("epsg:3857") # Input-Proj
+            gnss_proj=Proj("epsg:25832") # Output-Proj
+
+            utm_x, utm_y = transform(osm_proj,gnss_proj,grenzpolygon_wgs84_x,grenzpolygon_wgs84_y)
+
+            grenzpolygon_utm.append([utm_x,utm_y])
+
+        return grenzpolygon_utm
 
     # TODO: Funktion definieren
     def plot_waypoint(self):
         x=1
 
     def plot_boatroute(self):
+        # Alle 10 Durchläufe soll die Route ergänzt werden
         update_interval = 10
         if self.t % update_interval == 0:
             self.route_x.append(self.current_boat_position_x)
             self.route_y.append(-self.current_boat_position_y)
+            # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
             if len(self.route_y)>1:
                 self.boat_route.set_xdata(self.route_x)
                 self.boat_route.set_ydata(self.route_y)
 
+    # Funktion registriert Klick-Events
+    def onclick(self,event):
+        # Rechtsklick soll vorliegen
+        if str(event.button)=='MouseButton.RIGHT':
+            ix, iy = event.xdata, event.ydata
+
+            if self.grenzpolygon_vorhanden==False:
+                # Rechter Doppelklick soll Polygon schließen
+                if event.dblclick==True:
+                    self.grenzpolygon_x.append(self.grenzpolygon.get_xdata()[0])
+                    self.grenzpolygon_y.append(self.grenzpolygon.get_ydata()[0])
+                    self.grenzpolygon_utm=self.img_utm_trans(self.grenzpolygon_x,self.grenzpolygon_y)
+                    self.grenzpolygon.set_color('green')
+                    self.grenzpolygon_vorhanden=True
+                # Einfacher Klick ergänzt Polygon
+                else:
+                    self.grenzpolygon_x.append(ix)
+                    self.grenzpolygon_y.append(iy)
+
+                self.grenzpolygon.set_xdata(self.grenzpolygon_x)
+                self.grenzpolygon.set_ydata(self.grenzpolygon_y)
+
+            # Erneuter Doppelklick löscht bestehende Form
+            else:
+                if event.dblclick==True:
+                    self.grenzpolygon.set_xdata([])
+                    self.grenzpolygon.set_ydata([])
+                    self.grenzpolygon_x, self.grenzpolygon_y = [], []
+                    self.grenzpolygon.set_color('red')
+                    self.grenzpolygon_vorhanden=False
+
+
+
+
     def karte_geschlossen(self,evt):
         self.monitor.karte_window = None
-
-
-#if __name__=="__main__":
-    #fenster=Tk()
-    #fenster.title("EchoBoat - Autopilot Navigator")
-    #anwendung=Anwendung_Karte(fenster)
-    #fenster.mainloop()

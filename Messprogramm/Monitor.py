@@ -370,7 +370,7 @@ class Anwendung(Frame):
             else:
                 self.con_qual_dimetix.config(bg="blue")
                 try:
-                    d = self.boot.AktuelleSensordaten[3].daten
+                    d = round(self.boot.AktuelleSensordaten[3].daten,3)
                     self.con_qual_dimetix.config(bg="dark blue")
                     self.var_current_distance.set(str(d))
                 except:

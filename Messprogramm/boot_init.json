@@ -1,0 +1,46 @@
+{
+  "Pixhawk":
+    {
+    "COM": "com13"
+	},
+  "GNSS1":
+    {
+    "COM": "COM0",
+	"baud": 115200,
+	"timeout": 0,
+	"takt": 0.2,
+	"bytesize": null,
+	"parity": null,
+	"simulation":true
+	},
+  "GNSS2":
+    {
+    "COM": "COM0",
+	"baud": 115200,
+	"timeout": 0,
+	"takt": 0.2,
+	"bytesize": null,
+	"parity": null,
+	"simulation":true
+	},
+  "Echolot":
+    {
+    "COM": "COM0",
+	"baud": 19200,
+	"timeout": 0,
+	"takt": 0.2,
+	"bytesize": null,
+	"parity": null,
+	"simulation":true
+	},
+  "Distanz":
+    {
+    "COM": "COM11",
+	"baud": 19200,
+	"timeout": 0,
+	"takt": 1,
+	"bytesize": null,
+	"parity": null,
+	"simulation":true
+	}
+}

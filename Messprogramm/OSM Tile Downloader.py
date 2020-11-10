@@ -4,6 +4,7 @@ import math
 import requests
 from tkinter import *
 from PIL import Image
+from tkinter import filedialog
 import time
 
 class Anwendung_Karte(Frame):

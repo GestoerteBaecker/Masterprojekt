@@ -96,9 +96,10 @@ class Anwendung_Karte():
         # Anzeigen des Bildes
         self.map=self.ax.imshow(np.asarray(self.cluster))
         # Abfragen und Setzen der Fenster-Position
-        thismanager=plt.get_current_fig_manager()
+        thismanager=self.plt.get_current_fig_manager()
         positionx,positiony=self.position
-        thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+        #TODO: Positionierung nachgucken
+        #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
         # Bestimmen der Transformationsparameter
         # Umrechnung der (kleinsten und größten) Kachelnummern im Bild in Lat und Lon
@@ -240,6 +241,7 @@ class Anwendung_Karte():
     # Funktion registriert Klick-Events
     def onclick(self,event):
         # Rechtsklick soll vorliegen
+        print(event)
         if str(event.button)=='MouseButton.RIGHT':
             ix, iy = event.xdata, event.ydata
 

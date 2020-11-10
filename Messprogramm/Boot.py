@@ -31,6 +31,7 @@ class Boot:
         self.db_table = None
         self.heading = None
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
+        self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
         self.DarstellungspunktGUI = None
         self.db_id = 0
@@ -208,8 +209,8 @@ class Boot:
 
         strecke = dist + self.Offset_GNSSmitte_Disto
 
-        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading / (200 / numpy.pi))) * strecke
-        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading / (200 / numpy.pi))) * strecke
+        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
+        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
 
         return (e, n)
 

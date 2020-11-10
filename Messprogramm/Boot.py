@@ -8,6 +8,8 @@ import statistics
 import threading
 import time
 import random
+import math
+import numpy
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
 # self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
@@ -28,6 +30,11 @@ class Boot:
         self.db_zeiger = None
         self.db_database = None
         self.db_table = None
+        self.heading = None
+        self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
+        self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
+        self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
+        self.DarstellungspunktGUI = None
         self.db_id = 0
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
@@ -186,12 +193,65 @@ class Boot:
                         sensor = self.Sensorliste[i]
                         self.AktuelleSensordaten[i] = sensor.aktdaten
 
+                # Abgeleitete Daten berechnen und überschreiben
+
+                if self.Sensorliste[0] and self.Sensorliste[1]:         # Headingberechnung
+                    self.heading = self.Headingberechnung()
+
+                if self.Sensorliste[0] and self.Sensorliste[1] and self.Sensorliste[3]:     #Uferpunktberechnung
+                    Uferpunkt = self.Uferpunktberechnung()
+                    self.Uferpunkte.append(Uferpunkt)
+
+                    # Für das Zeichnen des Headings in die GUI wir ein weit entferneter Punkt in Headingrichtung gebraucht. Dieser wird mit der Uferpunktfunktion berechnet.
+                    self.DarstellungspunktGUI = self.Uferpunktberechnung(dist=1000)
+                    
                 time.sleep(self.db_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
+    def Uferpunktberechnung(self, dist=None):
+
+        if not dist:                                    # Falls keine Dastanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
+            dist = self.AktuelleSensordaten[3].daten
+
+        strecke = dist + self.Offset_GNSSmitte_Disto
+
+        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
+        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
+
+        return (e, n)
+
+    def Headingberechnung(self):
+
+        Bootsmitte = [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]]
+        Bootsbug = [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
+
+        # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
+        heading_rad = numpy.arctan((Bootsmitte[0]-Bootsbug[0]) / (Bootsmitte[1]-Bootsbug[1]))
+
+        # Quadrantenabfrage
+
+        if Bootsbug[0] > Bootsmitte[0]:
+            if Bootsbug[1] > Bootsmitte[1]:
+                q_zuschl = 0                # Quadrant 1
+            else:
+                q_zuschl = 2*numpy.pi       # Quadrant 4
+        else:
+            if Bootsbug[1] > Bootsmitte[1]:
+                q_zuschl = numpy.pi         # Quadrant 2
+            else:
+                q_zuschl = numpy.pi         # Quadrant 3
+
+        heading_rad += q_zuschl
+        heading_gon = heading_rad * (200/numpy.pi)
+
+        return heading_gon
+
     def Hinderniserkennung(self):
         pass
+
+        # Entfernungswerte tracken und mit vorhereigen Messungen abgleichen
+        # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
 
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
         pass

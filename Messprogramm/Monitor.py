@@ -157,11 +157,11 @@ class Anwendung(Frame):
     def osm_tiles_lesen(self):
         # Öffnen der Datei
         tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
-        try:
-          self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-          self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
-        except:
-          print("Dateien ungültig")
+        #try:
+        self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
+        self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
+        #except:
+        #    print("Dateien ungültig")
 
 
     def aktuelle_methode(self, x):

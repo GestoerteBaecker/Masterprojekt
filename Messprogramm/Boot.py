@@ -162,8 +162,8 @@ class Boot:
                     # Für Simulation
                     else:                                             # TODO nur für simulation
                         if i == 0:
-                            hoch = 5888482.455 + random.random()
-                            east = 446507.998 + random.random()
+                            hoch = 5887502.759 + random.random()
+                            east = 447431.164 + random.random()
                             self.AktuelleSensordaten[i] = Sensoren.Daten(0, [east, hoch, 2, 45.123, 4])
                         if i == 1:
                             hoch = 5888474.95 + random.random()

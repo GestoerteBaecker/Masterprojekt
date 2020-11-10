@@ -40,7 +40,7 @@ class Anwendung_Karte():
 
 
     def karte_laden(self):
-        # Öffnen der Kacheln
+        self.grenzpolygon_vorhanden=False
 
         self.xtile_num_max,self.ytile_num_max=-math.inf,-math.inf
         self.xtile_num_min, self.ytile_num_min=math.inf,math.inf
@@ -81,11 +81,17 @@ class Anwendung_Karte():
         # Zum Abfangen von Fehlern beim Schließen der Karte
         self.figure.canvas.mpl_connect('close_event',self.karte_geschlossen)
 
+        self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+        self.coords=[]
+
         # Variablen für das spätere Boot setzen
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
+        self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=5, color="red")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
         self.route_x,self.route_y=[],[]
+        self.grenzpolygon_x,self.grenzpolygon_y=[],[]
+
 
         # Anzeigen des Bildes
         self.map=self.ax.imshow(np.asarray(self.cluster))
@@ -122,7 +128,7 @@ class Anwendung_Karte():
         s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
         s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
 
-        self.m=s_ziel/s_quell
+        self.m_utm_img=s_ziel/s_quell
 
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
@@ -142,6 +148,9 @@ class Anwendung_Karte():
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 
+        # Plotten des Polygons:
+
+
         # Plotten der neuen Daten
         self.figure.canvas.draw()
         #plt.pause(0.2)
@@ -155,7 +164,7 @@ class Anwendung_Karte():
             boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
-            self.current_boat_position_x,self.current_boat_position_y=self.img_utm_trans(boat_utm_x,boat_utm_y)
+            self.current_boat_position_x,self.current_boat_position_y=self.utm_img_trans(boat_utm_x,boat_utm_y)
 
             # Setzen der Punkte im Plot auf neue Werte
             self.current_boat_heading.set_xdata([self.current_boat_position_x, self.current_boat_position_x+math.sin(heading_rad)*100])
@@ -169,7 +178,8 @@ class Anwendung_Karte():
             self.ax.text(.5, .5,'NO GPS DATA', horizontalalignment='center',
                             verticalalignment='center', size=15, color="red",transform=self.ax.transAxes)
 
-    def img_utm_trans(self,boat_utm_x,boat_utm_y):
+    # Transformation von UTM-Koordinaten zu Bildkoordinaten
+    def utm_img_trans(self,boat_utm_x,boat_utm_y):
 
         # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
         gnss_proj=Proj("epsg:25832") # Input-Proj
@@ -178,23 +188,89 @@ class Anwendung_Karte():
         boat_wgs84_x, boat_wgs84_y = transform(gnss_proj,osm_proj,boat_utm_x,boat_utm_y)
 
         # Anwenden der Transformationsparameter
-        boat_img_x=self.upperleft_img[0]-self.m*self.upperleft_wgs84[0]+self.m*boat_wgs84_x
-        boat_img_y=self.upperleft_img[1]-self.m*self.upperleft_wgs84[1]+self.m*boat_wgs84_y
+        boat_img_x=self.upperleft_img[0]-self.m_utm_img*self.upperleft_wgs84[0]+self.m_utm_img*boat_wgs84_x
+        boat_img_y=self.upperleft_img[1]-self.m_utm_img*self.upperleft_wgs84[1]+self.m_utm_img*boat_wgs84_y
 
         return boat_img_x,boat_img_y
+
+    # Transformation von Bildkoordinaten zu UTM-Koordinaten
+    def img_utm_trans(self,grenzpoly_x,grenzpoly_y):
+
+        grenzpolygon_utm=[]
+
+        delta_y_ziel=self.lowerright_wgs84[1]-self.upperleft_wgs84[1]
+        delta_x_ziel = self.lowerright_wgs84[0] - self.upperleft_wgs84[0]
+        delta_y_quell=self.lowerright_img[1]-self.upperleft_img[1]
+        delta_x_quell=self.lowerright_img[0]-self.upperleft_img[0]
+
+        s_quell=math.sqrt(delta_y_quell**2+delta_x_quell**2)
+        s_ziel=math.sqrt(delta_y_ziel**2+delta_x_ziel**2)
+
+        self.m_img_utm = s_ziel / s_quell
+
+        # Anwenden der Transformationsparameter
+        for i in range(len(grenzpoly_x)):
+            grenzpolygon_wgs84_x=self.upperleft_wgs84[0]-self.m_img_utm*self.upperleft_img[0]+self.m_img_utm*grenzpoly_x[i]
+            grenzpolygon_wgs84_y=self.upperleft_wgs84[1]-self.m_img_utm*self.upperleft_img[1]+self.m_img_utm*-(grenzpoly_y[i])
+
+            # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
+            osm_proj=Proj("epsg:3857") # Input-Proj
+            gnss_proj=Proj("epsg:25832") # Output-Proj
+
+            utm_x, utm_y = transform(osm_proj,gnss_proj,grenzpolygon_wgs84_x,grenzpolygon_wgs84_y)
+
+            grenzpolygon_utm.append([utm_x,utm_y])
+
+        return grenzpolygon_utm
 
     # TODO: Funktion definieren
     def plot_waypoint(self):
         x=1
 
     def plot_boatroute(self):
+        # Alle 10 Durchläufe soll die Route ergänzt werden
         update_interval = 10
         if self.t % update_interval == 0:
             self.route_x.append(self.current_boat_position_x)
             self.route_y.append(-self.current_boat_position_y)
+            # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
             if len(self.route_y)>1:
                 self.boat_route.set_xdata(self.route_x)
                 self.boat_route.set_ydata(self.route_y)
+
+    # Funktion registriert Klick-Events
+    def onclick(self,event):
+        # Rechtsklick soll vorliegen
+        if str(event.button)=='MouseButton.RIGHT':
+            ix, iy = event.xdata, event.ydata
+
+            if self.grenzpolygon_vorhanden==False:
+                # Rechter Doppelklick soll Polygon schließen
+                if event.dblclick==True:
+                    self.grenzpolygon_x.append(self.grenzpolygon.get_xdata()[0])
+                    self.grenzpolygon_y.append(self.grenzpolygon.get_ydata()[0])
+                    self.grenzpolygon_utm=self.img_utm_trans(self.grenzpolygon_x,self.grenzpolygon_y)
+                    self.grenzpolygon.set_color('green')
+                    self.grenzpolygon_vorhanden=True
+                # Einfacher Klick ergänzt Polygon
+                else:
+                    self.grenzpolygon_x.append(ix)
+                    self.grenzpolygon_y.append(iy)
+
+                self.grenzpolygon.set_xdata(self.grenzpolygon_x)
+                self.grenzpolygon.set_ydata(self.grenzpolygon_y)
+
+            # Erneuter Doppelklick löscht bestehende Form
+            else:
+                if event.dblclick==True:
+                    self.grenzpolygon.set_xdata([])
+                    self.grenzpolygon.set_ydata([])
+                    self.grenzpolygon_x, self.grenzpolygon_y = [], []
+                    self.grenzpolygon.set_color('red')
+                    self.grenzpolygon_vorhanden=False
+
+
+
 
     def karte_geschlossen(self,evt):
         self.monitor.karte_window = None

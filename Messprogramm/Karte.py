@@ -144,7 +144,6 @@ class Anwendung_Karte():
         # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
         # Wird nicht ausgeführt, falls kein Signal vorhanden (also t=None)
         if self.t: self.plot_boatroute()
-
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 

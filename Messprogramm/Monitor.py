@@ -61,7 +61,7 @@ class Anwendung(Frame):
         button_aufnehmen.grid(row=4, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
 
         # Label der Verbindungsqualität
-        Label(self,text="Status").grid(row=5,column=0,pady=(20,0))
+        Label(self,text="Status").grid(row=5,column=0,pady=(10,0))
         self.con_qual_gnss1=Label(self, bg="red",width=3,height=2,relief="groove")
         self.con_qual_gnss1.grid(row=6, column=0, pady=10, padx=5)
         self.con_qual_gnss2=Label(self, bg="red",width=3,height=2,relief="groove")
@@ -76,7 +76,7 @@ class Anwendung(Frame):
         #self.con_qual_imu.grid(row=11, column=0, pady=10, padx=5)
 
         # Label der Instrumentnamen
-        Label(self,text="Instrument",width=14).grid(row=5,column=1,pady=(20,0))
+        Label(self,text="Instrument",width=14).grid(row=5,column=1,pady=(10,0))
         label_gnss1=Label(self, text="GNSS1",bg="lightgrey",height=2,relief="groove")
         label_gnss1.grid(row=6, column=1, pady=5, sticky=W+E)
         label_gnss2=Label(self, text="GNSS2",bg="lightgrey",height=2,relief="groove")
@@ -157,11 +157,12 @@ class Anwendung(Frame):
     def osm_tiles_lesen(self):
         # Öffnen der Datei
         tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
-        #try:
-        self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-        self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
-        #except:
-         #   print("Dateien ungültig")
+        try:
+          self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
+          self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
+        except:
+          print("Dateien ungültig")
+
 
     def aktuelle_methode(self, x):
         print(x)
@@ -218,6 +219,7 @@ class Anwendung(Frame):
         self.t+=1
 
         # Abfrage, ob Verbindung initialisiert wurde
+        self.t+=1
         if self.verbindung_initialisiert==True:
 
             if self.boot.PixHawk.verbindung_hergestellt==True:
@@ -307,8 +309,8 @@ class Anwendung(Frame):
                             self.con_qual_gnss2.config(bg="yellow")
                     except:
                         self.con_qual_gnss2.config(bg="orange")
-                else:
-                    self.con_qual_gnss2.config(bg="red")
+                #else:
+                    #self.con_qual_gnss2.config(bg="red")
 
             # S I M U L A T I O N  G N S S 2
             else:

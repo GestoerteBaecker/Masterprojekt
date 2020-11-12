@@ -3,6 +3,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import tkinter.ttk as ttk
 import sys, os
+import time
 
 # Import der aufzurufenden Skripte
 import Karte
@@ -150,18 +151,18 @@ class Anwendung(Frame):
 
         # Abrufen der neuesten Daten und Stati
         self.verbindung_initialisiert=False
-        self.t=0
         self.status_und_daten_aktualisieren()
+        self.t=0
 
 
     def osm_tiles_lesen(self):
         # Öffnen der Datei
         tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
-        #try:
-        self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-        self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
-        #except:
-        #    print("Dateien ungültig")
+        try:
+            self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
+            self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
+        except:
+            print("Dateien ungültig")
 
 
     def aktuelle_methode(self, x):
@@ -208,10 +209,8 @@ class Anwendung(Frame):
 
     def status_und_daten_aktualisieren(self):
         # Anzahl der Durchläufe für die Bootsroute
-        self.t+=1
-
         if self.verbindung_initialisiert==True:
-
+            self.t+=1
             if self.boot.PixHawk.verbindung_hergestellt==True:
                 modus=str(self.boot.PixHawk.vehicle.mode).split(":")[1]
                 self.con_qual_pixhawk4.config(bg="orange")
@@ -235,9 +234,9 @@ class Anwendung(Frame):
                 if gnss.verbindung_hergestellt:
                     try:
                         gnss_qual_indikator=self.boot.AktuelleSensordaten[0].daten[4]
-                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0]-32000000,self.boot.AktuelleSensordaten[0].daten[1] #TODO
-                        #gnss_heading=self.boot.AktuelleSensordaten[xy] #TODO
-                        gnss_heading=0
+                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1] #TODO
+                        gnss_heading = self.boot.heading
+
                         if gnss_qual_indikator==4:
                             if not gnss.simulation:
                                 self.con_qual_gnss1.config(bg="green")
@@ -258,7 +257,7 @@ class Anwendung(Frame):
                                 self.con_qual_gnss1.config(bg="blue")
                         if self.karte_window!= None:
                             try:
-                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading, self.t)
+                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading,self.t)
                             except:
                                 print("Karte kann nicht aktualisiert werden.")
                     except:
@@ -354,10 +353,10 @@ class Anwendung(Frame):
                 else:
                     self.con_qual_dimetix.config(bg="red")
 
-        self.after(1000, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
+        self.after(500, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 
     def alles_schliessen(self):
-        self.boot_trennen()
+        if self.verbindung_initialisiert == True: self.boot_trennen()
         if self.karte_window:
             self.karte_window.plt.close()
             self.karte_window=None

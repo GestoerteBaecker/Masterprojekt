@@ -85,5 +85,5 @@ class Pixhawk:
 
     def Trennen(self):
 
-        self.vehicle.close()
+        if self.vehicle: self.vehicle.close()
 

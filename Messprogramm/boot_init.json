@@ -5,42 +5,42 @@
 	},
   "GNSS1":
     {
-    "COM": "COM0",
+    "COM": "COM10",
 	"baud": 115200,
-	"timeout": 0,
+	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "GNSS2":
     {
-    "COM": "COM0",
+    "COM": "COM11",
 	"baud": 115200,
-	"timeout": 0,
+	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "Echolot":
     {
-    "COM": "COM0",
+    "COM": "COM1",
 	"baud": 19200,
-	"timeout": 0,
+	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "Distanz":
     {
-    "COM": "COM11",
+    "COM": "COM8",
 	"baud": 19200,
-	"timeout": 0,
+	"timeout": 1,
 	"takt": 1,
-	"bytesize": null,
-	"parity": null,
-	"simulation":true
+	"bytesize":7,
+	"parity":"E",
+	"simulation":false
 	}
 }

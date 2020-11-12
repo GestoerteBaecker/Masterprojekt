@@ -16,6 +16,9 @@ import numpy
 # -> d.h. damit zB self. datenbankbeschreiben True ist müssen mind. die anderen beiden auch True sein
 class Boot:
 
+    #TODO: GNSS muss beim Trennen rot werden; Datenbankschreiben hört bei unterbrochenem Echolot auf, Heading, Abfangen von Parsefehler in der Karte; GNSS1 Signalverlust in Datenbank abfangen ; Häufung von Datenverlusten manuell Signal abbrechen; Trennfunktion berichtigen
+
+
     def __init__(self):
 
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
@@ -36,6 +39,7 @@ class Boot:
         self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
         self.DarstellungspunktGUI = None
         self.db_id = 0
+        self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -84,8 +88,9 @@ class Boot:
             self.Sensornamen.append("Distanz")
             takt.append(json_daten["GNSS1"]["takt"])"""
 
-        self.AktuelleSensordaten = len(self.Sensorliste) * [None]
+        self.AktuelleSensordaten = len(self.Sensorliste) * [False]
         self.db_takt = min(*takt)
+        self.akt_takt = self.db_takt/4
 
 
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
@@ -118,15 +123,22 @@ class Boot:
                     db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
                     zeiten = []
                     db_temp = ""
+                    db_schreiben = True
                     for i, daten in enumerate(self.AktuelleSensordaten):
-                        if daten: # wenn Daten vorliegen
+                        if daten and self.Sensorliste[i].verbindung_hergestellt: # wenn Daten vorliegen
                             zeiten.append(daten.timestamp) #TODO: Testen , ob die Zeitpunkte nicht zu weit auseinander liegen?
                             db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(daten, id_zeit=False)
-                    zeit_mittel = statistics.mean(zeiten)
-                    self.db_id += 1
-                    db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
-                    self.db_zeiger.execute(db_text)
-                    self.db_zeiger.commit()
+                        else:
+                            db_schreiben = False
+                        #    print("aktuelle Daten in DB, sensor", self.Sensorliste[i], daten, i)
+                        #    db_temp = db_temp + ", " + self.Sensorliste[i].make_db_command(None, id_zeit=False, fehler=True)
+                    if db_schreiben: #nur wenn alle Sensoren Daten haben
+                        zeit_mittel = statistics.mean(zeiten)
+                        self.db_id += 1
+                        db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
+                        print(db_text)
+                        self.db_zeiger.execute(db_text)
+                        self.db_zeiger.commit()
                     schlafen = abs(self.db_takt - (time.time() - t))
                     time.sleep(schlafen)
 
@@ -187,25 +199,30 @@ class Boot:
 
         self.fortlaufende_aktualisierung = True
 
+
         def Ueberschreibungsfunktion(self):
             while self.fortlaufende_aktualisierung:
+                #print("aktuelle Daten Überschreibung", self.AktuelleSensordaten)
                 for i in range(0, len(self.Sensorliste)):
+                    if self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
-                        self.AktuelleSensordaten[i] = sensor.aktdaten
+                        if sensor.aktdaten:
+                            self.AktuelleSensordaten[i] = sensor.aktdaten
+                            #print("aktuelle Daten in Überschreibungsfkt, sensor", self.Sensorliste[i], sensor.aktdaten, i, time.time())
 
                 # Abgeleitete Daten berechnen und überschreiben
-
-                if self.Sensorliste[0] and self.Sensorliste[1]:         # Headingberechnung
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
                     self.heading = self.Headingberechnung()
+                    print(self.heading)
 
-                if self.Sensorliste[0] and self.Sensorliste[1] and self.Sensorliste[3]:     #Uferpunktberechnung
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     Uferpunkt = self.Uferpunktberechnung()
                     self.Uferpunkte.append(Uferpunkt)
 
                     # Für das Zeichnen des Headings in die GUI wir ein weit entferneter Punkt in Headingrichtung gebraucht. Dieser wird mit der Uferpunktfunktion berechnet.
                     self.DarstellungspunktGUI = self.Uferpunktberechnung(dist=1000)
                     
-                time.sleep(self.db_takt)
+                time.sleep(self.akt_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
@@ -286,6 +303,7 @@ class Boot:
         for sensor in self.Sensorliste:
             sensor.kill()
         self.datenbankbeschreiben = False
+        #TODO: DBtrennen
 
         if self.PixHawk:
             self.PixHawk.Trennen()

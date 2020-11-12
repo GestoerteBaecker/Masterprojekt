@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
 import numpy as np
+import time
 import utm
 import random
 import threading
@@ -99,7 +100,7 @@ class Anwendung_Karte():
         thismanager=self.plt.get_current_fig_manager()
         positionx,positiony=self.position
         #TODO: Positionierung nachgucken
-        #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+        thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
         # Bestimmen der Transformationsparameter
         # Umrechnung der (kleinsten und größten) Kachelnummern im Bild in Lat und Lon
@@ -134,44 +135,46 @@ class Anwendung_Karte():
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
+        update_interval = 10
         self.gnss_north=gnss_north
         self.gnss_east=gnss_east
-        self.gnss_heading=gnss_east
-        self.t=t
+        self.gnss_heading=gnss_heading
 
+        #t=time.time()
         # Plotten der aktuellen Boot-Position inklusive Heading
         self.plot_boat()
+        #print('Zeit1:',time.time()-t)
 
-        # Plotten der abgefahrenen Route (im vorgegebenen Aktualisierungstakt)
-        # Wird nicht ausgeführt, falls kein Signal vorhanden (also t=None)
-        if self.t: self.plot_boatroute()
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 
-        # Plotten des Polygons:
+        # Alle 10 Durchläufe soll die Route ergänzt werden
+        if t and t % update_interval == 0:
+            self.plot_boatroute()
+
 
 
         # Plotten der neuen Daten
-        self.figure.canvas.draw()
-        #plt.pause(0.2)
+        #self.figure.canvas.draw()
+
 
     def plot_boat(self):
         try:
             # Einlesen der aktuellen Boot-Daten
-            heading_deg = self.gnss_heading
-            heading_rad=math.radians(self.gnss_heading)
+            #heading_deg = self.gnss_heading
+            #heading_rad=math.radians(self.gnss_heading)
             boat_utm_x=self.gnss_north
             boat_utm_y = self.gnss_east
 
             # Umrechnung der Boot-UTM-Koordinaten in Bild-Koordinaten
-            self.current_boat_position_x,self.current_boat_position_y=self.utm_img_trans(boat_utm_x,boat_utm_y)
+            self.current_boat_position_x,self.current_boat_position_y=self.utm_img_trans(boat_utm_x-32000000,boat_utm_y)
 
             # Setzen der Punkte im Plot auf neue Werte
-            self.current_boat_heading.set_xdata([self.current_boat_position_x, self.current_boat_position_x+math.sin(heading_rad)*100])
-            self.current_boat_heading.set_ydata([-self.current_boat_position_y, -self.current_boat_position_y + math.cos(heading_rad-math.pi) * 100])
+            self.current_boat_heading.set_xdata([self.current_boat_position_x, self.current_boat_position_x + math.sin(self.gnss_heading*math.pi/200) * 100])
+            self.current_boat_heading.set_ydata([-self.current_boat_position_y, -self.current_boat_position_y + math.cos(self.gnss_heading*math.pi/200 - math.pi) * 100])
             self.boat_position.set_xdata(self.current_boat_position_x)
             self.boat_position.set_ydata(-self.current_boat_position_y)
-            self.boat_position.set_marker(marker=(3,0,-heading_deg))
+            self.boat_position.set_marker(marker=(3,0,-self.gnss_heading*180/200))
 
         # Wenn keine GPS-Daten vorhanden, Fehlermeldung ausgeben
         except:
@@ -180,7 +183,6 @@ class Anwendung_Karte():
 
     # Transformation von UTM-Koordinaten zu Bildkoordinaten
     def utm_img_trans(self,boat_utm_x,boat_utm_y):
-
         # Umrechnung der ETRS89-Koordinaten aus GNSS zu WGS84 OSM-System
         gnss_proj=Proj("epsg:25832") # Input-Proj
         osm_proj=Proj("epsg:3857") # Output-Proj
@@ -190,12 +192,10 @@ class Anwendung_Karte():
         # Anwenden der Transformationsparameter
         boat_img_x=self.upperleft_img[0]-self.m_utm_img*self.upperleft_wgs84[0]+self.m_utm_img*boat_wgs84_x
         boat_img_y=self.upperleft_img[1]-self.m_utm_img*self.upperleft_wgs84[1]+self.m_utm_img*boat_wgs84_y
-
         return boat_img_x,boat_img_y
 
     # Transformation von Bildkoordinaten zu UTM-Koordinaten
     def img_utm_trans(self,grenzpoly_x,grenzpoly_y):
-
         grenzpolygon_utm=[]
 
         delta_y_ziel=self.lowerright_wgs84[1]-self.upperleft_wgs84[1]
@@ -228,20 +228,16 @@ class Anwendung_Karte():
         x=1
 
     def plot_boatroute(self):
-        # Alle 10 Durchläufe soll die Route ergänzt werden
-        update_interval = 10
-        if self.t % update_interval == 0:
-            self.route_x.append(self.current_boat_position_x)
-            self.route_y.append(-self.current_boat_position_y)
-            # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
-            if len(self.route_y)>1:
-                self.boat_route.set_xdata(self.route_x)
-                self.boat_route.set_ydata(self.route_y)
+        self.route_x.append(self.current_boat_position_x)
+        self.route_y.append(-self.current_boat_position_y)
+        # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
+        if len(self.route_y)>1:
+            self.boat_route.set_xdata(self.route_x)
+            self.boat_route.set_ydata(self.route_y)
 
     # Funktion registriert Klick-Events
     def onclick(self,event):
         # Rechtsklick soll vorliegen
-        print(event)
         if str(event.button)=='MouseButton.RIGHT':
             ix, iy = event.xdata, event.ydata
 

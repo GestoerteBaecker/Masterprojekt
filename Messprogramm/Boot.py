@@ -1,4 +1,5 @@
 import Sensoren
+import Messgebiet
 import datetime
 import numpy
 import json
@@ -37,7 +38,8 @@ class Boot:
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
-        self.DarstellungspunktGUI = None
+        self.Bodenpunkte = []
+        self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         datei = open("boot_init.json", "r")
@@ -201,6 +203,8 @@ class Boot:
 
 
         def Ueberschreibungsfunktion(self):
+
+            Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
                 #print("aktuelle Daten Überschreibung", self.AktuelleSensordaten)
                 for i in range(0, len(self.Sensorliste)):
@@ -213,35 +217,83 @@ class Boot:
                 # Abgeleitete Daten berechnen und überschreiben
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
                     self.heading = self.Headingberechnung()
-                    print(self.heading)
 
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     Uferpunkt = self.Uferpunktberechnung()
                     self.Uferpunkte.append(Uferpunkt)
 
-                    # Für das Zeichnen des Headings in die GUI wir ein weit entferneter Punkt in Headingrichtung gebraucht. Dieser wird mit der Uferpunktfunktion berechnet.
-                    self.DarstellungspunktGUI = self.Uferpunktberechnung(dist=1000)
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]: # TODO: Nur jeden 10. Bodenpunkte berechnen und abspeichern
+                    Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
+                    Letzte_Bodenpunkte.append(Bodendaten)
+
+                    if len(Letzte_Bodenpunkte) > 10:
+                        Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
+                        self.Bodenpunkte.append(Bodenpunkt)
+                        Letzte_Bodenpunkte = []
                     
                 time.sleep(self.akt_takt)
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
-    def Uferpunktberechnung(self, dist=None):
+    def Uferpunktberechnung(self, dist=False):
 
         if not dist:                                    # Falls keine Dastanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
             dist = self.AktuelleSensordaten[3].daten
 
         strecke = dist + self.Offset_GNSSmitte_Disto
 
-        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
-        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading+self.Winkeloffset_dist / (200 / numpy.pi))) * strecke
+        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading+self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading+self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
 
-        return (e, n)
+        return Messgebiet.Uferpunkt(e, n)
+
+    def Bodenpunktberechnung(self, Bodendaten = False):
+
+        if Bodendaten:
+            summex = 0
+            summey = 0
+            z_werte = []                    #Liste, da nicht mittelwert, sondern Median berechnet wird
+            summe_sedimentdicken = 0
+            for messung in Bodendaten:
+                gnss_datenobjekt, echo_datenobjekt = messung
+                summex += gnss_datenobjekt.daten[0]
+                summey += gnss_datenobjekt.daten[1]
+
+                z_boden = gnss_datenobjekt.daten[3] - self.Offset_GNSS_Echo - echo_datenobjekt.daten[0]
+                z_werte.append(z_boden)
+
+                summe_sedimentdicken += abs(echo_datenobjekt.daten[0]-echo_datenobjekt.daten[1])
+
+            x_mittel = summex / len(Bodendaten)
+            y_mittel = summey / len(Bodendaten)
+
+            mitte = len(z_werte)//2
+            z_werte.sort()
+            if mitte:
+                z_median = z_werte[mitte]
+            else:
+                z_median = (z_werte[mitte-1]+z_werte[mitte])/2
+
+            sedimentdicke_mittel = summe_sedimentdicken / len(Bodendaten)
+
+            return Messgebiet.Bodenpunkt(x_mittel, y_mittel, z_median, sedimentdicke_mittel)
+
+        else:
+
+            x, y = self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]
+            zgnss = self.AktuelleSensordaten[0].daten[3]
+            Sedimentdicke = abs(self.AktuelleSensordaten[2].daten[0] - self.AktuelleSensordaten[2].daten[1])
+
+            z_boden = zgnss - self.Offset_GNSS_Echo- self.AktuelleSensordaten[2].daten[0]       # TODO: Höhere Frequenz eingeben
+
+            Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z,Sedimentdicke)                             # TODO: Die letzten Bodenpunkte zusammenfassen und nur einen Punkt berechnen
+
+            return Bodenpunkt
 
     def Headingberechnung(self):
 
         Bootsmitte = [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]]
-        Bootsbug = [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
+        Bootsbug =   [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
 
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
         heading_rad = numpy.arctan((Bootsbug[0]-Bootsmitte[0]) / (Bootsbug[1]-Bootsmitte[1]))

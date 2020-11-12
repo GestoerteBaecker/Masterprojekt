@@ -25,10 +25,6 @@ class Uferpunt(Punkt):
     def __init__(self, x, y, z=None):
         super().__init__(x,y,z)
 
-class Bootsposition(Punkt):
-
-    def __init__(self, x, y, z=None, heading=None):
-        super().__init__(x, y, z)
 
 class Bodenpunkt(Punkt):
 
@@ -39,14 +35,13 @@ class Bodenpunkt(Punkt):
 
 class Zelle:
 
-    def __init__(self,cx, cy, w, h):    # Rasterzelle mit mittelpunkt, weite und Höhe definieren, siehe https://scipython.com/blog/quadtrees-2-implementation-in-python/
+    def __init__(self,cx, cy, w, h):    # Rasterzelle mit mittelpunkt, weite und Höhe definieren, siehe
         self.cx, self.cy = cx, cy
         self.w, self.h = w, h
         self.west_kante, self.ost_kante = cx - w/2, cx + w/2
         self.nord_kante, self.sued_kante = cy - h/2, cy + h/2
 
         self.beinhaltet_uferpunkte = False
-        self.beinhaltet_bootspunkte = False
         self.beinhaltet_bodenpunkte = False
 
     def ebenenausgleichung(self):
@@ -62,7 +57,6 @@ class Zelle:
 
 
         if Punktart == "Uferpunkt": self.beinhaltet_uferpunkte = True
-        if Punktart == "Bootspunkt": self.beinhaltet_bootspunkte = True
         if Punktart == "Bodenpunkt": self.beinhaltet_bodenpunkte = True
 
         return enthaelt_punkt           # Gibt True oder False zurück

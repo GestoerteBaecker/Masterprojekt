@@ -44,10 +44,12 @@ class Sensor:
         try:
             if not self.simulation:
                 if self.bytesize:
-                    self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+                    self.ser = serial.Serial(self.com, timeout=self.timeout, baudrate=self.baudrate, bytesize=self.bytesize, parity=self.parity)
                 else:
-                    self.ser = serial.Serial(self.com, self.baudrate)
+                    self.ser = serial.Serial(self.com, baudrate=self.baudrate, timeout=self.timeout)
                 self.verbindung_hergestellt = True
+                #TODO: test auf echter Verbindung, ob Daten ausgelesen werden können
+                #-> falls nicht, dann in den except Ast
             else:
                 self.verbindung_hergestellt = True
         except:
@@ -81,10 +83,10 @@ class Sensor:
             while not self.verbindung_hergestellt:
                 try:
                     if self.bytesize:
-                        self.ser = serial.Serial(self.com, self.baudrate, self.bytesize, self.parity)
+                        self.ser = serial.Serial(self.com, timeout=self.timeout, baudrate=self.baudrate, bytesize=self.bytesize, parity=self.parity)
                         self.ser.write(b's0o\r\n')
                     else:
-                        self.ser = serial.Serial(self.com, self.baudrate)
+                        self.ser = serial.Serial(self.com, baudrate=self.baudrate, timeout=self.timeout)
                     self.verbindung_hergestellt = True
                 except:
                     self.ser = None
@@ -109,7 +111,7 @@ class Sensor:
     def kill(self):
         self.close_datastream()
         time.sleep(0.2)
-        if not self.simulation:
+        if not self.simulation and self.ser:
             self.ser.close()
         if self.db_zeiger:
             self.db_zeiger.close()
@@ -146,12 +148,14 @@ class Sensor:
 
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
         def nested_read(self):
-            while self.datastream:
+            while self.datastream and self.verbindung_hergestellt:
                 try:
                     daten = self.read_sensor_data()
                     if daten:
                         self.aktdaten = daten
                         self.daten.put(daten)
+                    else:
+                        self.aktdaten = False
                     time.sleep(self.taktrate)
                 except Exception as e: # hierin werden Ausnahmen behandelt, bei denen die Verbindung zur seriellen Schnittstelle nachweislich abgebrochen wurde
                     self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
@@ -192,11 +196,12 @@ class Sensor:
     # setzt eine Liste von Daten zusammen, mit denen die Daten-Objekte über Cursor.execute() in die DB enigepflegt werden können
     # WICHTIG: auf den Aufbau der Datenbank achten! Columns id, zeit und vor allem wie daten aufgebaut ist
     # id_zeit: sagt aus, ob auch diese beiden Attribute in den String umgesetzt werden
-    def make_db_command(self, datenpaket, id_zeit=True):
+    def make_db_command(self, datenpaket, id_zeit=True, fehler=False):
         return str()
 
 
     # Daten in die Datenbank schreiben
+    #TODO: falls diese Funktion benutzt wird, muss abgefangen werden, dass make_db_command bei einem Fehler "" zurückgibt
     def start_pushing_db(self):
         self.writing_db = True
         self.db_schreiben_wiederaufnehmen = True
@@ -233,13 +238,16 @@ class Echolot(Sensor):
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, daten als String
-    def make_db_command(self, datenpaket, id_zeit=True):
-        if id_zeit:
-            db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten[0], datenpaket.daten[1]]
+    def make_db_command(self, datenpaket, id_zeit=True, fehler=False):
+        if not fehler:
+            if id_zeit:
+                db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten[0], datenpaket.daten[1]]
+            else:
+                db_string_daten = [datenpaket.daten[0], datenpaket.daten[1]]
+            db_string_daten = ", ".join(str(x) for x in db_string_daten)
+            return db_string_daten
         else:
-            db_string_daten = [datenpaket.daten[0], datenpaket.daten[1]]
-        db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_daten
+            return ""
 
 
     def read_sensor_data(self):
@@ -256,15 +264,17 @@ class Echolot(Sensor):
                         break
                 else:
                     break
-            tiefe1 = bytes(line).decode("UTF-8").split()[1]
-            tiefe2 = bytes(line).decode("UTF-8").split()[2]
+            tiefe1 = bytes(line).decode("UTF-8").split()[2]
+            tiefe2 = bytes(line).decode("UTF-8").split()[3]
         else:
             tiefe1 = random.uniform(0.0,20.0)
             tiefe2 = tiefe1 + random.uniform(-1.0,1.0)
         db_objekt = Daten(Echolot.id, [tiefe1, tiefe2], time.time())
         Echolot.id += 1
 
+
         return db_objekt # Datenobjekt mit entsprechenden Einträgen
+
 
 
 class GNSS(Sensor):
@@ -297,8 +307,8 @@ class GNSS(Sensor):
                     print("Parsen fehlgeschlagen",self.db_table, e)
                     #TODO: Prio 99, Fehlerzähler + Ausgabe in GUI self.Fehlerzaehler_pars += 1
         else:
-            lat = 53.5 + random.uniform(-0.1,0.1)
-            lon = 8 + random.uniform(-0.1,0.1)
+            lat = 53.14 + random.uniform(-0.01,0.01)
+            lon = 8.2 + random.uniform(-0.01,0.01)
             koords = utm.from_latlon(lat, lon)
             daten = [koords[2] * 10 ** 6 + koords[0], koords[1], 0, 0, random.randint(0,4)]  # Ausgeben von lat, lon, Höhe, Qualität,
             db_objekt = Daten(GNSS.id, daten, time.time())
@@ -307,15 +317,17 @@ class GNSS(Sensor):
 
 
     # Aufbau der Datenbank (die Felder) muss zwingend folgendermaßen sein: id als Int, zeit als Int, east/north als DOUBLE
-    def make_db_command(self, datenpaket, id_zeit=True):
-        punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")', 25832)"
-        if id_zeit:
-            db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
+    def make_db_command(self, datenpaket, id_zeit=True, fehler=False):
+        if not fehler:
+            punkt_temp = "ST_pointfromtext('POINT(" + str(datenpaket.daten[0]) + " " + str(datenpaket.daten[1]) + ")', 25832)"
+            if id_zeit:
+                db_string_daten = [datenpaket.id, datenpaket.timestamp, punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])] # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
+            else:
+                db_string_daten = [punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])]  # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
+            db_string_daten = ", ".join(str(x) for x in db_string_daten)
+            return db_string_daten
         else:
-            db_string_daten = [punkt_temp, str(datenpaket.daten[2]), str(datenpaket.daten[3]), str(datenpaket.daten[4])]  # Einfügen von Id, Timestamp, lat, lon, Höhe, Qualität,
-        db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_daten
-
+            return ""
 
 class Distanzmesser(Sensor):
 
@@ -325,23 +337,29 @@ class Distanzmesser(Sensor):
         super().__init__(COM, baudrate, timeout, taktrate, bytesize, parity, simulation)
         self.db_felder = [("id", "INT"), ("zeitpunkt", "DOUBLE"), ("distanz", "DOUBLE")]
 
-    def make_db_command(self, datenpaket, id_zeit=True):
-        if id_zeit:
-            db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
+    def make_db_command(self, datenpaket, id_zeit=True, fehler=False):
+        if not fehler:
+            if id_zeit:
+                db_string_daten = [datenpaket.id, datenpaket.timestamp, datenpaket.daten]
+            else:
+                db_string_daten = [datenpaket.daten]
+            db_string_daten = ", ".join(str(x) for x in db_string_daten)
+            return db_string_daten
         else:
-            db_string_daten = [datenpaket.daten]
-        db_string_daten = ", ".join(str(x) for x in db_string_daten)
-        return db_string_daten
+            return ""
+
 
     # je nach Art der NMEA-Nachricht müssen hier unterschiedliche Daten-Objekte gebildet werden
     def read_sensor_data(self):
         if not self.simulation:
             try:
                 self.ser.write(b's0g\r\n')
-                Dist = int(self.ser.readline().decode("ascii")[4:]) / 10000
-                db_objekt = Daten(Distanzmesser.id, Dist, time.time())
-                Distanzmesser.id += 1
-                return db_objekt  # Datenobjekt mit entsprechenden Einträgen
+                Dist = self.ser.readline().decode("ascii")[4:].rstrip("\n")
+                if Dist != '':
+                    Dist=int(Dist)/10000
+                    db_objekt = Daten(Distanzmesser.id, Dist, time.time())
+                    Distanzmesser.id += 1
+                    return db_objekt  # Datenobjekt mit entsprechenden Einträgen
 
             except Exception as e:
                     print("Fehler bei Distanzmessung", self.db_table, e)

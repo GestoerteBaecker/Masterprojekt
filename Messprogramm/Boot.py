@@ -63,33 +63,6 @@ class Boot:
                 sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity, simulation)
                 self.Sensorliste.append(sensor)
 
-        """
-        # COM0 als Testmodus
-        if "GNSS1" in json_daten:
-            self.GNSS1 = Sensoren.GNSS(GNSS1_COM, GNSS1_baud, GNSS1_timeout, GNSS1_takt, simulation=True)
-            self.Sensorliste.append(self.GNSS1)
-            self.Sensornamen.append("GNSS1")
-            takt.append(json_daten["GNSS1"]["takt"])
-
-        if GNSS2_COM != "COM0":
-            self.GNSS2 = Sensoren.GNSS(GNSS2_COM, GNSS2_baud, GNSS2_timeout, GNSS2_takt, simulation=True)
-            self.Sensorliste.append(self.GNSS2)
-            self.Sensornamen.append("GNSS2")
-            takt.append(json_daten["GNSS2"]["takt"])
-
-
-        if ECHO_COM != "COM0":
-            self.Echo = Sensoren.Echolot(ECHO_COM, ECHO_baud, ECHO_timeout, ECHO_takt, simulation=True)
-            self.Sensorliste.append(self.Echo)
-            self.Sensornamen.append("Echolot")
-            takt.append(json_daten["GNSS1"]["takt"])
-
-        if DIST_COM != "COM0":
-            self.DIST = Sensoren.Distanzmesser(DIST_COM, DIST_baud, DIST_timeout, DIST_takt, simulation=True)
-            self.Sensorliste.append(self.DIST)
-            self.Sensornamen.append("Distanz")
-            takt.append(json_daten["GNSS1"]["takt"])"""
-
         self.AktuelleSensordaten = len(self.Sensorliste) * [False]
         self.db_takt = min(*takt)
         self.akt_takt = self.db_takt/4
@@ -97,7 +70,6 @@ class Boot:
 
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
     def Sensorwerte_auslesen(self):
-
 
         if not self.auslesen:
             self.auslesen = True
@@ -194,13 +166,13 @@ class Boot:
                 except:
                     print("Für " + self.Sensornamen[i] + " konnte keine Datenbanktabelle angelegt werden")
 
+    # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
 
         if not self.auslesen:
             self.Sensorwerte_auslesen()
 
         self.fortlaufende_aktualisierung = True
-
 
         def Ueberschreibungsfunktion(self):
 
@@ -356,9 +328,11 @@ class Boot:
         for sensor in self.Sensorliste:
             sensor.kill()
         self.datenbankbeschreiben = False
-        #TODO: DBtrennen
+        if self.db_verbindung:
+            self.db_zeiger.close()
+            self.db_verbindung.close()
 
-        if self.PixHawk:
+        if self.PixHawk.verbindung_hergestellt:
             self.PixHawk.Trennen()
 
     def RTL(self):
@@ -492,7 +466,7 @@ class Boot:
     # ST_Distance ist nicht sargable! (kann nicht zusammen mithilfe eines Index beschleunigt werden)
     # https://stackoverflow.com/questions/35093608/spatial-index-not-being-used
     # für Beschleunigung über PostGIS (PostgreSQL): https://gis.stackexchange.com/questions/123911/st-distance-doesnt-use-index-for-spatial-query
-    #TODO: Testen wie lange es für 10000 Punkte dauert (sonst SRID auf 0 setzen oder https://dba.stackexchange.com/questions/214268/mysql-geo-spatial-query-is-very-slow-although-index-is-used)
+    # https://dba.stackexchange.com/questions/214268/mysql-geo-spatial-query-is-very-slow-although-index-is-used)
     def Daten_abfrage(self, punkt, radius=20):
         x = []
         y = []
@@ -525,7 +499,7 @@ def Flächenberechnung(x, y):
 # Zum Testen
 if __name__=="__main__":
 
-    Boot = Boot(Pix_COM="com0", GNSS1_COM="COM10", GNSS1_baud=115200, GNSS1_timeout=0, GNSS1_takt=0.2, GNSS2_COM="COM11", GNSS2_baud=115200, GNSS2_timeout=0, GNSS2_takt=0.2, ECHO_COM="COM1", ECHO_baud=19200, ECHO_timeout=0, ECHO_takt=0.2, DIST_COM="COM12", DIST_baud=19200, DIST_timeout=0, DIST_takt=1)
+    Boot = Boot()
 
     Boot.Sensorwerte_auslesen()
     time.sleep(5)

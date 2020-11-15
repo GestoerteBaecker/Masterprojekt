@@ -11,7 +11,7 @@
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "GNSS2":
     {
@@ -21,7 +21,7 @@
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "Echolot":
     {
@@ -31,7 +31,7 @@
 	"takt": 0.2,
 	"bytesize": null,
 	"parity": null,
-	"simulation":true
+	"simulation":false
 	},
   "Distanz":
     {
@@ -41,6 +41,6 @@
 	"takt": 1,
 	"bytesize":7,
 	"parity":"E",
-	"simulation":true
+	"simulation":false
 	}
 }

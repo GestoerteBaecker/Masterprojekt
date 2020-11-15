@@ -217,6 +217,7 @@ class Boot:
                 # Abgeleitete Daten berechnen und überschreiben
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
                     self.heading = self.Headingberechnung()
+                    print(self.heading)
 
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     Uferpunkt = self.Uferpunktberechnung()

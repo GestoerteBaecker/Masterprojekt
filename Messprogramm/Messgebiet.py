@@ -91,7 +91,8 @@ class Profil:
 
     # Punkt muss mind. Toleranz Meter auf dem Profil liegen für return True
     def PruefPunktAufProfil(self, punkt, toleranz=2):
-        pass
+        abstand = abstand_punkt_gerade(self.richtung, self.stuetzpunkt, punkt)
+        return abs(abstand) < toleranz
 
     # Überprüft, ob das Profil, das aus den Argumenten initialisiert werden KÖNNTE, ähnlich zu dem self Profil ist (unter Angabe der Toleranz)
     # Toleranz ist das Verhältnis der Überdeckung beider Profilbreiten zu dem self-Profil; bei 0.3 dürfen max 30% des self-Profilstreifens mit dem neuen Profil überlagert sein
@@ -102,7 +103,7 @@ class Profil:
             x = []
             y = []
             # Clipping der neuen Profilfläche auf die alte
-
+            
             überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
             return (überdeckung / fläche) < toleranz
         else:
@@ -116,6 +117,16 @@ class Profil:
 def abstand_punkt_gerade(richtung, stuetz, punkt):
     richtung = numpy.array([richtung[1], -richtung[0]])
     return numpy.dot(richtung, (punkt - stuetz))
+
+def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2):
+    if richtung1 == richtung2:
+        return None
+    else:
+        faktor = 1 / (richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1])
+        diff_stuetz_x = stuetz2[0] - stuetz1[0]
+        lamb = (richtung2[1]*faktor*diff_stuetz_x - richtung2[0]*faktor*diff_stuetz_x)
+        punkt = stuetz1 + lamb * richtung1
+        return punkt
 
 
 # Klasse, die Daten der Messung temporär speichert

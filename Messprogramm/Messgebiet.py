@@ -81,9 +81,10 @@ class Profil:
     def BerechneLambda(self, punkt):
         self.lamb = numpy.dot((punkt - self.stuetzpunkt), self.richtung)
 
-    # Berechnet einen neuen Kurspunkt in 50m Entfernung
-    def BerechneNeuenKurspunkt(self, entfernung=50):
-        punkt = self.stuetzpunkt + (self.lamb + entfernung) * self.richtung
+    # Berechnet einen neuen Kurspunkt in 50m Entfernung (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
+    def BerechneNeuenKurspunkt(self, laengs_entfernung=50, quer_entfernung=0):
+        quer_richtung = numpy.array([self.richtung[1], -self.richtung[0]])
+        punkt = self.stuetzpunkt + (self.lamb + laengs_entfernung) * self.richtung + quer_entfernung * quer_richtung
         return punkt
 
     def Profillaenge(self):
@@ -99,11 +100,52 @@ class Profil:
     # Profilbreite: Breite zu einer Seite (also Gesamtbreite ist profilbreite*2)
     def PruefProfilExistiert(self, richtung, stuetzpunkt, profilbreite=5, toleranz=0.3):
         if not self.aktuelles_profil:
+            richtung = richtung / numpy.linalg.norm(richtung)
             fläche = self.Profillaenge() * 2 * profilbreite
             x = []
             y = []
             # Clipping der neuen Profilfläche auf die alte
-            
+            eckpunkte = [] # Eckpunkte des self-Profils
+            for i in range(4):
+                faktor = -1
+                if i % 3 == 0:
+                    faktor = 1
+                punkt = self.BerechneNeuenKurspunkt(0, faktor * profilbreite)
+                eckpunkte.append(punkt)
+                if i == 1:
+                    self.lamb = self.end_lambda
+            pruef_stuetz = [] # Stützpunkte der beiden parallelen zunächst unendlich langen Geraden der Begrenzung des neu zu prüfenden Profils
+            temp_pruef_quer_richtung = numpy.array([richtung[1], -richtung[0]])
+            pruef_stuetz.append(stuetzpunkt - profilbreite * temp_pruef_quer_richtung)
+            pruef_stuetz.append(stuetzpunkt + profilbreite * temp_pruef_quer_richtung)
+            test_richtung = numpy.array([-self.richtung[1], self.richtung[0]]) # Richtung der aktuell betrachteten Kante des self Profils
+            for eckpunkt in eckpunkte:
+                p1 = schneide_geraden()
+                p2 = schneide_geraden()
+                if bool(p1) and bool(p2): # wenn es keine oder nur sehr schleifende Schnittpunkte gibt, muss anders getestet werden
+                    p1 = ...
+                    p2 = ...
+                    pass
+                abst_stuetz_p1 =
+                abst_stuetz_p2 =
+                if abst_stuetz_p1 <= abst_stuetz_p2:
+                    x.append(p1[0])
+                    x.append(p2[0])
+                    y.append(p1[1])
+                    y.append(p2[1])
+                else:
+                    x.append(p2[0])
+                    x.append(p1[0])
+                    y.append(p2[1])
+                    y.append(p1[1])
+                test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
+            # entfernen der Schnittpunkte, die außerhalb des Profils liegen
+            for eckpunkt in eckpunkte:
+                for i in range(len(x) - 1, -1, -1):
+                    pass
+                test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
+                pass
+
             überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
             return (überdeckung / fläche) < toleranz
         else:
@@ -118,15 +160,17 @@ def abstand_punkt_gerade(richtung, stuetz, punkt):
     richtung = numpy.array([richtung[1], -richtung[0]])
     return numpy.dot(richtung, (punkt - stuetz))
 
+# Überprüfung, dass sich die Geraden schneiden, muss außerhalb der Funktion getestet werden!
 def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2):
-    if richtung1 == richtung2:
+    det = richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1]
+    if det < 0.000001: # falls kein oder sehr schleifender Schnitt existiert
         return None
-    else:
-        faktor = 1 / (richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1])
-        diff_stuetz_x = stuetz2[0] - stuetz1[0]
-        lamb = (richtung2[1]*faktor*diff_stuetz_x - richtung2[0]*faktor*diff_stuetz_x)
-        punkt = stuetz1 + lamb * richtung1
-        return punkt
+    faktor = 1 / det
+    # betrachten der Komponenten nur für die erste Gerade
+    diff_stuetz_x = stuetz2[0] - stuetz1[0]
+    lamb = (richtung2[1]*faktor*diff_stuetz_x - richtung2[0]*faktor*diff_stuetz_x)
+    punkt = stuetz1 + lamb * richtung1
+    return punkt
 
 
 # Klasse, die Daten der Messung temporär speichert

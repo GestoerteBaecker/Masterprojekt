@@ -119,35 +119,49 @@ class Profil:
             pruef_stuetz.append(stuetzpunkt - profilbreite * temp_pruef_quer_richtung)
             pruef_stuetz.append(stuetzpunkt + profilbreite * temp_pruef_quer_richtung)
             test_richtung = numpy.array([-self.richtung[1], self.richtung[0]]) # Richtung der aktuell betrachteten Kante des self Profils
-            for eckpunkt in eckpunkte:
-                p1 = schneide_geraden()
-                p2 = schneide_geraden()
+            for i, eckpunkt in enumerate(eckpunkte):
+                # Test, ob Eckpunkt innerhalb des neuen Profils liegt und falls ja, hinzufügen
+                abst_g1 = abstand_punkt_gerade(richtung, pruef_stuetz[0], eckpunkt)
+                abst_g2 = abstand_punkt_gerade(richtung, pruef_stuetz[1], eckpunkt)
+                if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
+                    x.append(eckpunkt[0])
+                    y.append(eckpunkt[1])
+                p1 = schneide_geraden(test_richtung, eckpunkt, richtung, pruef_stuetz[0])
+                p2 = schneide_geraden(test_richtung, eckpunkt, richtung, pruef_stuetz[1])
                 if bool(p1) and bool(p2): # wenn es keine oder nur sehr schleifende Schnittpunkte gibt, muss anders getestet werden
-                    p1 = ...
-                    p2 = ...
-                    pass
-                abst_stuetz_p1 =
-                abst_stuetz_p2 =
-                if abst_stuetz_p1 <= abst_stuetz_p2:
-                    x.append(p1[0])
-                    x.append(p2[0])
-                    y.append(p1[1])
-                    y.append(p2[1])
-                else:
-                    x.append(p2[0])
-                    x.append(p1[0])
-                    y.append(p2[1])
-                    y.append(p1[1])
+                    abst_g1 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[0])# Abstand des Stützvektors der Geraden 1 des zu testenden Profils
+                    abst_g2 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[1])
+                    if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
+                        p1 = eckpunkt
+                        p2 = eckpunkte[(i+1)%4]
+                if bool(p1) and bool(p2):
+                    abst_stuetz_p1 = numpy.linalg.norm(p1 - eckpunkt)
+                    abst_stuetz_p2 = numpy.linalg.norm(p2 - eckpunkt)
+                    if abst_stuetz_p1 <= abst_stuetz_p2:
+                        x.append(p1[0])
+                        x.append(p2[0])
+                        y.append(p1[1])
+                        y.append(p2[1])
+                    else:
+                        x.append(p2[0])
+                        x.append(p1[0])
+                        y.append(p2[1])
+                        y.append(p1[1])
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
             # entfernen der Schnittpunkte, die außerhalb des Profils liegen
             for eckpunkt in eckpunkte:
                 for i in range(len(x) - 1, -1, -1):
-                    pass
+                    test_punkt = numpy.array([x[i], y[i]])
+                    abstand= abstand_punkt_gerade(test_richtung, eckpunkt, test_punkt)
+                    if abstand < -0.0001:
+                        x.pop(i)
+                        y.pop(i)
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
-                pass
-
-            überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
-            return (überdeckung / fläche) < toleranz
+            if len(x) >= 3:
+                überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
+                return (überdeckung / fläche) < toleranz
+            else:
+                return 0
         else:
             raise Exception
 

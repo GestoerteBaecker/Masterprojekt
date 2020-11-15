@@ -20,7 +20,7 @@ class Punkt:
         pass
 
 
-class Uferpunt(Punkt):
+class Uferpunkt(Punkt):
 
     def __init__(self, x, y, z=None):
         super().__init__(x,y,z)

@@ -208,6 +208,11 @@ class Boot:
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
+        time.sleep(0.1)
+        if not self.PixHawk.homepoint:
+            punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
+            self.PixHawk.homepoint = punkt
+
     def Uferpunktberechnung(self, dist=False):
 
         if not dist:                                    # Falls keine Dastanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen

@@ -12,6 +12,7 @@ class Pixhawk:
         self.connection_string = COM
         self.verbindung_hergestellt = False
         self.initialisierung = False
+        self.homepoint = None # für RTL
 
         def Initialisierungsfuntion(self):  # Wird aufgerufen, damit das Hauptprogramm nicht aufgehalten wird, wenn kein Pixhawk angeschlossen ist, oder der Verbindungsvorgang sehr lange dauert
             try:
@@ -57,6 +58,7 @@ class Pixhawk:
         self.vehicle.armed = True
         self.vehicle.mode = dronekit.VehicleMode("GUIDED")
         self.initialisierung = True
+        self.HomepointSetzen()
 
         #todo: Takeoff einbauen?
 
@@ -82,6 +84,11 @@ class Pixhawk:
     def Return_to_launch(self):
 
         self.vehicle.mode = dronekit.VehicleMode("RTL")
+
+    # Punkt, der bei RTL angefahren werden soll
+    def HomepointSetzen(self):
+        #TODO: Implementieren
+        pass
 
     def Trennen(self):
 

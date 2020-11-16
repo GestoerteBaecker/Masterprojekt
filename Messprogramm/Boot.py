@@ -365,7 +365,7 @@ class Boot:
         :return: Liste mit Vektor der größten Steigung (Richtung gemäß Vektor und für Betrag gilt: arcsin(betrag) = Steigungswinkel) und Angabe, ob flächenhaft um das Boot herum gesucht wurde (True) oder ob nur 1-dim Messungen herangezogen wurden (False)
         """
         punkte = self.Daten_abfrage(punkt)
-        fläche = Flächenberechnung(punkte[0], punkte[1])
+        fläche = Messgebiet.Flächenberechnung(punkte[0], punkte[1])
 
         if fläche < 5: # dann sind nur Punkte enthalten, die vermutlich aus den momentanen Messungen herrühren
 
@@ -488,17 +488,6 @@ class Boot:
             y.append(pkt[1])
             tiefe.append(pkt[2])
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
-
-# Berechnet die Fläche des angeg. Polygons
-# https://en.wikipedia.org/wiki/Shoelace_formula
-# https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
-def Flächenberechnung(x, y):
-    """
-    :param x, y: sind numpy-arrays
-    :return:
-    """
-    # dot: Skalarprodukt, roll: nimmt das array und verschiebt alle Werte um den angeg. Index nach vorne
-    return 0.5 * numpy.abs(numpy.dot(x, numpy.roll(y, 1)) - numpy.dot(y, numpy.roll(x, 1)))
 
 
 # Zum Testen

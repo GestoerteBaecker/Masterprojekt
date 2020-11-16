@@ -1,6 +1,9 @@
 import Sensoren
 import numpy
 
+# Berechnet die Fläche des angeg. Polygons
+# https://en.wikipedia.org/wiki/Shoelace_formula
+# https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
 def Flächenberechnung(x, y):
     """
     :param x, y: sind numpy-arrays
@@ -88,12 +91,13 @@ class Profil:
     def BerechneLambda(self, punkt):
         self.lamb = numpy.dot((punkt - self.stuetzpunkt), self.richtung)
 
-    # Berechnet einen neuen Kurspunkt in 50m Entfernung (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
+    # Berechnet einen neuen Kurspunkt von aktuellem Lambda in 50m Entfernung (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
     def BerechneNeuenKurspunkt(self, laengs_entfernung=50, quer_entfernung=0):
         quer_richtung = numpy.array([self.richtung[1], -self.richtung[0]])
         punkt = self.stuetzpunkt + (self.lamb + laengs_entfernung) * self.richtung + quer_entfernung * quer_richtung
         return punkt
 
+    # aktuell gefahrenen Profillänge
     def Profillaenge(self):
         return self.lamb - self.start_lambda
 
@@ -180,8 +184,7 @@ class Profil:
 # richtung und stuetz sind jeweils die 2D Vektoren der Geraden, und punkt der zu testende Punkt
 def abstand_punkt_gerade(richtung, stuetz, punkt):
     richtung = numpy.array([richtung[1], -richtung[0]])
-    a = numpy.dot(richtung, (punkt - stuetz))
-    return a
+    return numpy.dot(richtung, (punkt - stuetz))
 
 # Überprüfung, dass sich die Geraden schneiden, muss außerhalb der Funktion getestet werden!
 def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2):
@@ -227,7 +230,7 @@ if __name__=="__main__":
     stuetz = numpy.array([0,0])
 
     test_richtung = numpy.array([0,1])
-    test_stuetz = numpy.array([20,0])
+    test_stuetz = numpy.array([10,0])
 
     profil = Profil(richtung, stuetz)
     profil.end_lambda = 20

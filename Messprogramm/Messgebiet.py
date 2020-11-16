@@ -1,6 +1,13 @@
 import Sensoren
 import numpy
-from Boot import Flächenberechnung
+
+def Flächenberechnung(x, y):
+    """
+    :param x, y: sind numpy-arrays
+    :return:
+    """
+    # dot: Skalarprodukt, roll: nimmt das array und verschiebt alle Werte um den angeg. Index nach vorne
+    return 0.5 * numpy.abs(numpy.dot(x, numpy.roll(y, 1)) - numpy.dot(y, numpy.roll(x, 1)))
 
 class Punkt:
 
@@ -100,8 +107,9 @@ class Profil:
     # Profilbreite: Breite zu einer Seite (also Gesamtbreite ist profilbreite*2)
     def PruefProfilExistiert(self, richtung, stuetzpunkt, profilbreite=5, toleranz=0.3):
         if not self.aktuelles_profil:
+            self.lamb = 0
             richtung = richtung / numpy.linalg.norm(richtung)
-            fläche = self.Profillaenge() * 2 * profilbreite
+            fläche = (self.end_lambda-self.start_lambda) * 2 * profilbreite
             x = []
             y = []
             # Clipping der neuen Profilfläche auf die alte
@@ -128,13 +136,13 @@ class Profil:
                     y.append(eckpunkt[1])
                 p1 = schneide_geraden(test_richtung, eckpunkt, richtung, pruef_stuetz[0])
                 p2 = schneide_geraden(test_richtung, eckpunkt, richtung, pruef_stuetz[1])
-                if bool(p1) and bool(p2): # wenn es keine oder nur sehr schleifende Schnittpunkte gibt, muss anders getestet werden
+                if p1 is None and p2 is None: # wenn es keine oder nur sehr schleifende Schnittpunkte gibt, muss anders getestet werden
                     abst_g1 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[0])# Abstand des Stützvektors der Geraden 1 des zu testenden Profils
                     abst_g2 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[1])
                     if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
                         p1 = eckpunkt
                         p2 = eckpunkte[(i+1)%4]
-                if bool(p1) and bool(p2):
+                if p1 is not None and p2 is not None:
                     abst_stuetz_p1 = numpy.linalg.norm(p1 - eckpunkt)
                     abst_stuetz_p2 = numpy.linalg.norm(p2 - eckpunkt)
                     if abst_stuetz_p1 <= abst_stuetz_p2:
@@ -153,15 +161,15 @@ class Profil:
                 for i in range(len(x) - 1, -1, -1):
                     test_punkt = numpy.array([x[i], y[i]])
                     abstand= abstand_punkt_gerade(test_richtung, eckpunkt, test_punkt)
-                    if abstand < -0.0001:
+                    if abstand < -0.001:
                         x.pop(i)
                         y.pop(i)
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
             if len(x) >= 3:
                 überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
-                return (überdeckung / fläche) < toleranz
+                return (überdeckung / fläche) > toleranz
             else:
-                return 0
+                return False
         else:
             raise Exception
 
@@ -172,12 +180,13 @@ class Profil:
 # richtung und stuetz sind jeweils die 2D Vektoren der Geraden, und punkt der zu testende Punkt
 def abstand_punkt_gerade(richtung, stuetz, punkt):
     richtung = numpy.array([richtung[1], -richtung[0]])
-    return numpy.dot(richtung, (punkt - stuetz))
+    a = numpy.dot(richtung, (punkt - stuetz))
+    return a
 
 # Überprüfung, dass sich die Geraden schneiden, muss außerhalb der Funktion getestet werden!
 def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2):
     det = richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1]
-    if det < 0.000001: # falls kein oder sehr schleifender Schnitt existiert
+    if abs(det) < 0.0000001: # falls kein oder sehr schleifender Schnitt existiert
         return None
     faktor = 1 / det
     # betrachten der Komponenten nur für die erste Gerade
@@ -214,5 +223,18 @@ class Messgebiet:
 
 if __name__=="__main__":
 
-    punkt = Bodenpunkt(1,2,3,0.5)
-    print(type(punkt).__name__)
+    richtung = 50
+    stuetz = numpy.array([0,0])
+
+    test_richtung = numpy.array([0,1])
+    test_stuetz = numpy.array([20,0])
+
+    profil = Profil(richtung, stuetz)
+    profil.end_lambda = 20
+    profil.lamb = 20
+    profil.aktuelles_profil = False
+
+    quer_richtung = numpy.array([profil.richtung[1], -profil.richtung[0]])
+    punkt = profil.stuetzpunkt + (profil.lamb + 0) * profil.richtung + 5 * quer_richtung
+
+    print(profil.PruefProfilExistiert(test_richtung, test_stuetz))

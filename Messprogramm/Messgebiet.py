@@ -106,6 +106,15 @@ class Profil:
         abstand = abstand_punkt_gerade(self.richtung, self.stuetzpunkt, punkt)
         return abs(abstand) < toleranz
 
+    # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.aktuelles_profil = False ODER wenn self.end_lambda != None
+    def PruefPunktInProfil(self, punkt, profilbreite=5):
+        if (not self.aktuelles_profil) or (self.end_lambda is not None):
+            if self.PruefPunktAufProfil(punkt, profilbreite):
+                lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
+                return self.start_lambda <= lamb <= self.end_lambda
+            else:
+                return False
+
     # Überprüft, ob das Profil, das aus den Argumenten initialisiert werden KÖNNTE, ähnlich zu dem self Profil ist (unter Angabe der Toleranz)
     # Toleranz ist das Verhältnis der Überdeckung beider Profilbreiten zu dem self-Profil; bei 0.3 dürfen max 30% des self-Profilstreifens mit dem neuen Profil überlagert sein
     # Profilbreite: Breite zu einer Seite (also Gesamtbreite ist profilbreite*2)
@@ -151,9 +160,14 @@ class Profil:
                     punkt = stuetzpunkt + (pruef_lambda) * pruef_richtung + (profilbreite * quer_richtung * faktor)
                     pruef_stuetz.append(punkt)
 
+            def pruef_eckpunkt_in_neuem_profil(eckpunkt):
+                pass
+
+            # Schleife über alle Eckpunkte des self Profils
             test_richtung = numpy.array([-self.richtung[1], self.richtung[0]]) # Richtung der aktuell betrachteten Kante des self Profils
             for i, eckpunkt in enumerate(eckpunkte):
                 # Test, ob Eckpunkt innerhalb des neuen Profils liegt und falls ja, hinzufügen
+                if
                 abst_g1 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[0], eckpunkt)
                 abst_g2 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[1], eckpunkt)
                 if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
@@ -186,7 +200,9 @@ class Profil:
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
                 if not test_profil_unendlich:#TODO: muss in die Schleife über alle Punkte des neuen Profils (existiert noch nicht)
                     pruef_richtung = numpy.array([pruef_richtung[1], -pruef_richtung[0]])
-            # entfernen der Schnittpunkte, die außerhalb des Profils liegen
+
+            """
+            # TODO: kann vllt entfallem entfernen der Schnittpunkte, die außerhalb des Profils liegen
             for eckpunkt in eckpunkte:
                 for i in range(len(x) - 1, -1, -1):
                     test_punkt = numpy.array([x[i], y[i]])
@@ -195,6 +211,7 @@ class Profil:
                         x.pop(i)
                         y.pop(i)
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
+                """
             if len(x) >= 3:
                 überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
                 return (überdeckung / fläche) > toleranz
@@ -213,15 +230,20 @@ def abstand_punkt_gerade(richtung, stuetz, punkt):
     return numpy.dot(richtung, (punkt - stuetz))
 
 # Überprüfung, dass sich die Geraden schneiden, muss außerhalb der Funktion getestet werden!
-def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2):
-    det = richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1]
+def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, lamb_intervall_1=None, lamb_intervall_2=None):
+    det = -1 * (richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1])
     if abs(det) < 0.0000001: # falls kein oder sehr schleifender Schnitt existiert
         return None
-    faktor = 1 / det
-    # betrachten der Komponenten nur für die erste Gerade
-    diff_stuetz_x = stuetz2[0] - stuetz1[0]
-    lamb = (richtung2[1]*faktor*diff_stuetz_x - richtung2[0]*faktor*diff_stuetz_x)
-    punkt = stuetz1 + lamb * richtung1
+    inverse = numpy.matrix([[-richtung2[1], richtung2[0]], [-richtung1[1], richtung1[0]]]) / det
+    diff_stuetz = stuetz2 - stuetz1
+    lambdas = numpy.array(inverse.dot(diff_stuetz))[0]
+    if lamb_intervall_1 is not None and lamb_intervall_2 is not None:
+        if not ((lamb_intervall_1[0] <= lambdas[0] <= lamb_intervall_1[1]) and (lamb_intervall_2[0] <= lambdas[1] <= lamb_intervall_2[1])):
+            return None
+    elif lamb_intervall_1 is not None:
+        if not (lamb_intervall_1[0] <= lambdas[0] <= lamb_intervall_1[1]):
+            return None
+    punkt = stuetz1 + lambdas[0] * richtung1
     return punkt
 
 
@@ -266,4 +288,13 @@ if __name__=="__main__":
     quer_richtung = numpy.array([profil.richtung[1], -profil.richtung[0]])
     punkt = profil.stuetzpunkt + (profil.lamb + 0) * profil.richtung + 5 * quer_richtung
 
-    print(profil.PruefProfilExistiert(test_richtung, test_stuetz))
+    #print(profil.PruefProfilExistiert(test_richtung, test_stuetz))
+
+    # Test Geradenschnitt
+    richtung1 = numpy.array([1,1])
+    richtung1 = richtung1 / numpy.linalg.norm(richtung1)
+    richtung2 = numpy.array([0,1])
+    stuetz1 = numpy.array([0,0])
+    stuetz2 = numpy.array([5,0])
+    print("========")
+    print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))

@@ -333,6 +333,7 @@ class Boot:
         for sensor in self.Sensorliste:
             sensor.kill()
         self.datenbankbeschreiben = False
+        time.sleep(0.2)
         if self.db_verbindung:
             self.db_zeiger.close()
             self.db_verbindung.close()

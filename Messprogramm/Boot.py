@@ -208,22 +208,26 @@ class Boot:
             while self.fortlaufende_aktualisierung:
                 #print("aktuelle Daten Überschreibung", self.AktuelleSensordaten)
                 for i in range(0, len(self.Sensorliste)):
-                    if self.Sensorliste[i]:
+                    i  f self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
                         if sensor.aktdaten:
                             self.AktuelleSensordaten[i] = sensor.aktdaten
                             #print("aktuelle Daten in Überschreibungsfkt, sensor", self.Sensorliste[i], sensor.aktdaten, i, time.time())
 
                 # Abgeleitete Daten berechnen und überschreiben
+
+                # aktuelles Heading berechnen und zum Boot abspeichern
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
                     self.heading = self.Headingberechnung()
                     print(self.heading)
 
+                # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     Uferpunkt = self.Uferpunktberechnung()
                     self.Uferpunkte.append(Uferpunkt)
 
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]: # TODO: Nur jeden 10. Bodenpunkte berechnen und abspeichern
+                # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
                     Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
                     Letzte_Bodenpunkte.append(Bodendaten)
 
@@ -238,7 +242,7 @@ class Boot:
 
     def Uferpunktberechnung(self, dist=False):
 
-        if not dist:                                    # Falls keine Dastanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
+        if not dist:                                    # Falls keine Distanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
             dist = self.AktuelleSensordaten[3].daten
 
         strecke = dist + self.Offset_GNSSmitte_Disto
@@ -268,12 +272,13 @@ class Boot:
             x_mittel = summex / len(Bodendaten)
             y_mittel = summey / len(Bodendaten)
 
-            mitte = len(z_werte)//2
+            mitte = (len(Bodendaten)//2)  # TODO: Prüfen
             z_werte.sort()
-            if mitte:
+
+            if mitte != len(Bodendaten)/2:      # Die Liste hat eine ungerade länge
                 z_median = z_werte[mitte]
             else:
-                z_median = (z_werte[mitte-1]+z_werte[mitte])/2
+                z_median = (z_werte[mitte-1]+z_werte[mitte])/2 # -1, da mitte immer der obere Wert vom Median ist, z.B. 6//2 = 3 => 2. und 3. Index einer 6 einträge langen Liste müssen benutzt werden
 
             sedimentdicke_mittel = summe_sedimentdicken / len(Bodendaten)
 
@@ -285,9 +290,9 @@ class Boot:
             zgnss = self.AktuelleSensordaten[0].daten[3]
             Sedimentdicke = abs(self.AktuelleSensordaten[2].daten[0] - self.AktuelleSensordaten[2].daten[1])
 
-            z_boden = zgnss - self.Offset_GNSS_Echo- self.AktuelleSensordaten[2].daten[0]       # TODO: Höhere Frequenz eingeben
+            z_boden = zgnss - self.Offset_GNSS_Echo- self.AktuelleSensordaten[2].daten[0]
 
-            Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z,Sedimentdicke)                             # TODO: Die letzten Bodenpunkte zusammenfassen und nur einen Punkt berechnen
+            Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z_boden,Sedimentdicke)
 
             return Bodenpunkt
 
@@ -308,7 +313,7 @@ class Boot:
                 q_zuschl = numpy.pi         # Quadrant 2
         else:
             if Bootsbug[1] > Bootsmitte[1]:
-                q_zuschl = 2*numpy.pi        # Quadrant 4
+                q_zuschl = 2*numpy.pi       # Quadrant 4
             else:
                 q_zuschl = numpy.pi         # Quadrant 3
 

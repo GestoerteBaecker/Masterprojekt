@@ -55,8 +55,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Messgebiet.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-822">
-              <caret line="129" column="18" lean-forward="true" selection-start-line="129" selection-start-column="18" selection-end-line="129" selection-end-column="18" />
+            <state relative-caret-position="704">
+              <caret line="320" column="56" lean-forward="true" selection-start-line="320" selection-start-column="56" selection-end-line="320" selection-end-column="56" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -88,7 +88,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Sensoren.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
+            <state relative-caret-position="2652">
               <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
             </state>
           </provider>
@@ -386,8 +386,8 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32922733" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.1444569" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32922733" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.25531915" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -455,17 +455,6 @@
     <state width="1345" height="179" key="GridCell.Tab.0.right" />
     <state width="1345" height="179" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Messgebiet.py</url>
-          <line>245</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-  </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/../Alte Testdateien/db_spatial_select_testlauf.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -521,15 +510,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Sensoren.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
+        <state relative-caret-position="2652">
           <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Messgebiet.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-822">
-          <caret line="129" column="18" lean-forward="true" selection-start-line="129" selection-start-column="18" selection-end-line="129" selection-end-column="18" />
+        <state relative-caret-position="704">
+          <caret line="320" column="56" lean-forward="true" selection-start-line="320" selection-start-column="56" selection-end-line="320" selection-end-column="56" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>

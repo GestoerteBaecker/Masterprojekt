@@ -91,11 +91,27 @@ class Profil:
     def BerechneLambda(self, punkt):
         self.lamb = numpy.dot((punkt - self.stuetzpunkt), self.richtung)
 
-    # Berechnet einen neuen Kurspunkt von aktuellem Lambda in 50m Entfernung (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
-    def BerechneNeuenKurspunkt(self, laengs_entfernung=50, quer_entfernung=0):
+    # Berechnet einen neuen Kurspunkt von Start-Lambda (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
+    def BerechneNeuenKurspunkt(self, laengs_entfernung, quer_entfernung=0):
         quer_richtung = numpy.array([self.richtung[1], -self.richtung[0]])
-        punkt = self.stuetzpunkt + (self.lamb + laengs_entfernung) * self.richtung + quer_entfernung * quer_richtung
+        punkt = self.stuetzpunkt + (self.start_lambda + laengs_entfernung) * self.richtung + quer_entfernung * quer_richtung
         return punkt
+
+    # Berechnet Punkte mit gleichmäßigem Abstand
+    def BerechneZwischenpunkte(self, abstand=5):
+        if self.end_lambda is not None:
+            punktliste = []
+            lamb = self.start_lambda
+            while lamb < self.end_lambda:
+                punkt = self.BerechneNeuenKurspunkt(lamb)
+                punkt = Punkt(punkt[0], punkt[1])
+                punktliste.append(punkt)
+                lamb += abstand
+            else:
+                punkt = self.BerechneNeuenKurspunkt(self.end_lambda)
+                punkt = Punkt(punkt[0], punkt[1])
+                punktliste.append(punkt)
+            return punktliste
 
     # aktuell gefahrenen Profillänge
     def Profillaenge(self):
@@ -125,21 +141,25 @@ class Profil:
             quer_lambda_intervall = [0, 2*profilbreite]
             test_profil_unendlich = not lambda_intervall # bestimmt, ob das neu zu rechnende Profil unendlich lang ist oder von Vornherein beschränkt ist
             self.lamb = 0
-            fläche = (self.end_lambda-self.start_lambda) * 2 * profilbreite
+            if test_profil_unendlich:
+                fläche = (self.end_lambda-self.start_lambda) * 2 * profilbreite # ist zwar nicht so gut, aber sagt zumindest aus, dass vom self Profil fast alles getroffen wird
+            else:
+                fläche = (lambda_intervall[1] - lambda_intervall[0]) * 2 * profilbreite
             x = []
             y = []
 
             ### Clipping der neuen Profilfläche auf die alte ###
             # Berechnung der Eckpunkte des self-Profils
             eckpunkte = []
+            lamb_temp = self.start_lambda
             for i in range(4):
                 faktor = -1
                 if i % 3 == 0:
                     faktor = 1
-                punkt = self.BerechneNeuenKurspunkt(0, faktor * profilbreite)
+                punkt = self.BerechneNeuenKurspunkt(lamb_temp, faktor * profilbreite)
                 eckpunkte.append(punkt)
                 if i == 1:
-                    self.lamb = self.end_lambda
+                    lamb_temp = self.end_lambda
 
             # Berechnung der Eckpunkte und Richtungsvektoren des neu zu prüfenden Profils
             pruef_richtung = numpy.array([numpy.sin(richtung * numpy.pi / 200), numpy.cos(richtung * numpy.pi / 200)])
@@ -167,7 +187,7 @@ class Profil:
                 if test_profil_unendlich:
                     abst_g1 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[0], eckpunkt)
                     abst_g2 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[1], eckpunkt)
-                    drinnen = (abst_g1 <= 0 and abst_g2 >= 0) or (abst_g1 >= 0 and abst_g2 <= 0)
+                    drinnen = (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0)
                     return drinnen
                 else:
                     pruef_temp = pruef_richtung
@@ -176,8 +196,8 @@ class Profil:
                     pruef_temp = numpy.array([pruef_temp[1], -pruef_temp[0]])
                     abst_g2 = abstand_punkt_gerade(pruef_temp, pruef_stuetz[1], eckpunkt)
                     abst_g4 = abstand_punkt_gerade(pruef_temp, pruef_stuetz[3], eckpunkt)
-                    drinnen_1 = (abst_g1 <= 0 and abst_g3 >= 0) or (abst_g1 >= 0 and abst_g3 <= 0)
-                    drinnen_2 = (abst_g2 <= 0 and abst_g4 >= 0) or (abst_g2 >= 0 and abst_g4 <= 0)
+                    drinnen_1 = (abst_g1 < 0 and abst_g3 > 0) or (abst_g1 > 0 and abst_g3 < 0)
+                    drinnen_2 = (abst_g2 < 0 and abst_g4 > 0) or (abst_g2 > 0 and abst_g4 < 0)
                     return drinnen_1 and drinnen_2
 
             # Schleife über alle Eckpunkte des self Profils
@@ -190,9 +210,21 @@ class Profil:
                 # Schleife über alle Stützpunkte des neuen Profils
                 for j in range(n):
                     pruef_eckpunkt = pruef_stuetz[j]
-                    schnittpunkt = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_eckpunkt, [self.start_lambda, self.end_lambda], lambda_intervall)
+                    # Lambda-Intervalle anpassen (je nach Kante)
+                    if i % 2 == 0:
+                        test_intervall = quer_lambda_intervall
+                    else:
+                        test_intervall = [self.start_lambda, self.end_lambda]
+                    if test_profil_unendlich:
+                        pruef_intervall = lambda_intervall
+                    else:
+                        if j % 2 == 0:
+                            pruef_intervall = lambda_intervall
+                        else:
+                            pruef_intervall = quer_lambda_intervall
+                    schnittpunkt = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_eckpunkt, test_intervall, pruef_intervall)
                     if schnittpunkt is not None:
-                        if not test_profil_unendlich:
+                        if not test_profil_unendlich and self.PruefPunktInProfil(pruef_eckpunkt, profilbreite):
                             x.append(pruef_eckpunkt[0])
                             y.append(pruef_eckpunkt[1])
                         x.append(schnittpunkt[0])
@@ -204,44 +236,6 @@ class Profil:
                     if not test_profil_unendlich:
                         pruef_richtung = numpy.array([pruef_richtung[1], -pruef_richtung[0]])
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
-
-
-            """
-            # Schleife über alle Eckpunkte des self Profils
-            test_richtung = numpy.array([-self.richtung[1], self.richtung[0]]) # Richtung der aktuell betrachteten Kante des self Profils
-            for i, eckpunkt in enumerate(eckpunkte):
-                # Test, ob Eckpunkt innerhalb des neuen Profils liegt und falls ja, hinzufügen
-
-                abst_g1 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[0], eckpunkt)
-                abst_g2 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[1], eckpunkt)
-                if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
-                    x.append(eckpunkt[0])
-                    y.append(eckpunkt[1])
-
-                # Schnittpunktberechnung mit Kanten des neuen Profils
-                #TODO: erst für alle Eckpunkte des self Punkte berechnen, dann alle Punkte mit dem neuen abchecken, ob die zuvor gefundenen Punkte auch in oder auf der Grenze des neuen liegen UND gucken, ob die Eckpunkte des neuen in dem self liege, falls nicht diese auch übernehmen (siehe Bild auf Cloud)
-                p1 = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_stuetz[0])
-                p2 = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_stuetz[1])
-                if p1 is None and p2 is None: # wenn es keine oder nur sehr schleifende Schnittpunkte gibt, muss anders getestet werden
-                    abst_g1 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[0])# Abstand des Stützvektors der Geraden 1 des zu testenden Profils
-                    abst_g2 = abstand_punkt_gerade(test_richtung, eckpunkt, pruef_stuetz[1])
-                    if (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0):
-                        p1 = eckpunkt
-                        p2 = eckpunkte[(i+1)%4]
-                if p1 is not None and p2 is not None:
-                    abst_stuetz_p1 = numpy.linalg.norm(p1 - eckpunkt)
-                    abst_stuetz_p2 = numpy.linalg.norm(p2 - eckpunkt)
-                    if abst_stuetz_p1 <= abst_stuetz_p2:
-                        x.append(p1[0])
-                        x.append(p2[0])
-                        y.append(p1[1])
-                        y.append(p2[1])
-                    else:
-                        x.append(p2[0])
-                        x.append(p1[0])
-                        y.append(p2[1])
-                        y.append(p1[1])
-            """
 
             if len(x) >= 3:
                 überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
@@ -320,7 +314,7 @@ if __name__=="__main__":
     #quer_richtung = numpy.array([profil.richtung[1], -profil.richtung[0]])
     #punkt = profil.stuetzpunkt + (profil.lamb + 0) * profil.richtung + 5 * quer_richtung
 
-    print(profil.PruefProfilExistiert(test_richtung, test_stuetz, profilbreite=5, toleranz=0.3, lambda_intervall=[0,100]))
+    print(profil.PruefProfilExistiert(test_richtung, test_stuetz, profilbreite=5, toleranz=0.3, lambda_intervall=[0,50]))
     """
     # Test Geradenschnitt
     richtung1 = numpy.array([1,1])

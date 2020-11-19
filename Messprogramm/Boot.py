@@ -264,7 +264,7 @@ class Boot:
 
             z_boden = zgnss - self.Offset_GNSS_Echo- self.AktuelleSensordaten[2].daten[0]       # TODO: Höhere Frequenz eingeben
 
-            Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z,Sedimentdicke)                             # TODO: Die letzten Bodenpunkte zusammenfassen und nur einen Punkt berechnen
+            Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z_boden,Sedimentdicke)                             # TODO: Die letzten Bodenpunkte zusammenfassen und nur einen Punkt berechnen
 
             return Bodenpunkt
 

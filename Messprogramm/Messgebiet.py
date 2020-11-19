@@ -74,6 +74,23 @@ class Zelle:
         return enthaelt_punkt           # Gibt True oder False zurück
 
 
+class Stern:
+
+    def __init__(self, startpunkt, heading):
+        self.profile = []
+
+
+    def InitProfil(self):
+        pass
+
+    def SternFuellen(self):
+        pass
+
+    def TestVerdichten(self):
+        pass
+
+
+
 class Profil:
 
     # Richtung: Kursrichtung in Gon (im Uhrzeigersinn); stuetzpunkt: Anfangspunkt bei start_lambda=0; start_lambda:

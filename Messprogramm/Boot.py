@@ -37,12 +37,15 @@ class Boot:
         self.heading = None
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
-        self.Uferpunkte = []            #TODO: in der Klasse Messgebiet einbringen (self Attribunt nur provisorisch)
+        self.uferpunkt = None
         self.Bodenpunkte = []
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         self.Messgebiet = None
+        self.ist_am_ufer = 0 # es gibt Kategorien 0 bis 2; 0: alles gut, 1: nah am Ufer (Geschw. drosseln); 2: "Ufer erreicht" (= eig  nicht aber kurz davor)
+        self.boot_lebt = True
+        self.geschwindigkeit = 2 # in km/h
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -195,11 +198,12 @@ class Boot:
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
-                    Uferpunkt = self.Uferpunktberechnung()
+                    self.uferpunkt = self.Uferpunktberechnung()
                     if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(Uferpunkt)
+                        Messgebiet.Uferpunkt_abspeichern(self.uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
+                #TODO: Bodenpunkte vllt in Messgebiet oder Stern eintragen? (Falls Löschung, trotzdem mindestens die letzten zwei Bodenpunkte in Boot tracken für Ufererkennung!!!)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
                     Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
                     Letzte_Bodenpunkte.append(Bodendaten)
@@ -300,16 +304,32 @@ class Boot:
 
         return heading_gon
 
-    def Hinderniserkennung(self):
-        pass
+    # prüft durchgehend, ob das Boot nah am Ufer kommt (über Dimetix und Echolot)
+    # Entfernungswerte tracken und mit vorherigen Messungen abgleichen
+    # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
+    def Ufererkennung(self):
 
-        # Entfernungswerte tracken und mit vorhereigen Messungen abgleichen
-        # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
+        def ufererkennung_thread(self):
+            while self.boot_lebt:
+                p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
+                abstand = p1.Abstand(p2, zwei_dim=True)
+                steigung = (p2.z - p1.z) / abstand
+                extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt)
+                entfernung = self.AktuelleSensordaten[3].daten
+                tiefe = self.AktuelleSensordaten[2].daten[0] #TODO: Richtige Frequenz wählen
+                #TODO: Gewichten wann welche Kategorie gewählt werden soll
+                time.sleep(self.akt_takt)
+        thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
+        thread.start()
+
 
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
 
         # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
         self.Messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
+
+    def GeschwindigkeitSetzen(self, geschw):
+        self.PixHawk.Geschwindigkeit_setzen(geschw)
 
     def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         try:

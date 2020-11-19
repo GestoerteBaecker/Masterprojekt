@@ -33,6 +33,12 @@ class Punkt:
         # oder Liste aller Rasterzellen iterieren und Methode enthaelt_punkt() verwenden
         pass
 
+    def Abstand(self, pkt, zwei_dim=False):
+        summe = (self.x - pkt.x)**2 + (self.y - pkt.y)**2
+        if self.z is not None and pkt.z is not None and not zwei_dim:
+            summe += (self.z - pkt.z)**2
+        return numpy.sqrt(summe)
+
 
 class Uferpunkt(Punkt):
 

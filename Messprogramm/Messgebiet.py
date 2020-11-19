@@ -2,6 +2,9 @@ import Sensoren
 import numpy
 import random
 import time
+import csv
+import matplotlib.pyplot as plt
+plt.ion() # Aktivieren eines dynamischen Plots
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -75,6 +78,17 @@ class Zelle:
 
         return enthaelt_punkt           # Gibt True oder False zurück
 
+    def gebiet_in_zelle(self, suchgebiet):
+        return not (suchgebiet.west_kante > self.ost_kante or
+                    suchgebiet.ost_kante < self.west_kante or
+                    suchgebiet.nord_kante > self.sued_kante or
+                    suchgebiet.sued_kante < self.nord_kante)
+
+    def zeichnen(self,plt_suchgebiet):
+        x1,y1=self.west_kante, self.nord_kante
+        x2,y2=self.ost_kante, self.sued_kante
+        plt_suchgebiet.set_xdata([x1, x2, x2, x1, x1])
+        plt_suchgebiet.set_ydata([y1, y1, y2, y2, y1])
 
 class Stern:
 
@@ -373,6 +387,31 @@ class Uferpunktquadtree:
 
         return False
 
+    def abfrage(self, suchgebiet, gefundene_punkte):
+        if not suchgebiet.gebiet_in_zelle(suchgebiet):
+            return False
+
+        for punkt in self.uferpunkte:
+            if suchgebiet.enthaelt_punkt(punkt):
+                gefundene_punkte.append(punkt)
+
+        if self.geteilt:
+            self.nw.abfrage(suchgebiet,gefundene_punkte)
+            self.no.abfrage(suchgebiet,gefundene_punkte)
+            self.so.abfrage(suchgebiet,gefundene_punkte)
+            self.sw.abfrage(suchgebiet,gefundene_punkte)
+
+        return gefundene_punkte
+
+    def zeichnen(self, ax):
+        self.zelle.zeichnen(ax)
+        if self.geteilt:
+            self.nw.zeichnen(ax)
+            self.no.zeichnen(ax)
+            self.so.zeichnen(ax)
+            self.sw.zeichnen(ax)
+
+
 # Klasse, die Daten der Messung temporär speichert
 class Messgebiet:
 
@@ -427,10 +466,92 @@ if __name__=="__main__":
     """
     # Test Quadtree
 
-    initialrechteck = Zelle(0,0,2000,2000)
-    Testquadtree = Uferpunktquadtree(initialrechteck)
-
     startzeit = time.time()
+
+    # Quadtree von DHM berechnen
+    testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r",encoding='utf-8-sig') # ArcGIS Encoding :)
+    lines=csv.reader(testdaten,delimiter=";")
+    id_testdaten=[]
+    x_testdaten=[]
+    y_testdaten=[]
+    tiefe_testdaten=[]
+
+    # Lesen der Datei
+    for line in lines:
+        id_testdaten.append(int(line[0]))
+        x_testdaten.append(float(line[1]))
+        y_testdaten.append(float(line[2]))
+        tiefe_testdaten.append(float(line[3]))
+    testdaten.close()
+
+    xmin=min(x_testdaten)-10
+    xmax=max(x_testdaten)+10
+    ymin=min(y_testdaten)-10
+    ymax=max(y_testdaten)+10
+
+    xdiff=xmax-xmin
+    ydiff=ymax-ymin
+    xzentrum=xmin+xdiff/2
+    yzentrum=ymin+ydiff/2
+
+    initialrechteck = Zelle(xzentrum,yzentrum,xdiff,ydiff)
+    Testdaten_quadtree = Uferpunktquadtree(initialrechteck)
+
+
+    # Generieren des Quadtree
+    for i in range(len(id_testdaten)):
+        x=x_testdaten[i]
+        y=y_testdaten[i]
+        tiefe=tiefe_testdaten[i]
+
+        p=Bodenpunkt(x,y,tiefe)
+
+        Testdaten_quadtree.punkt_einfuegen(p)
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    plt.gca().set_aspect('equal', adjustable='box')
+    #Testdaten_quadtree.zeichnen(ax)
+
+    ax.scatter(x_testdaten, y_testdaten, s=1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # Punkte innerhalb eines Suchgebietes finden
+    boot_position, = ax.plot([], [], marker='o', markersize=3, color='blue')
+    plt_gefundene_punkte, = ax.plot([],[], marker='o', markersize=5,color='red',lw=0)
+    plt_suchgebiet,=ax.plot([],[],c='r',lw=1)
+
+    xpos=451880
+    ypos=5884944
+    stuetzpunkt=(xpos,ypos)
+    xsuch=5
+    ysuch=5
+    richtung=50+random.random()
+    testprofil=Profil(richtung, stuetzpunkt, 0, 1000)
+    profilpunkte=testprofil.BerechneZwischenpunkte(2)
+
+    for punkt in profilpunkte:
+        gefundene_punkte = []
+        plt.pause(0.01)
+        xpos=punkt.x
+        ypos=punkt.y
+        boot_position.set_xdata(xpos)
+        boot_position.set_ydata(ypos)
+        suchgebiet = Zelle(xpos, ypos, xsuch, ysuch)
+        suchgebiet.zeichnen(plt_suchgebiet)
+        Testdaten_quadtree.abfrage(suchgebiet, gefundene_punkte)
+        plt_gefundene_punkte.set_xdata([p.x for p in gefundene_punkte])
+        plt_gefundene_punkte.set_ydata([p.y for p in gefundene_punkte])
+
+        time.sleep(0.1)
+
+    #plt.show()
+
+
+    """
     for i in range(0,10000):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)
@@ -449,6 +570,7 @@ if __name__=="__main__":
 
         wert = Testquadtree.ebene_von_punkt(p)
         print(i, wert)
+    """
 
     endzeit = time.time()
     zeitdifferenz = endzeit-startzeit

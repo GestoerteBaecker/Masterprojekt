@@ -42,6 +42,7 @@ class Boot:
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
+        self.Messgebiet = None
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -201,14 +202,13 @@ class Boot:
 
         self.fortlaufende_aktualisierung = True
 
-
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
                 #print("aktuelle Daten Überschreibung", self.AktuelleSensordaten)
                 for i in range(0, len(self.Sensorliste)):
-                    i  f self.Sensorliste[i]:
+                    if self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
                         if sensor.aktdaten:
                             self.AktuelleSensordaten[i] = sensor.aktdaten
@@ -219,12 +219,12 @@ class Boot:
                 # aktuelles Heading berechnen und zum Boot abspeichern
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
                     self.heading = self.Headingberechnung()
-                    print(self.heading)
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     Uferpunkt = self.Uferpunktberechnung()
-                    self.Uferpunkte.append(Uferpunkt)
+                    if self.Messgebiet != None:
+                        Messgebiet.Uferpunkt_abspeichern(Uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -329,7 +329,9 @@ class Boot:
         # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
 
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
-        pass
+
+        # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
+        self.Messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
 
     def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         try:

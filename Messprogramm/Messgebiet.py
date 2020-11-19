@@ -2,6 +2,8 @@ import Sensoren
 import numpy
 import random
 import time
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -75,12 +77,16 @@ class Zelle:
 
         return enthaelt_punkt           # Gibt True oder False zurück
 
+    def draw(self, ax, c='k', lw=1, **kwargs):
+        x1, y1 = self.west_kante, self.nord_kante
+        x2, y2 = self.ost_kante, self.sued_kante
+        ax.plot([x1,x2,x2,x1,x1],[y1,y1,y2,y2,y1], c=c, lw=lw, **kwargs)
+
 
 class Stern:
 
     def __init__(self, startpunkt, heading):
         self.profile = []
-
 
     def InitProfil(self):
         pass
@@ -90,7 +96,6 @@ class Stern:
 
     def TestVerdichten(self):
         pass
-
 
 
 class Profil:
@@ -373,6 +378,33 @@ class Uferpunktquadtree:
 
         return False
 
+    def zeichnen(self, ax= False):
+        """Draw a representation of the quadtree on Matplotlib Axes ax."""
+
+        DPI = 72
+        if not ax:
+            fig = plt.figure(figsize=(700 / DPI, 700 / DPI), dpi=DPI)
+            ax = plt.subplot()
+            ax.set_xlim(-self.zelle.w/2, self.zelle.w/2)
+            ax.set_ylim(-self.zelle.h/2, self.zelle.h/2)
+        self.zelle.draw(ax)
+
+        if self.geteilt:
+            self.nw.draw(ax)
+            self.no.draw(ax)
+            self.so.draw(ax)
+            self.sw.draw(ax)
+
+        ax.scatter([p.x for p in self.uferpunkte], [p.y for p in self.uferpunkte], s=1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.invert_yaxis()
+
+        if self.ebene == 0:
+            plt.tight_layout()
+            plt.savefig('search-quadtree.png', DPI=72)
+            plt.show()
+
 # Klasse, die Daten der Messung temporär speichert
 class Messgebiet:
 
@@ -398,7 +430,7 @@ class Messgebiet:
         self.Uferquadtree.punkt_einfuegen(punkt)
 
 if __name__=="__main__":
-
+    """
     richtung = 50
     stuetz = numpy.array([0,0])
 
@@ -415,7 +447,7 @@ if __name__=="__main__":
     #punkt = profil.stuetzpunkt + (profil.lamb + 0) * profil.richtung + 5 * quer_richtung
 
     print(profil.PruefProfilExistiert(test_richtung, test_stuetz, profilbreite=5, toleranz=0.3, lambda_intervall=[0,50]))
-    """
+    
     # Test Geradenschnitt
     richtung1 = numpy.array([1,1])
     richtung1 = richtung1 / numpy.linalg.norm(richtung1)
@@ -431,7 +463,7 @@ if __name__=="__main__":
     Testquadtree = Uferpunktquadtree(initialrechteck)
 
     startzeit = time.time()
-    for i in range(0,10000):
+    for i in range(0,500):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)
 
@@ -440,7 +472,7 @@ if __name__=="__main__":
         Testquadtree.punkt_einfuegen(p)
 
     print("Quadtree angelegt")
-
+    Testquadtree.zeichnen()
     for i in range(0,1000):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)

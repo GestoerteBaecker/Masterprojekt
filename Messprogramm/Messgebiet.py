@@ -84,17 +84,67 @@ class Zelle:
 
 class Stern:
 
-    def __init__(self, startpunkt, heading):
+    # bei initial = True, ist der Startpunkt er Punkt, an dem die Messung losgeht (RTL), bei False ist der Stern ein zusätzlicher und startpunkt demnach die Mitte des neuen Sterns
+    # winkelinkrement in gon
+    # grzw_seitenlaenge in Meter, ab wann die auf entsprechender Seite ein verdichtender Stern platziert werden soll
+    def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True):
         self.profile = []
+        self.aktuelles_profil = 0 # Index des aktuellen Profils
+        self.initial = initial
+        self.mittelpunkt = None
+        self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
+        self.weitere_sterne = []
+        self.winkelinkrement = winkelinkrement
+        self.grzw_seitenlaenge = grzw_seitenlaenge
 
+        self.InitProfil(startpunkt, heading)
 
-    def InitProfil(self):
-        pass
+    def InitProfil(self, startpunkt, heading):
+        profil = Profil(startpunkt, heading)
+        self.profile.append(profil)
+        return profil.BerechneNeuenKurspunkt(2000, 0) # Punkt liegt in 2km Entfernung
 
+    # Schließt das Init-Profil, berechnet den Sternmittelpunkt und fügt die weiteren Profile ein
     def SternFuellen(self):
         pass
 
+    #TODO: Test, ob die weiteren Sterne auch funktionieren!
+    # rekursiver Aufruf, ob jeder in tiefster Ebene befindliche Stern auch nicht mehr abgefahren werden muss
     def TestVerdichten(self):
+        if len(self.weitere_sterne) == 0:
+            neue_messung = False
+            for profil in self.profile:
+                seitenlänge = ...
+                if seitenlänge > self.grzw_seitenlaenge:
+                    neue_messung = True
+                    stern = Stern(...)
+                    self.weitere_sterne.append(stern)
+            return neue_messung
+        else:
+            for stern in self.weitere_sterne:
+                return stern.TestVerdichten()
+
+    # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
+    def ProfilBeendet(self):
+        if self.aktuelles_profil == 0:
+            self.SternFuellen()
+        if self.profile and self.aktuelles_profil == len(self.profile)-1:
+            if self.TestVerdichten():
+                pass #TODO: die gesamte Steuerung jetzt verschachtlelt für die weiteren Sterne
+
+        self.aktuelles_profil += 1
+        return self.MittelpunktAnfahren()
+
+    def MittelpunktAnfahren(self):
+        if self.mittelpunkt:
+            return self.mittelpunkt
+
+    # pflegt einen bereits Median-gefilterten Punkt in die entsprechende Liste des aktuellen Profils ein
+    def MedianPunkteEinlesen(self, punkt):
+        pass
+
+    # aus den einzelnen Profilen
+    def TopographischBedeutsamePunkteAbfragen(self):
         pass
 
 

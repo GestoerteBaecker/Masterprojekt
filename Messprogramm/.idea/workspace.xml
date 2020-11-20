@@ -2,10 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d484fff9-5253-47ed-bbd7-8e240af0eae9" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/Boot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Boot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messgebiet.py" afterDir="false" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/Sensoren.iml" afterPath="$PROJECT_DIR$/.idea/Sensoren.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Boot.py" afterPath="$PROJECT_DIR$/Boot.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Messgebiet.py" afterPath="$PROJECT_DIR$/Messgebiet.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,18 +18,19 @@
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
   </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FavoritesManager">
     <favorites_list name="Sensoren" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.2793716">
+    <splitter split-orientation="horizontal" split-proportion="0.26945412">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+          <file leaf-file-name="Boot.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/Boot.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="527">
-                  <caret line="40" lean-forward="true" selection-start-line="40" selection-end-line="40" />
+                <state relative-caret-position="536">
+                  <caret line="323" column="40" selection-start-line="323" selection-start-column="40" selection-end-line="323" selection-end-column="40" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
                   </folding>
@@ -37,23 +42,12 @@
       </split-first>
       <split-second>
         <leaf>
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/Boot.py">
+          <file leaf-file-name="Messgebiet.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="458">
-                  <caret line="320" column="41" lean-forward="true" selection-start-line="320" selection-start-column="41" selection-end-line="320" selection-end-column="41" />
-                  <folding>
-                    <element signature="e#0#15#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/Sensoren.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-1130">
-                  <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
+                <state relative-caret-position="337">
+                  <caret line="114" column="32" selection-start-line="114" selection-start-column="32" selection-end-line="114" selection-end-column="32" />
+                  <folding />
                 </state>
               </provider>
             </entry>
@@ -113,21 +107,40 @@
         <option value="$PROJECT_DIR$/Karte.py" />
         <option value="$PROJECT_DIR$/Pixhawk.py" />
         <option value="$PROJECT_DIR$/test_geradenausgleichung.py" />
-        <option value="$PROJECT_DIR$/Messgebiet.py" />
         <option value="$PROJECT_DIR$/Boot.py" />
+        <option value="$PROJECT_DIR$/Messgebiet.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
     <option name="height" value="1056" />
   </component>
   <component name="ProjectId" id="1jrdLd41rNlQ28BE7Wm4adDjxd2" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="true" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
+  </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
+      <flattenPackages />
+      <showMembers />
+      <showModules />
+      <showLibraryContents />
+      <hideEmptyPackages />
+      <abbreviatePackageNames />
+      <autoscrollToSource />
+      <autoscrollFromSource />
+      <sortByType />
+      <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes />
@@ -140,6 +153,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -153,7 +167,121 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Monitor">
+  <component name="RunManager">
+    <configuration default="false" name="Boot" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Boot.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Messgebiet" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Messgebiet.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Monitor" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Monitor.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="db_test_spatial_index" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../Alte Testdateien" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../Alte Testdateien/db_test_spatial_index.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="test_geradenausgleichung" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_geradenausgleichung.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <method />
+    </configuration>
     <configuration default="true" type="tests" factoryName="Attests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -173,148 +301,111 @@
       <option name="USE_PATTERN" value="false" />
       <method />
     </configuration>
-    <configuration name="Boot" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="Sensoren" />
+    <configuration default="true" type="tests" factoryName="Doctests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Boot.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="Messgebiet" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="Sensoren" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Messgebiet.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="Monitor" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="Sensoren" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Monitor.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
+      <envs />
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="db_test_spatial_index" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Nosetests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
+      <envs />
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../Alte Testdateien" />
+      <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../Alte Testdateien/db_test_spatial_index.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="test_geradenausgleichung" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Unittests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
+      <envs />
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_geradenausgleichung.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
     </configuration>
-    <list>
-      <item itemvalue="Python.Boot" />
-      <item itemvalue="Python.Messgebiet" />
-      <item itemvalue="Python.Monitor" />
-      <item itemvalue="Python.db_test_spatial_index" />
-      <item itemvalue="Python.test_geradenausgleichung" />
+    <configuration default="true" type="tests" factoryName="py.test">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Sensoren" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="testToRun" value="" />
+      <option name="keywords" value="" />
+      <option name="params" value="" />
+      <option name="USE_PARAM" value="false" />
+      <option name="USE_KEYWORD" value="false" />
+      <method />
+    </configuration>
+    <list size="5">
+      <item index="0" class="java.lang.String" itemvalue="Python.Boot" />
+      <item index="1" class="java.lang.String" itemvalue="Python.Messgebiet" />
+      <item index="2" class="java.lang.String" itemvalue="Python.Monitor" />
+      <item index="3" class="java.lang.String" itemvalue="Python.db_test_spatial_index" />
+      <item index="4" class="java.lang.String" itemvalue="Python.test_geradenausgleichung" />
     </list>
     <recent_temporary>
-      <list>
-        <item itemvalue="Python.Monitor" />
-        <item itemvalue="Python.Messgebiet" />
-        <item itemvalue="Python.Boot" />
-        <item itemvalue="Python.db_test_spatial_index" />
-        <item itemvalue="Python.test_geradenausgleichung" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.test_geradenausgleichung" />
+        <item index="1" class="java.lang.String" itemvalue="Python.db_test_spatial_index" />
+        <item index="2" class="java.lang.String" itemvalue="Python.Monitor" />
+        <item index="3" class="java.lang.String" itemvalue="Python.Messgebiet" />
+        <item index="4" class="java.lang.String" itemvalue="Python.Boot" />
       </list>
     </recent_temporary>
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false">
+    <option name="remove_strategy" value="false" />
   </component>
   <component name="SpellCheckerSettings" BundledDictionaries="0" Folders="0" CustomDictionaries="0" Dictionaries="0" CorrectionsLimit="5" DefaultDictionary="application-level" UseSingleDictionary="true" />
   <component name="SvnConfiguration">
@@ -348,27 +439,26 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1696" height="1026" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" weight="0.25" />
-      <window_info active="true" id="Structure" order="1" visible="true" weight="0.11700844" />
-      <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.16013438" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.25531915" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" />
-      <window_info anchor="bottom" id="Python Console" order="9" />
-      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
-      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Data View" order="3" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.09272919" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -388,20 +478,6 @@
         </entry>
       </map>
     </option>
-    <option name="RECENT_FILTERS">
-      <map>
-        <entry key="Branch">
-          <value>
-            <list />
-          </value>
-        </entry>
-        <entry key="User">
-          <value>
-            <list />
-          </value>
-        </entry>
-      </map>
-    </option>
   </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
@@ -410,6 +486,9 @@
     <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
       <collection />
     </option>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Daten eingefuegt" />
@@ -425,11 +504,117 @@
     <state width="1345" height="179" key="GridCell.Tab.0.right" />
     <state width="1345" height="179" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager />
+    <watches-manager />
+  </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="680">
+          <caret line="40" column="0" selection-start-line="40" selection-start-column="0" selection-end-line="40" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Boot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Sensoren.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2788">
+          <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
+          <folding>
+            <marker date="1605887412437" expanded="true" signature="0:473" ph="..." />
+            <marker date="1605887412437" expanded="false" signature="475:600" ph="import ..." />
+            <marker date="1605887412437" expanded="true" signature="603:721" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="734:943" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="792:943" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="959:10374" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1079:3600" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1644:2243" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1680:2174" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="2050:2174" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="2259:2393" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3681:4728" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3719:4640" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3770:4429" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3791:4215" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3829:4029" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4239:4429" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4447:4640" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4844:4924" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4977:5202" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5134:5202" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5209:5383" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5415:5469" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5602:5765" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5838:5971" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6151:7998" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6364:7866" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6431:7666" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6452:6744" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6534:6626" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6783:7267" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7291:7666" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7684:7866" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7701:7845" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="8005:8090" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="8254:9017" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9024:9342" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9413:9434" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9441:9597" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9629:10374" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9749:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9804:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9939:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10395:10771" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10522:10771" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10797:12621" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10928:11127" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11318:11718" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11341:11682" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11752:12621" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11836:11960" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11992:12343" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12016:12223" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12074:12175" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12357:12458" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12644:15591" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12812:13046" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13176:14659" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13208:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13275:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13340:14045" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13523:14045" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14084:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14261:14659" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14855:15591" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14878:15555" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15621:17212" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15748:15926" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15998:16350" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16021:16314" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16480:17212" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16512:17027" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16529:16918" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16679:16918" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="17041:17212" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../Alte Testdateien/db_spatial_select_testlauf.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="208">
-          <caret line="75" column="272" selection-start-line="75" selection-end-line="75" selection-end-column="272" />
+          <caret line="75" column="272" selection-start-line="75" selection-start-column="0" selection-end-line="75" selection-end-column="272" />
         </state>
       </provider>
     </entry>
@@ -438,19 +623,13 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1462">
           <caret line="90" column="12" selection-start-line="90" selection-start-column="12" selection-end-line="90" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Monitor.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1479">
-          <caret line="96" selection-start-line="96" selection-end-line="96" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+          <caret line="96" column="0" selection-start-line="96" selection-start-column="0" selection-end-line="96" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -458,9 +637,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1649">
           <caret line="100" column="40" selection-start-line="100" selection-start-column="40" selection-end-line="100" selection-end-column="40" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -471,30 +647,105 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
-          <caret line="40" lean-forward="true" selection-start-line="40" selection-end-line="40" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Sensoren.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1130">
-          <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
+        <state relative-caret-position="17">
+          <caret line="165" column="28" selection-start-line="165" selection-start-column="28" selection-end-line="165" selection-end-column="28" />
+          <folding>
+            <marker date="1605887412437" expanded="true" signature="0:473" ph="..." />
+            <marker date="1605887412437" expanded="false" signature="475:600" ph="import ..." />
+            <marker date="1605887412437" expanded="true" signature="603:721" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="734:943" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="792:943" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="959:10374" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1079:3600" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1644:2243" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="1680:2174" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="2050:2174" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="2259:2393" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3681:4728" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3719:4640" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3770:4429" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3791:4215" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="3829:4029" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4239:4429" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4447:4640" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4844:4924" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="4977:5202" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5134:5202" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5209:5383" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5415:5469" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5602:5765" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="5838:5971" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6151:7998" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6364:7866" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6431:7666" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6452:6744" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6534:6626" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="6783:7267" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7291:7666" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7684:7866" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="7701:7845" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="8005:8090" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="8254:9017" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9024:9342" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9413:9434" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9441:9597" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9629:10374" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9749:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9804:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="9939:10232" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10395:10771" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10522:10771" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10797:12621" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="10928:11127" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11318:11718" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11341:11682" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11752:12621" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11836:11960" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="11992:12343" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12016:12223" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12074:12175" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12357:12458" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12644:15591" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="12812:13046" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13176:14659" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13208:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13275:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13340:14045" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="13523:14045" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14084:14247" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14261:14659" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14855:15591" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="14878:15555" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15621:17212" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15748:15926" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="15998:16350" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16021:16314" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16480:17212" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16512:17027" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16529:16918" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="16679:16918" ph="..." />
+            <marker date="1605887412437" expanded="true" signature="17041:17212" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Boot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="458">
-          <caret line="320" column="41" lean-forward="true" selection-start-line="320" selection-start-column="41" selection-end-line="320" selection-end-column="41" />
+        <state relative-caret-position="536">
+          <caret line="323" column="40" selection-start-line="323" selection-start-column="40" selection-end-line="323" selection-end-column="40" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="337">
+          <caret line="114" column="32" selection-start-line="114" selection-start-column="32" selection-end-line="114" selection-end-column="32" />
+          <folding />
         </state>
       </provider>
     </entry>

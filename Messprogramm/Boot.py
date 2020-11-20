@@ -314,10 +314,16 @@ class Boot:
                 p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
                 abstand = p1.Abstand(p2, zwei_dim=True)
                 steigung = (p2.z - p1.z) / abstand
-                extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt)
-                entfernung = self.AktuelleSensordaten[3].daten
+                extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
+                entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
                 tiefe = self.AktuelleSensordaten[2].daten[0] #TODO: Richtige Frequenz wählen
                 #TODO: Gewichten wann welche Kategorie gewählt werden soll
+                if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
+                    self.ist_am_ufer = 2
+                elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
+                    self.ist_am_ufer = 1
+                else:
+                    self.ist_am_ufer = 0
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
         thread.start()

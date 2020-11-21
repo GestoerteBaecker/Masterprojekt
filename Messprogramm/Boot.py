@@ -38,12 +38,13 @@ class Boot:
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.uferpunkt = None
-        self.Bodenpunkte = []
+        self.Bodenpunkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         self.Messgebiet = None
-        self.ist_am_ufer = 0 # es gibt Kategorien 0 bis 2; 0: alles gut, 1: nah am Ufer (Geschw. drosseln); 2: "Ufer erreicht" (= eig  nicht aber kurz davor)
+        self.ist_am_ufer = [0, False] # für Index 0: es gibt Kategorien 0 bis 2; 0: alles gut, 1: nah am Ufer (Geschw. drosseln); 2: "Ufer erreicht" (= eig  nicht aber kurz davor)
+                                  # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.geschwindigkeit = 2 # in km/h
         datei = open("boot_init.json", "r")
@@ -319,11 +320,17 @@ class Boot:
                 tiefe = self.AktuelleSensordaten[2].daten[0] #TODO: Richtige Frequenz wählen
                 #TODO: Gewichten wann welche Kategorie gewählt werden soll
                 if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
-                    self.ist_am_ufer = 2
+                    if entfernung < 20 or steigung > 0:
+                        self.ist_am_ufer = [2, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
+                    else:
+                        self.ist_am_ufer = [2, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
                 elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
-                    self.ist_am_ufer = 1
+                    if entfernung < 50 or steigung > 0:
+                        self.ist_am_ufer = [1, True]  # sehr kurz davor und Boot guckt Richtung Ufer
+                    else:
+                        self.ist_am_ufer = [1, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                 else:
-                    self.ist_am_ufer = 0
+                    self.ist_am_ufer = [0, False] # weit entfernt
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
         thread.start()

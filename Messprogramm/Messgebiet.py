@@ -96,9 +96,10 @@ class Stern:
         self.weitere_sterne = []
         self.winkelinkrement = winkelinkrement
         self.grzw_seitenlaenge = grzw_seitenlaenge
+        self.startpunkt = startpunkt # nur für initiales Profil
+        self.heading = heading # nur für initiales Profil
 
-        self.InitProfil(startpunkt, heading)
-
+    # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self, startpunkt, heading):
         profil = Profil(startpunkt, heading)
         self.profile.append(profil)

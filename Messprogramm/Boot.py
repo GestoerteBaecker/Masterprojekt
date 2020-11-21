@@ -322,8 +322,7 @@ class Boot:
         def ufererkennung_thread(self):
             while self.boot_lebt:
                 p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
-                abstand = p1.Abstand(p2, zwei_dim=True)
-                steigung = (p2.z - p1.z) / abstand
+                steigung = p2.NeigungBerechnen(p1)
                 extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
                 entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
                 tiefe = self.AktuelleSensordaten[2].daten[0] #TODO: Richtige Frequenz wählen

@@ -59,6 +59,23 @@ class Bodenpunkt(Punkt):
         super().__init__(x, y, z)
         self.Sedimentstaerke = Sedimentstaerke
 
+    # Berechnet die Neigung zwischen dem self und bodenpunkt; bei zurueck=True wird das Gefälle vom Bodenpunkt zum self-Punkt betrachtet (bodenpunkt liegt in Fahrtrichtung nach hinten)
+    # Profilansicht. Fahrtrichtung nach rechts
+    # bei zurueck=True gilt also:  Neigung ist negativ     |  bei zurueck=False gilt also:  Neigung ist negativ
+    # bodenpunkt->  .                                      |  self ->  .
+    #                \                                     |            \
+    #                 \                                    |             \
+    #                  .  <- self                          |              .  <- bodenpunkt
+    def NeigungBerechnen(self, bodenpunkt, zurueck=True):
+        strecke = self.Abstand(bodenpunkt, zwei_dim=True)
+        if strecke < 0.1: # liegen die Punkte <10cm auseinander, sollte keine signifikante Steigung vorhanden sein
+            return 0
+        if zurueck:
+            h_diff = self.z - bodenpunkt.z
+        else:
+            h_diff = bodenpunkt.z - self.z
+        return h_diff / strecke
+
 
 class Zelle:
 
@@ -346,15 +363,57 @@ class Profil:
             self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
             if self.end_lambda is None:
                 self.end_lambda = self.lamb
-            #TODO: Topographisch bedeutsame Punkte bestimmen und in die Liste einfügen
-            mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
-            for i, punkt in enumerate(self.median_punkte):
-                pass
 
+            # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
+            mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
+            grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
+            if len(self.median_punkte) > mind_anzahl_topo_punkte:
+                index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
+                steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
+                for i in range(1, len(self.median_punkte) - 1):
+                    p1 = self.median_punkte[i]
+                    p2 = self.median_punkte[i+1]
+                    steigung_vor = numpy.arctan(p1.NeigungBerechnen(p2, zurueck=False))
+                    winkel = steigung_vor - steigung_zurück
+                    if abs(winkel) >= grzw_winkel_rad:
+                        index_zugefügter_medianpunkte.append(i)
+                    steigung_zurück = steigung_vor
+
+                # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
+                while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
+                    größter_abstand = 0
+                    index = None
+                    # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
+                    test_indizes = [0, *index_zugefügter_medianpunkte, len(index_zugefügter_medianpunkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
+                    for i in range(len(test_indizes)-1):
+                        median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
+                        median_index_ende = test_indizes[i+1]
+                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt()
+                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt() - stuetz
+                        richtung = richtung / numpy.linalg.norm(richtung)
+                        # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
+                        for median_index in range(median_index_start+1, median_index_ende):
+                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index]))
+                            if größter_abstand < abstand:
+                                größter_abstand = abstand
+                                index = median_index
+                    index_zugefügter_medianpunkte.append(index)
+                    index_zugefügter_medianpunkte.sort()
+
+                # hinzufügen aller so gefundenen Punkte als topographisch bedeutsame Punkte
+                for index in index_zugefügter_medianpunkte:
+                    self.topographisch_bedeutsame_punkte.append(self.median_punkte[index])
+            else:
+                self.topographisch_bedeutsame_punkte = self.median_punkte
 
 # richtung und stuetz sind jeweils die 2D Vektoren der Geraden, und punkt der zu testende Punkt
+# richtung muss normiert sein!!
 def abstand_punkt_gerade(richtung, stuetz, punkt):
-    richtung = numpy.array([richtung[1], -richtung[0]])
+    if richtung.shape[0] == 2: # falls die Vektoren 2D sind
+        richtung = numpy.array([richtung[1], -richtung[0]])
+    else: # falls die Vektoren 3D sind
+        richtung = punkt - numpy.dot(punkt, richtung) * richtung
+        richtung = richtung / numpy.linalg.norm(richtung)
     return numpy.dot(richtung, (punkt - stuetz))
 
 # Gerade 1 sollte bei Verwendung innerhalb der Klasse Profil die Kante des self Profils sein

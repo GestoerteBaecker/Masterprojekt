@@ -1,16 +1,25 @@
 import Sensoren
 import Messgebiet
 import datetime
-import numpy
 import json
 import Pixhawk
 import pyodbc
 import statistics
 import threading
 import time
-import random
-import math
 import numpy
+import enum
+
+# Definition von Enums zur besseren Lesbarkeit
+class TrackingMode(enum.Enum):
+    PROFIL = 0
+    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen
+    AUS = 2
+
+class UferPosition(enum.Enum):
+    IM_WASSER = 0
+    NAH_AM_UFER = 1
+    AM_UFER = 2
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
 # self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
@@ -43,10 +52,10 @@ class Boot:
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         self.Messgebiet = None
-        self.ist_am_ufer = [0, False] # für Index 0: es gibt Kategorien 0 bis 2; 0: alles gut, 1: nah am Ufer (Geschw. drosseln); 2: "Ufer erreicht" (= eig  nicht aber kurz davor)
-                                  # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
+        self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.geschwindigkeit = 2 # in km/h
+        self.tracking_mode = TrackingMode.PROFIL
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -321,16 +330,16 @@ class Boot:
                 #TODO: Gewichten wann welche Kategorie gewählt werden soll
                 if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                     if entfernung < 20 or steigung > 0:
-                        self.ist_am_ufer = [2, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
+                        self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                     else:
-                        self.ist_am_ufer = [2, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
+                        self.ist_am_ufer = [UferPosition.AM_UFER, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
                 elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
                     if entfernung < 50 or steigung > 0:
-                        self.ist_am_ufer = [1, True]  # sehr kurz davor und Boot guckt Richtung Ufer
+                        self.ist_am_ufer = [UferPosition.NAH_AM_UFER, True]  # sehr kurz davor und Boot guckt Richtung Ufer
                     else:
-                        self.ist_am_ufer = [1, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
+                        self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                 else:
-                    self.ist_am_ufer = [0, False] # weit entfernt
+                    self.ist_am_ufer = [UferPosition.AM_UFER, False] # weit entfernt
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
         thread.start()

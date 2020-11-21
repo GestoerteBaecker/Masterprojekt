@@ -39,6 +39,13 @@ class Punkt:
             summe += (self.z - pkt.z)**2
         return numpy.sqrt(summe)
 
+    def ZuNumpyPunkt(self, zwei_dim=False):
+        if self.z is not None and not zwei_dim:
+            punkt = numpy.array([self.x, self.y, self.z])
+        else:
+            punkt = numpy.array([self.x, self.y])
+        return punkt
+
 
 class Uferpunkt(Punkt):
 
@@ -126,8 +133,9 @@ class Stern:
                 return stern.TestVerdichten()
 
     # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
-    def ProfilBeendet(self):
+    def ProfilBeendet(self, punkt):
         if self.aktuelles_profil == 0:
+
             self.SternFuellen()
         if self.profile and self.aktuelles_profil == len(self.profile)-1:
             if self.TestVerdichten():
@@ -140,28 +148,38 @@ class Stern:
         if self.mittelpunkt:
             return self.mittelpunkt
 
-    # pflegt einen bereits Median-gefilterten Punkt in die entsprechende Liste des aktuellen Profils ein
-    def MedianPunkteEinlesen(self, punkt):
-        pass
+    # pflegt bereits Median-gefilterte Punkte in die entsprechende Liste des aktuellen Profils ein; punkt kann auch eine einziger Punkt sein
+    def MedianPunkteEinlesen(self, punkte):
+        if type(punkte).__name__ != "list":
+            punkte = [punkte]
+        for punkt in punkte:
+            self.profile[self.aktuelles_profil].MedianPunktEinfuegen(punkt)
 
-    # aus den einzelnen Profilen
+    # aus den einzelnen Profilen für das TIN
     def TopographischBedeutsamePunkteAbfragen(self):
+        # auch wieder rekursiv aus allen Sternen
         pass
-
 
 
 class Profil:
 
     # Richtung: Kursrichtung in Gon (im Uhrzeigersinn); stuetzpunkt: Anfangspunkt bei start_lambda=0; start_lambda:
     # end_lmbda ist bei den verdichtenden Profilen gegeben
-    def __init__(self, richtung, stuetzpunkt, start_lambda=0, end_lambda=None):
+    def __init__(self, richtung, stuetzpunkt, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
         self.richtung = numpy.array([numpy.sin(richtung*numpy.pi/200), numpy.cos(richtung*numpy.pi/200)]) # 2D Richtungsvektor in Soll-Fahrtrichtung
         self.stuetzpunkt = stuetzpunkt # Anfangspunkt, von dem die Profilmessung startet, wenn start_lambda=0
         self.lamb = start_lambda # aktuelles Lambda der Profilgeraden (da self.richtung normiert, ist es gleichzeitig die Entfernung vom Stuetzpunkt)
         self.start_lambda = start_lambda
         self.end_lambda = end_lambda
-        self.aktuelles_profil = True # bei False ist diese Profil bereits gemessen worden
+        self.gemessenes_profil = False # bei True ist dieses Profil fertig gemessen und ausgewertet worden
         self.ist_sternprofil = (self.end_lambda is None) # explizit testen, dass es nicht None ist, da es auch 0 sein kann (was als False interpretiert wird)
+        self.median_punkte = [] # Median gefilterte Bodenpunkte
+        self.topographisch_bedeutsame_punkte = []
+        self.grzw_dichte_topo_pkt = grzw_dichte_topo_pkt # Mindestanzahl der topographisch interessanten Punkte pro Meter!
+        self.grzw_neigungen = grzw_neigungen # Winkel in gon, die die nachfolgend zu betrachtende Seite von der aktuellen abweichen darf, um noch als Gerade betrachtet zu werden
+
+    def MedianPunktEinfuegen(self, punkt):
+        self.median_punkte.append(punkt)
 
     # sollte während der Erkundung für das aktuelle Profil immer aufgerufen werden!!!
     def BerechneLambda(self, punkt):
@@ -189,7 +207,7 @@ class Profil:
                 punktliste.append(punkt)
             return punktliste
 
-    # aktuell gefahrenen Profillänge
+    # aktuell gefahrenen Profillänge, falls Profil abgeschlossen ist, ist es die Gesamtlänge
     def Profillaenge(self):
         return self.lamb - self.start_lambda
 
@@ -198,9 +216,9 @@ class Profil:
         abstand = abstand_punkt_gerade(self.richtung, self.stuetzpunkt, punkt)
         return abs(abstand) < toleranz
 
-    # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.aktuelles_profil = False ODER wenn self.end_lambda != None
+    # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
     def PruefPunktInProfil(self, punkt, profilbreite=5):
-        if (not self.aktuelles_profil) or (self.end_lambda is not None):
+        if (self.gemessenes_profil) or (self.end_lambda is not None):
             if self.PruefPunktAufProfil(punkt, profilbreite):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
                 return self.start_lambda <= lamb <= self.end_lambda
@@ -213,7 +231,7 @@ class Profil:
     # bei return True sollte das Profil also nicht gemessen werden
     # lambda_intervall: bei None, soll das neue Profil unendlich lang sein, bei Angabe eben zwischen den beiden Lambdas liegen (als Liste, zB [-20,20] bei lamb 0 ist der Geradenpunkt gleich dem Stützpunkt)
     def PruefProfilExistiert(self, richtung, stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=None):
-        if not self.aktuelles_profil:
+        if self.gemessenes_profil:
             quer_lambda_intervall = [0, 2*profilbreite]
             test_profil_unendlich = not lambda_intervall # bestimmt, ob das neu zu rechnende Profil unendlich lang ist oder von Vornherein beschränkt ist
             self.lamb = 0
@@ -321,9 +339,18 @@ class Profil:
         else:
             raise Exception
 
-    def ProfilAbschliessen(self):
-        self.aktuelles_profil = False
-        self.end_lambda = self.lamb
+    # end_punkt: Punkt, an dem das Boot sagt, hier ist Ufer oder der zuvor definierte Endpunkt ist erreicht;
+    def ProfilAbschliessen(self, end_punkt):
+        if not self.gemessenes_profil:
+            self.gemessenes_profil = True
+            self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
+            if self.end_lambda is None:
+                self.end_lambda = self.lamb
+            #TODO: Topographisch bedeutsame Punkte bestimmen und in die Liste einfügen
+            mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
+            for i, punkt in enumerate(self.median_punkte):
+                pass
+
 
 # richtung und stuetz sind jeweils die 2D Vektoren der Geraden, und punkt der zu testende Punkt
 def abstand_punkt_gerade(richtung, stuetz, punkt):

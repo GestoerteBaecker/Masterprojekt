@@ -2,6 +2,7 @@ import Sensoren
 import numpy
 import random
 import time
+import enum
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -125,7 +126,7 @@ class Stern:
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self, startpunkt, heading):
-        profil = Profil(startpunkt, heading)
+        profil = Profil(startpunkt, heading) #TODO: nachgucken
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0) # Punkt liegt in 2km Entfernung
 
@@ -180,27 +181,53 @@ class Stern:
 
 class Profil:
 
+    # gibt an, wie das Profil zurzeit definiert ist
+    class Definition(enum.Enum):
+        NUR_RICHTUNG = 0
+        RICHTUNG_UND_START = 1
+        START_UND_ENDPUNKT = 2
+
     # Richtung: Kursrichtung in Gon (im Uhrzeigersinn); stuetzpunkt: Anfangspunkt bei start_lambda=0; start_lambda:
     # startpunkt als Punkt-Objekt
     # end_lmbda ist bei den verdichtenden Profilen gegeben
     # grzw_dichte_topo_pkt: Soll-Punktdichte je Meter Profil; grzw_neigungen: grenzwert in gon, ab wann aufeinander folgende Gefälle einen topographisch bedeutsamenm Punkt verursachen
-    def __init__(self, richtung, stuetzpunkt, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+    def __init__(self, richtung, stuetzpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
         self.richtung = numpy.array([numpy.sin(richtung*numpy.pi/200), numpy.cos(richtung*numpy.pi/200)]) # 2D Richtungsvektor in Soll-Fahrtrichtung
         self.stuetzpunkt = stuetzpunkt.ZuNumpyPunkt(zwei_dim=True) # Anfangspunkt, von dem die Profilmessung startet, wenn start_lambda=0
         self.lamb = start_lambda # aktuelles Lambda der Profilgeraden (da self.richtung normiert, ist es gleichzeitig die Entfernung vom Stuetzpunkt)
         self.start_lambda = start_lambda
         self.end_lambda = end_lambda
         self.gemessenes_profil = False # bei True ist dieses Profil fertig gemessen und ausgewertet worden
-        self.ist_sternprofil = (self.end_lambda is None) # explizit testen, dass es nicht None ist, da es auch 0 sein kann (was als False interpretiert wird)
         self.median_punkte = [] # Median gefilterte Bodenpunkte
         self.topographisch_bedeutsame_punkte = []
         self.grzw_dichte_topo_pkt = grzw_dichte_topo_pkt # Mindestanzahl der topographisch interessanten Punkte pro Meter!
         self.grzw_neigungen = grzw_neigungen # Winkel in gon, die die nachfolgend zu betrachtende Seite von der aktuellen abweichen darf, um noch als Gerade betrachtet zu werden
 
-    def MedianPunktEinfuegen(self, punkt):
-        self.median_punkte.append(punkt)
+        # Bestimmung der Profildefinition
+        if stuetz_ist_start:
+            if self.end_lambda is None:
+                self.ist_definiert = Profil.Definition.RICHTUNG_UND_START
+            else:
+                self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
+        else:
+            self.ist_definiert = Profil.Definition.NUR_RICHTUNG
 
-    # sollte während der Erkundung für das aktuelle Profil immer aufgerufen werden!!!
+    # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
+    def ProfilBeginnen(self, punkt):
+        if self.ist_definiert == Profil.Definition.NUR_RICHTUNG:
+            # Projektion des neuen Stuetzvektors (punkt) auf die vorhandene Gerade
+            richtung = numpy.array([self.richtung[1], -self.richtung[0]])
+            punkt = punkt.ZuNumpyPunkt(zwei_dim=True)
+            self.stuetzpunkt = punkt - richtung * (numpy.dot((punkt - self.stuetzpunkt), richtung))
+            self.ist_definiert = Profil.Definition.RICHTUNG_UND_START
+            self.start_lambda = 0
+
+    def MedianPunktEinfuegen(self, punkt):
+        if self.ist_definiert.value > 0:
+            self.median_punkte.append(punkt)
+        else:
+            raise Exception # sonst ist das Profil nicht richtig angelegt (Boot müsste auf dem Weg zum Startpunkt des Profils sein)
+
     def BerechneLambda(self, punkt):
         self.lamb = numpy.dot((punkt - self.stuetzpunkt), self.richtung)
 
@@ -212,7 +239,7 @@ class Profil:
 
     # Berechnet Punkte mit gleichmäßigem Abstand
     def BerechneZwischenpunkte(self, abstand=5):
-        if self.end_lambda is not None:
+        if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             punktliste = []
             lamb = self.start_lambda
             while lamb < self.end_lambda:
@@ -227,8 +254,11 @@ class Profil:
             return punktliste
 
     # aktuell gefahrenen Profillänge, falls Profil abgeschlossen ist, ist es die Gesamtlänge
-    def Profillaenge(self):
-        return self.lamb - self.start_lambda
+    def Profillaenge(self, akt_laenge=True):
+        if akt_laenge:
+            return self.lamb - self.start_lambda
+        else: # Länge, wenn end_lambda bekannt
+            return self.end_lambda - self.start_lambda
 
     # Punkt muss mind. Toleranz Meter auf dem Profil liegen für return True
     def PruefPunktAufProfil(self, punkt, toleranz=2):
@@ -237,7 +267,7 @@ class Profil:
 
     # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
     def PruefPunktInProfil(self, punkt, profilbreite=5):
-        if (self.gemessenes_profil) or (self.end_lambda is not None):
+        if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             if self.PruefPunktAufProfil(punkt, profilbreite):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
                 return self.start_lambda <= lamb <= self.end_lambda
@@ -250,7 +280,7 @@ class Profil:
     # bei return True sollte das Profil also nicht gemessen werden
     # lambda_intervall: bei None, soll das neue Profil unendlich lang sein, bei Angabe eben zwischen den beiden Lambdas liegen (als Liste, zB [-20,20] bei lamb 0 ist der Geradenpunkt gleich dem Stützpunkt)
     def PruefProfilExistiert(self, richtung, stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=None):
-        if self.gemessenes_profil:
+        if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             quer_lambda_intervall = [0, 2*profilbreite]
             test_profil_unendlich = not lambda_intervall # bestimmt, ob das neu zu rechnende Profil unendlich lang ist oder von Vornherein beschränkt ist
             self.lamb = 0
@@ -363,8 +393,9 @@ class Profil:
         if not self.gemessenes_profil:
             self.gemessenes_profil = True
             self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
-            if self.end_lambda is None:
+            if self.ist_definiert != Profil.Definition.START_UND_ENDPUNKT:
                 self.end_lambda = self.lamb
+                self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))

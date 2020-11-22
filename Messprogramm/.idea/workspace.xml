@@ -4,7 +4,6 @@
     <list default="true" id="d484fff9-5253-47ed-bbd7-8e240af0eae9" name="Default Changelist" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Messgebiet.py" afterPath="$PROJECT_DIR$/Messgebiet.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/_TEST.py" afterPath="$PROJECT_DIR$/_TEST.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -21,7 +20,7 @@
     <favorites_list name="Sensoren" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.22473867">
+    <splitter split-orientation="horizontal" split-proportion="0.28164923">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file leaf-file-name="Boot.py" pinned="false" current-in-tab="true">
@@ -55,10 +54,11 @@
           <file leaf-file-name="Messgebiet.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="334">
-                  <caret line="185" column="183" selection-start-line="185" selection-start-column="183" selection-end-line="185" selection-end-column="183" />
+                <state relative-caret-position="1529">
+                  <caret line="228" column="131" selection-start-line="228" selection-start-column="131" selection-end-line="228" selection-end-column="131" />
                   <folding>
-                    <element signature="e#11957#18292#0" expanded="false" />
+                    <element signature="e#0#15#0" expanded="true" />
+                    <element signature="e#13335#19706#0" expanded="false" />
                   </folding>
                 </state>
               </provider>
@@ -152,8 +152,8 @@
         <option value="$PROJECT_DIR$/Pixhawk.py" />
         <option value="$PROJECT_DIR$/test_geradenausgleichung.py" />
         <option value="$PROJECT_DIR$/Boot.py" />
-        <option value="$PROJECT_DIR$/Messgebiet.py" />
         <option value="$PROJECT_DIR$/_TEST.py" />
+        <option value="$PROJECT_DIR$/Messgebiet.py" />
       </list>
     </option>
   </component>
@@ -571,7 +571,8 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#11957#18292#0" expanded="false" />
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#13335#19706#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -581,7 +582,8 @@
         <state relative-caret-position="680">
           <caret line="40" column="0" selection-start-line="40" selection-start-column="0" selection-end-line="40" selection-end-column="0" />
           <folding>
-            <element signature="e#11957#18292#0" expanded="false" />
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#13335#19706#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -659,6 +661,14 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Sensoren.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1912">
+          <caret line="165" column="28" selection-start-line="165" selection-start-column="28" selection-end-line="165" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/_TEST.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
@@ -669,20 +679,13 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Sensoren.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1912">
-          <caret line="165" column="28" selection-start-line="165" selection-start-column="28" selection-end-line="165" selection-end-column="28" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Messgebiet.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="334">
-          <caret line="185" column="183" selection-start-line="185" selection-start-column="183" selection-end-line="185" selection-end-column="183" />
+        <state relative-caret-position="1529">
+          <caret line="228" column="131" selection-start-line="228" selection-start-column="131" selection-end-line="228" selection-end-column="131" />
           <folding>
-            <element signature="e#11957#18292#0" expanded="false" />
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#13335#19706#0" expanded="false" />
           </folding>
         </state>
       </provider>

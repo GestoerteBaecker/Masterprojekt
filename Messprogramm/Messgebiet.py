@@ -24,8 +24,7 @@ class Punkt:
         Punkt.id += 1
         self.x = x
         self.y = y
-        if z:
-            self.z = z
+        self.z = z
         self.zelle = self.Zellenzugehoerigkeit()
 
     def Zellenzugehoerigkeit(self):
@@ -46,6 +45,9 @@ class Punkt:
         else:
             punkt = numpy.array([self.x, self.y])
         return punkt
+
+    def __str__(self):
+        return "\"Punkt: " + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "\""
 
 
 class Uferpunkt(Punkt):
@@ -228,8 +230,10 @@ class Profil:
         else:
             raise Exception # sonst ist das Profil nicht richtig angelegt (Boot müsste auf dem Weg zum Startpunkt des Profils sein)
 
+    # Berechnet die Entfernung des angeg. Punkts entlang des Profils bis zum Stuetzpunkt (der ab Profil.Definition > 0 auch der Startpunkt ist)
     def BerechneLambda(self, punkt):
         self.lamb = numpy.dot((punkt - self.stuetzpunkt), self.richtung)
+        return self.lamb
 
     # Berechnet einen neuen Kurspunkt von Start-Lambda (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
     def BerechneNeuenKurspunkt(self, laengs_entfernung, quer_entfernung=0):
@@ -389,12 +393,13 @@ class Profil:
             raise Exception
 
     # end_punkt: Punkt, an dem das Boot sagt, hier ist Ufer oder der zuvor definierte Endpunkt ist erreicht;
-    def ProfilAbschliessen(self, end_punkt):
+    def ProfilAbschliessen(self, end_punkt=None):
         if not self.gemessenes_profil:
             self.gemessenes_profil = True
-            self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
             if self.ist_definiert != Profil.Definition.START_UND_ENDPUNKT:
-                self.end_lambda = self.lamb
+                if end_punkt is None:
+                    raise Exception # es muss ein Endpunkt angegeben werden
+                self.end_lambda = self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
                 self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)

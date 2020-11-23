@@ -1,4 +1,3 @@
-import Sensoren
 import numpy
 import random
 import time
@@ -387,13 +386,15 @@ class Uferpunktquadtree:
             ax = plt.subplot()
             ax.set_xlim(-self.zelle.w/2, self.zelle.w/2)
             ax.set_ylim(-self.zelle.h/2, self.zelle.h/2)
-        self.zelle.draw(ax)
+
+        if not self.geteilt:
+            self.zelle.draw(ax)
 
         if self.geteilt:
-            self.nw.draw(ax)
-            self.no.draw(ax)
-            self.so.draw(ax)
-            self.sw.draw(ax)
+            self.nw.zeichnen(ax)
+            self.no.zeichnen(ax)
+            self.so.zeichnen(ax)
+            self.sw.zeichnen(ax)
 
         ax.scatter([p.x for p in self.uferpunkte], [p.y for p in self.uferpunkte], s=1)
         ax.set_xticks([])
@@ -464,8 +465,11 @@ if __name__=="__main__":
 
     startzeit = time.time()
     for i in range(0,500):
-        x = random.randint(-1000, 1000)
-        y = random.randint(-1000, 1000)
+        s = random.uniform(780, 800)
+        a = random.uniform(0, 2* numpy.pi)
+
+        x = s * numpy.sin(a)
+        y = s * numpy.cos(a)
 
         p = Uferpunkt(x,y)
 
@@ -473,6 +477,8 @@ if __name__=="__main__":
 
     print("Quadtree angelegt")
     Testquadtree.zeichnen()
+
+    """
     for i in range(0,1000):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)
@@ -485,3 +491,4 @@ if __name__=="__main__":
     endzeit = time.time()
     zeitdifferenz = endzeit-startzeit
     print(zeitdifferenz)
+    """

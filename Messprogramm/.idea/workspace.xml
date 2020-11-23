@@ -24,7 +24,7 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Boot.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="188">
+                <state relative-caret-position="52">
                   <caret line="302" selection-start-line="302" selection-end-line="302" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
@@ -49,11 +49,11 @@
       </split-first>
       <split-second>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="532">
-                  <caret line="158" lean-forward="true" selection-start-line="158" selection-end-line="158" />
+                <state relative-caret-position="287">
+                  <caret line="180" column="54" lean-forward="true" selection-start-line="180" selection-start-column="54" selection-end-line="180" selection-end-column="54" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
                     <element signature="e#13600#19967#0" />
@@ -62,11 +62,11 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="false">
+          <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/_TEST.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="476">
-                  <caret line="28" column="38" lean-forward="true" selection-start-line="28" selection-start-column="10" selection-end-line="28" selection-end-column="38" />
+                <state relative-caret-position="272">
+                  <caret line="40" column="20" lean-forward="true" selection-start-line="40" selection-start-column="20" selection-end-line="40" selection-end-column="20" />
                   <folding>
                     <element signature="e#0#12#0" expanded="true" />
                   </folding>
@@ -151,8 +151,8 @@
         <option value="$PROJECT_DIR$/Pixhawk.py" />
         <option value="$PROJECT_DIR$/test_geradenausgleichung.py" />
         <option value="$PROJECT_DIR$/Boot.py" />
-        <option value="$PROJECT_DIR$/_TEST.py" />
         <option value="$PROJECT_DIR$/Messgebiet.py" />
+        <option value="$PROJECT_DIR$/_TEST.py" />
       </list>
     </option>
   </component>
@@ -400,12 +400,12 @@
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" weight="0.25" />
-      <window_info active="true" id="Structure" order="1" visible="true" weight="0.1079614" />
+      <window_info id="Structure" order="1" visible="true" weight="0.1079614" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.36842105" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.40303358" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.28331468" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.34714445" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -472,6 +472,17 @@
     <state width="1345" height="179" key="GridCell.Tab.0.right" />
     <state width="1345" height="179" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/_TEST.py</url>
+          <line>53</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/../Alte Testdateien/db_spatial_select_testlauf.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -527,7 +538,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Boot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="188">
+        <state relative-caret-position="52">
           <caret line="302" selection-start-line="302" selection-end-line="302" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
@@ -535,23 +546,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/_TEST.py">
+    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="476">
-          <caret line="28" column="38" lean-forward="true" selection-start-line="28" selection-start-column="10" selection-end-line="28" selection-end-column="38" />
+        <state relative-caret-position="287">
+          <caret line="180" column="54" lean-forward="true" selection-start-line="180" selection-start-column="54" selection-end-line="180" selection-end-column="54" />
           <folding>
-            <element signature="e#0#12#0" expanded="true" />
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#13600#19967#0" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+    <entry file="file://$PROJECT_DIR$/_TEST.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="532">
-          <caret line="158" lean-forward="true" selection-start-line="158" selection-end-line="158" />
+        <state relative-caret-position="272">
+          <caret line="40" column="20" lean-forward="true" selection-start-line="40" selection-start-column="20" selection-end-line="40" selection-end-column="20" />
           <folding>
-            <element signature="e#0#15#0" expanded="true" />
-            <element signature="e#13600#19967#0" />
+            <element signature="e#0#12#0" expanded="true" />
           </folding>
         </state>
       </provider>

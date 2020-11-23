@@ -175,14 +175,23 @@ class Stern:
             for stern in self.weitere_sterne:
                 return stern.TestVerdichten()
 
+    # durchläuft alle Sternemüsste so stimmen
+    def AktuellesProfil(self):
+        if not self.stern_beendet:
+            return self.profile[self.aktuelles_profil]
+        elif len(self.weitere_sterne) != 0:
+            for stern in self.weitere_sterne:
+                return stern.AktuellesProfil()
+
     # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
     def ProfilBeenden(self, punkt):
-        profil = self.profile[self.aktuelles_profil]
+        profil = self.AktuellesProfil()
         profil.ProfilAbschliessenUndTopoPunkteFinden(punkt)
         if self.aktuelles_profil == 0 and self.initial: # falls es das allererste gemessene Profil ist
             self.mittelpunkt = profil.BerechneNeuenKurspunkt(profil.Profillaenge(False)/2, punkt_objekt=True)
             self.SternFuellen()
         if self.aktuelles_profil == len(self.profile)-1:
+            self.stern_beendet = True
             if self.TestVerdichten():
                 pass #TODO: die gesamte Steuerung jetzt verschachtlelt für die weiteren Sterne
         self.aktuelles_profil += 1

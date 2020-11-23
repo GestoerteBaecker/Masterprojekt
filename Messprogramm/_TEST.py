@@ -22,16 +22,72 @@ for pkt in topo:
 print(time.time()-t)
 """
 
-def Test(richtung, inkr):
-    liste = []
-    winkel = 0
-    rot_matrix = numpy.array([[numpy.cos(inkr*numpy.pi/200), numpy.sin(inkr*numpy.pi/200)], [-numpy.sin(inkr*numpy.pi/200), numpy.cos(inkr*numpy.pi/200)]])
-    while (400-winkel-inkr) > inkr/10:
-        richtung = rot_matrix.dot(richtung)
-        liste.append(richtung)
-        winkel += inkr
-    return liste
 
-richtungen = Test(numpy.array([0, 1]), 50)
-for r in richtungen:
-    print(r)
+
+class A:
+    i = 0
+    def __init__(self):
+        self.id = A.i
+        A.i+= 1
+        self.liste = []
+        self.akt = False
+
+    def neu(self):
+        a = A()
+        self.liste.append(a)
+
+    def aktuell(self):
+        print(self.id)
+        if self.akt:
+            print("return")
+            return self.id
+        for a in self.liste:
+            return a.aktuell()
+
+a = A()
+a.neu()
+a.neu()
+a.liste[0].neu()
+a.liste[0].liste[0].akt = True
+#a.aktuell()
+print(a.aktuell())
+i = 0
+
+
+"""
+def check_with_list(dd, check_value, other_value=None):
+
+    for index, h in enumerate(dd):
+        if isinstance(h, list):
+            result = check_with_list(h, check_value)
+
+            if result is not None:
+                if other_value:
+                    new = (index,) + result
+                    if len(new) == 2:
+
+                        if dd[new[0]][0] == other_value:
+                            result = None
+                        else:
+                            return (index,) + result
+
+
+        elif h == check_value:
+            return (index,)
+    # value not found
+    return None
+
+dd = [
+    "gcc",
+    "fcc",
+    ["scc", "jhh", "rrr"],
+    ["www", "rrr", "rrr"],
+    "mmm",
+    ["qwe", ["ree", "rrr", "rrr"], "ere"]
+]
+dd = check_with_list(dd, "rrr", "ree")
+print(check_with_list(dd, "rrr", "ree"))
+"""
+
+
+# hier weiter gucken https://stackoverflow.com/questions/58389370/getting-all-recursion-results-in-a-list

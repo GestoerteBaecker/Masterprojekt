@@ -4,6 +4,13 @@ import random
 import time
 import enum
 
+# Definition von Enums zur besseren Lesbarkeit
+# Tracking Mode, das das Boot haben soll
+class TrackingMode(enum.Enum):
+    PROFIL = 0
+    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen
+    AUS = 2
+
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
 # https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
@@ -119,6 +126,7 @@ class Stern:
         self.aktuelles_profil = 0 # Index des aktuellen Profils
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
         self.mittelpunkt = None
+        self.mittelpunktfahrt = False # sagt aus, ob das Boot gerade Richtung Mittelpunkt fährt
         self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
         self.weitere_sterne = []
         self.winkelinkrement = winkelinkrement
@@ -128,9 +136,9 @@ class Stern:
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self, startpunkt, heading):
-        profil = Profil(startpunkt, heading) #TODO: nachgucken
+        profil = Profil(startpunkt, heading, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50)
         self.profile.append(profil)
-        return profil.BerechneNeuenKurspunkt(2000, 0) # Punkt liegt in 2km Entfernung
+        return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
     # Schließt das Init-Profil, berechnet den Sternmittelpunkt und fügt die weiteren Profile ein
     def SternFuellen(self):
@@ -153,16 +161,39 @@ class Stern:
                 return stern.TestVerdichten()
 
     # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
-    def ProfilBeendet(self, punkt):
-        if self.aktuelles_profil == 0:
-
+    def ProfilBeenden(self, punkt):
+        profil = self.profile[self.aktuelles_profil]
+        profil.ProfilAbschliessenUndTopoPunkteFinden(punkt)
+        if self.aktuelles_profil == 0 and self.initial: # falls es das allererste gemessene Profil ist
+            self.mittelpunkt = profil.BerechneNeuenKurspunkt(profil.Profillaenge(False)/2, punkt_objekt=True)
             self.SternFuellen()
-        if self.profile and self.aktuelles_profil == len(self.profile)-1:
+        if self.aktuelles_profil == len(self.profile)-1:
             if self.TestVerdichten():
                 pass #TODO: die gesamte Steuerung jetzt verschachtlelt für die weiteren Sterne
-
         self.aktuelles_profil += 1
         return self.MittelpunktAnfahren()
+
+    # diese Methode immer aufrufen, sobald das Ufer angefahren wird ODER ein Punkt erreicht wird, der angefahren werden sollte
+    # punkt: Endpunkt, an dem das Boot auf das Ufer trifft; mode: TrackingMode des Bootes
+    # Rückgabe: Liste mit Punkt, der angefahren werden sollte und welche Tracking-Methode das Boot haben sollte
+    def NaechsteAktion(self, punkt, mode):
+        if mode == TrackingMode.PROFIL: # das Boot soll Messungen auf dem Profil vornehmen
+            punkt = self.ProfilBeenden(punkt)
+            mode = TrackingMode.AUS
+            self.mittelpunktfahrt = True
+        elif mode == TrackingMode.AUS and self.mittelpunktfahrt: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
+            punkt = self.profile[self.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
+            mode = TrackingMode.AUS
+            self.mittelpunktfahrt = False
+        elif mode == TrackingMode.AUS and not self.mittelpunktfahrt:
+            profil = self.profile[self.aktuelles_profil]
+            profil.ProfilBeginnen(punkt)
+            punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
+            mode = TrackingMode.PROFIL
+        if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
+            return
+        return [punkt, mode]
+
 
     def MittelpunktAnfahren(self):
         if self.mittelpunkt:
@@ -236,9 +267,11 @@ class Profil:
         return self.lamb
 
     # Berechnet einen neuen Kurspunkt von Start-Lambda (länge der Fahrtrichtung) und quer dazu (in Fahrtrichtung rechts ist positiv)
-    def BerechneNeuenKurspunkt(self, laengs_entfernung, quer_entfernung=0):
+    def BerechneNeuenKurspunkt(self, laengs_entfernung, quer_entfernung=0, punkt_objekt=False):
         quer_richtung = numpy.array([self.richtung[1], -self.richtung[0]])
         punkt = self.stuetzpunkt + (self.start_lambda + laengs_entfernung) * self.richtung + quer_entfernung * quer_richtung
+        if punkt_objekt:
+            punkt = Punkt(punkt[0], punkt[1])
         return punkt
 
     # Berechnet Punkte mit gleichmäßigem Abstand
@@ -393,7 +426,7 @@ class Profil:
             raise Exception("Das Profil wurde noch nicht vollständig definiert.")
 
     # end_punkt: Punkt, an dem das Boot sagt, hier ist Ufer oder der zuvor definierte Endpunkt ist erreicht;
-    def ProfilAbschliessen(self, end_punkt=None):
+    def ProfilAbschliessenUndTopoPunkteFinden(self, end_punkt=None):
         if not self.gemessenes_profil:
             self.gemessenes_profil = True
             if self.ist_definiert != Profil.Definition.START_UND_ENDPUNKT:

@@ -11,11 +11,6 @@ import numpy
 import enum
 
 # Definition von Enums zur besseren Lesbarkeit
-class TrackingMode(enum.Enum):
-    PROFIL = 0
-    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen
-    AUS = 2
-
 class UferPosition(enum.Enum):
     IM_WASSER = 0
     NAH_AM_UFER = 1
@@ -56,7 +51,7 @@ class Boot:
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.geschwindigkeit = 2 # in km/h
-        self.tracking_mode = TrackingMode.PROFIL
+        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()

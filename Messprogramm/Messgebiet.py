@@ -117,7 +117,7 @@ class Stern:
     def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True):
         self.profile = []
         self.aktuelles_profil = 0 # Index des aktuellen Profils
-        self.initial = initial
+        self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
         self.mittelpunkt = None
         self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
         self.weitere_sterne = []
@@ -228,7 +228,7 @@ class Profil:
         if self.ist_definiert.value > 0:
             self.median_punkte.append(punkt)
         else:
-            raise Exception # sonst ist das Profil nicht richtig angelegt (Boot müsste auf dem Weg zum Startpunkt des Profils sein)
+            raise Exception("Das Profil wurde noch nicht initialisiert (Startpunkt fehlt; Methode ProfilBeginnen muss aufgerufen werden).") # (Boot müsste auf dem Weg zum Startpunkt des Profils sein)
 
     # Berechnet die Entfernung des angeg. Punkts entlang des Profils bis zum Stuetzpunkt (der ab Profil.Definition > 0 auch der Startpunkt ist)
     def BerechneLambda(self, punkt):
@@ -390,7 +390,7 @@ class Profil:
             else:
                 return False
         else:
-            raise Exception
+            raise Exception("Das Profil wurde noch nicht vollständig definiert.")
 
     # end_punkt: Punkt, an dem das Boot sagt, hier ist Ufer oder der zuvor definierte Endpunkt ist erreicht;
     def ProfilAbschliessen(self, end_punkt=None):
@@ -398,7 +398,7 @@ class Profil:
             self.gemessenes_profil = True
             if self.ist_definiert != Profil.Definition.START_UND_ENDPUNKT:
                 if end_punkt is None:
-                    raise Exception # es muss ein Endpunkt angegeben werden
+                    raise Exception("Es muss ein Endpunkt des Profils angegeben werden.")
                 self.end_lambda = self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
                 self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
 

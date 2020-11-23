@@ -47,7 +47,8 @@ class Boot:
         self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.uferpunkt = None
-        self.Bodenpunkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
+        self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
+        self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
@@ -192,13 +193,13 @@ class Boot:
 
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
-                #print("aktuelle Daten Überschreibung", self.AktuelleSensordaten)
+
+                # Aktualisierung des Attributs self.AktuelleSensordaten
                 for i in range(0, len(self.Sensorliste)):
                     if self.Sensorliste[i]:
                         sensor = self.Sensorliste[i]
                         if sensor.aktdaten:
                             self.AktuelleSensordaten[i] = sensor.aktdaten
-                            #print("aktuelle Daten in Überschreibungsfkt, sensor", self.Sensorliste[i], sensor.aktdaten, i, time.time())
 
                 # Abgeleitete Daten berechnen und überschreiben
 
@@ -213,7 +214,6 @@ class Boot:
                         Messgebiet.Uferpunkt_abspeichern(self.uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
-                #TODO: Bodenpunkte vllt in Messgebiet oder Stern eintragen? (Falls Löschung, trotzdem mindestens die letzten zwei Bodenpunkte in Boot tracken für Ufererkennung!!!)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
                     Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
                     Letzte_Bodenpunkte.append(Bodendaten)
@@ -221,6 +221,13 @@ class Boot:
                     if len(Letzte_Bodenpunkte) > 10:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         self.Bodenpunkte.append(Bodenpunkt)
+                        if len(self.Bodenpunkte) > 2:
+                            self.Bodenpunkte.pop(0)
+                        # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
+                        if self.tracking_mode.value < 2:
+                            self.median_punkte.append(Bodenpunkt)
+                        else:
+                            self.median_punkte = []
                         Letzte_Bodenpunkte = []
                     
                 time.sleep(self.akt_takt)
@@ -321,7 +328,8 @@ class Boot:
 
         def ufererkennung_thread(self):
             while self.boot_lebt:
-                p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
+                if len(self.Bodenpunkte) >= 2:
+                    p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
                 steigung = p2.NeigungBerechnen(p1)
                 extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
                 entfernung = self.AktuelleSensordaten[3].daten # zum Ufer

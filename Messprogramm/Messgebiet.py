@@ -121,7 +121,7 @@ class Stern:
     # bei initial = True, ist der Startpunkt er Punkt, an dem die Messung losgeht (RTL), bei False ist der Stern ein zusätzlicher und startpunkt demnach die Mitte des neuen Sterns
     # winkelinkrement in gon
     # grzw_seitenlaenge in Meter, ab wann die auf entsprechender Seite ein verdichtender Stern platziert werden soll
-    def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True):
+    def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50):
         self.profile = []
         self.aktuelles_profil = 0 # Index des aktuellen Profils
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
@@ -133,19 +133,34 @@ class Stern:
         self.grzw_seitenlaenge = grzw_seitenlaenge
         self.startpunkt = startpunkt # nur für initiales Profil
         self.heading = heading # nur für initiales Profil
+        self.profil_grzw_dichte_topo_pkt = profil_grzw_dichte_topo_pkt
+        self.profil_grzw_neigungen = profil_grzw_neigungen
+
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self, startpunkt, heading):
-        profil = Profil(startpunkt, heading, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50)
+        profil = Profil(startpunkt, heading, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
     # Schließt das Init-Profil, berechnet den Sternmittelpunkt und fügt die weiteren Profile ein
-    def SternFuellen(self):
-        pass
+    # richtung wird nur angegeben, wenn der Stern nicht initial ist (dann ist richtung das Profil, dessen Seitenlänge den Grenzwert übersteigt
+    def SternFuellen(self, richtung=None):
+        winkel = self.winkelinkrement
+        mitte = self.mittelpunkt.ZuNumpyPunkt(zwei_dim=True)
+        if self.initial:
+            richtung = self.profile[0].richtung
+        rot_matrix = numpy.array([[numpy.cos(self.winkelinkrement*numpy.pi/200), numpy.sin(self.winkelinkrement*numpy.pi/200)], [-numpy.sin(self.winkelinkrement*numpy.pi/200), numpy.cos(self.winkelinkrement*numpy.pi/200)]])
+        while (400-winkel-self.winkelinkrement) > self.winkelinkrement/10:
+            richtung = numpy.dot(rot_matrix, richtung)
+            profil = Profil(richtung, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
+            self.profile.append(profil)
+            winkel += self.winkelinkrement
 
     #TODO: Test, ob die weiteren Sterne auch funktionieren!
     # rekursiver Aufruf, ob jeder in tiefster Ebene befindliche Stern auch nicht mehr abgefahren werden muss
+
+    # TODO:testen, dass die Strecken der Seiten beidseitig vom Mittelpunkt abgehen
     def TestVerdichten(self):
         if len(self.weitere_sterne) == 0:
             neue_messung = False

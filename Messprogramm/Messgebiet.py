@@ -201,7 +201,7 @@ class TIN:
                                 # Abfrage, ob Kante in umgekehrter Form bereits existiert
                                 vorhanden = False
                                 for Kantealt in self.Kantenliste:
-                                    if Kantealt.Anfangspunkt == punkt2:
+                                    if Kantealt.Anfangspunkt == punkt2 and Kantealt.Endpunkt == punkt1:
                                         vorhanden = True
 
                                 # Kante Bilden und abspeichern

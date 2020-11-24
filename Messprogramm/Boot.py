@@ -43,6 +43,7 @@ class Boot:
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
         self.Messgebiet = None
+        self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()

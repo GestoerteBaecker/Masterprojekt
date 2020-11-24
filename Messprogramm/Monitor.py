@@ -8,7 +8,6 @@ import time
 # Import der aufzurufenden Skripte
 import Karte
 import Boot
-#import ____
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
 class Anwendung(Frame):
@@ -46,7 +45,7 @@ class Anwendung(Frame):
 
 
         # Button zum Öffnen der Karte
-        button_open_map=Button(self, text="Karte öffnen...", command=lambda: self.osm_tiles_lesen())
+        button_open_map=Button(self, text="Karte öffnen...", command=lambda: self.karte_laden())
         button_open_map.grid(row=1, column=2, sticky="we", padx=10, pady=10)
 
         # Verbindung, Erkundung und Vermessung
@@ -155,12 +154,12 @@ class Anwendung(Frame):
         self.t=0
 
 
-    def osm_tiles_lesen(self):
+    def karte_laden(self):
         # Öffnen der Datei
-        tilefiles = filedialog.askopenfilenames(filetypes=[("OSM-Tile", "*.png")])
+        geotiff_path = filedialog.askopenfilename(filetypes=[("GeoTiff","*.tiff"),("OSM-Tile", "*.png")])
         try:
             self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-            self.karte_window=Karte.Anwendung_Karte(self,self.position,tilefiles)
+            self.karte_window=Karte.Anwendung_Karte(self,self.position,geotiff_path)
         except:
             print("Dateien ungültig")
 
@@ -256,10 +255,10 @@ class Anwendung(Frame):
                             else:
                                 self.con_qual_gnss1.config(bg="blue")
                         if self.karte_window!= None:
-                            try:
+                            #try:
                                 self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading,self.t)
-                            except:
-                                print("Karte kann nicht aktualisiert werden.")
+                            #except:
+                                #print("Karte kann nicht aktualisiert werden.")
                     except:
                         if not gnss.simulation:
                             self.con_qual_gnss1.config(bg="orange")

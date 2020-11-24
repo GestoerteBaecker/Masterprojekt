@@ -307,8 +307,8 @@ class GNSS(Sensor):
                     print("Parsen fehlgeschlagen",self.db_table, e)
                     #TODO: Prio 99, Fehlerzähler + Ausgabe in GUI self.Fehlerzaehler_pars += 1
         else:
-            lat = 53.14 + random.uniform(-0.01,0.01)
-            lon = 8.2 + random.uniform(-0.01,0.01)
+            lat = 53.11176 + random.uniform(-0.0001,0.0001)
+            lon = 8.28111 + random.uniform(-0.0001,0.0001)
             koords = utm.from_latlon(lat, lon)
             daten = [koords[2] * 10 ** 6 + koords[0], koords[1], 0, 0, random.randint(0,4)]  # Ausgeben von lat, lon, Höhe, Qualität,
             db_objekt = Daten(GNSS.id, daten, time.time())

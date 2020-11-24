@@ -23,7 +23,7 @@ for pkt in range(10):
 """
 
 startpunkt = Messgebiet.Punkt(0,0)
-heading = 0
+heading = 50
 stern = Messgebiet.Stern(startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50)
 stern.InitProfil()
 stern.profile[0].gemessenes_profil = True

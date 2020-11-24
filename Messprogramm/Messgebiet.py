@@ -148,13 +148,13 @@ class Stern:
     # fügt weitere Profile in gegebenen Winkelinkrementen ein, die anschließend befahren werden
     def SternFuellen(self): #TODO: testen
         stern = self.aktueller_stern
-        winkel = stern.winkelinkrement
         mitte = stern.mittelpunkt
-        richtung = stern.profile[0].richtung
-        rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
-        while (200-winkel-stern.winkelinkrement) > stern.winkelinkrement/10:
-            richtung = numpy.dot(rot_matrix, richtung)
-            profil = Profil(richtung, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
+        start_winkel = stern.profile[0].heading + stern.winkelinkrement
+        winkel = start_winkel
+        #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
+        while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
+            #richtung = numpy.dot(rot_matrix, richtung)
+            profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
             stern.profile.append(profil)
             winkel += stern.winkelinkrement
 

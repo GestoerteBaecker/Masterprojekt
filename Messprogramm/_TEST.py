@@ -15,15 +15,25 @@ for pkt in range(10):
     punkt = Messgebiet.Bodenpunkt(10*pkt, 10*pkt, z)
     profil.MedianPunktEinfuegen(punkt)
 
-profil.ProfilAbschliessen()
-topo = profil.topographisch_bedeutsame_punkte
-for pkt in topo:
-    print(pkt)
-print(time.time()-t)
+#profil.ProfilAbschliessenUndTopoPunkteFinden()
+#topo = profil.topographisch_bedeutsame_punkte
+#for pkt in topo:
+#    print(pkt)
+#print(time.time()-t)
 """
 
+startpunkt = Messgebiet.Punkt(0,0)
+heading = 0
+stern = Messgebiet.Stern(startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50)
+stern.InitProfil()
+stern.profile[0].gemessenes_profil = True
+stern.mittelpunkt = Messgebiet.Punkt(0,50)
+stern.SternFuellen()
+i=0
 
 
+
+"""
 class A:
     i = 0
     def __init__(self):
@@ -56,7 +66,7 @@ a.liste[1].akt = True
 a.liste[0].liste[0].akt = True
 print(a.aktuell())
 i = 0
-
+"""
 
 """
 def check_with_list(dd, check_value, other_value=None):

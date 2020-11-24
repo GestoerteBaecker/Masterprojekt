@@ -3,6 +3,7 @@ import numpy
 import random
 import time
 import enum
+import copy
 
 # Definition von Enums zur besseren Lesbarkeit
 # Tracking Mode, das das Boot haben soll
@@ -139,46 +140,56 @@ class Stern:
         self.profil_grzw_neigungen = profil_grzw_neigungen
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
-    def InitProfil(self, startpunkt, heading):
-        profil = Profil(startpunkt, heading, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
+    def InitProfil(self):
+        profil = Profil(self.heading, self.startpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
-    # Schließt das Init-Profil, berechnet den Sternmittelpunkt und fügt die weiteren Profile ein
-    # richtung wird nur angegeben, wenn der Stern nicht initial ist (dann ist richtung das Profil, dessen Seitenlänge den Grenzwert übersteigt
-    def SternFuellen(self, richtung=None):
+    # fügt weitere Profile in gegebenen Winkelinkrementen ein, die anschließend befahren werden
+    def SternFuellen(self): #TODO: testen
         stern = self.aktueller_stern
         winkel = stern.winkelinkrement
-        mitte = stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True)
-        if stern.initial:
-            richtung = stern.profile[0].richtung
+        mitte = stern.mittelpunkt
+        richtung = stern.profile[0].richtung
         rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
-        while (400-winkel-stern.winkelinkrement) > stern.winkelinkrement/10:
+        while (200-winkel-stern.winkelinkrement) > stern.winkelinkrement/10:
             richtung = numpy.dot(rot_matrix, richtung)
             profil = Profil(richtung, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
             stern.profile.append(profil)
             winkel += stern.winkelinkrement
 
-    #TODO: Test, ob die weiteren Sterne auch funktionieren!
-    # rekursiver Aufruf, ob jeder in tiefster Ebene befindliche Stern auch nicht mehr abgefahren werden muss
-
-    # TODO:testen, dass die Strecken der Seiten beidseitig vom Mittelpunkt abgehen
+    # test der Überschreitung des Grenzwerts der Länge eines Profils
     def TestVerdichten(self):
-        if len(self.weitere_sterne) == 0:
+
+        def berechne_mitte(stern, profil, entfernung_vom_startpunkt):
+            neue_mitte = profil.BerechneNeuenKurspunkt(entfernung_vom_startpunkt, punkt_objekt=True)
+            neuer_stern = Stern(neue_mitte, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen)
+            # nicht stern.init, da dieses Profil bereits vom übergeordneten Stern gemessen wurde; stattdessen soll dieses Profil als bereits gemessen übernommen werden
+            neuer_stern.profile.append(copy.deepcopy(stern.profile[0]))
+            return neuer_stern
+
+        stern = self.aktueller_stern
+        if len(stern.weitere_sterne) == 0:
             neue_messung = False
-            for profil in self.profile:
-                seitenlänge = ...
-                if seitenlänge > self.grzw_seitenlaenge:
+            for profil in stern.profile:
+                gesamtlänge = profil.Profillaenge(akt_laenge=False)
+                profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
+                seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True) #Anfang bis Mitte
+                seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte # Mitte bis Ende
+                if seitenlänge_vor_mitte > stern.grzw_seitenlaenge:
                     neue_messung = True
-                    stern = Stern(...)
-                    self.weitere_sterne.append(stern)
+                    entfernung = seitenlänge_vor_mitte/2
+                elif seitenlänge_nach_mitte > stern.grzw_seitenlaenge:
+                    neue_messung = True
+                    entfernung = seitenlänge_vor_mitte + seitenlänge_nach_mitte / 2
+                else:
+                    continue
+                neuer_stern = berechne_mitte(stern, profil, entfernung)
+                stern.weitere_sterne.append(neuer_stern)
             return neue_messung
-        else:
-            for stern in self.weitere_sterne:
-                return stern.TestVerdichten()
 
     # sucht den aktuellen Stern (möglicherweise rekursiv, falls mehrere Sterne vorhanden sind)
-    # diese Funktion sollte mindestens immer aufgerufen werden, wenn ein Stern abgeschlossen wurde! #TODO
+    # diese Funktion sollte mindestens immer aufgerufen werden, wenn ein Stern abgeschlossen wurde!
     def AktuellerStern(self):
         if self.initial and not self.stern_beendet:
             self.aktueller_stern = self
@@ -197,6 +208,7 @@ class Stern:
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
+    #TODO: deprecated
     def AktuellesProfil(self):
         stern = self.aktueller_stern
         for i, profil in enumerate(stern.profile):
@@ -208,39 +220,43 @@ class Stern:
 
     # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
     def ProfilBeenden(self, punkt):
+        stern = self.aktueller_stern
         profil = self.AktuellesProfil()
         profil.ProfilAbschliessenUndTopoPunkteFinden(punkt)
-        if self.aktuelles_profil == 0 and self.initial: # falls es das allererste gemessene Profil ist
-            self.mittelpunkt = profil.BerechneNeuenKurspunkt(profil.Profillaenge(False)/2, punkt_objekt=True)
+        if stern.aktuelles_profil == 0:
+            stern.mittelpunkt = profil.BerechneNeuenKurspunkt(profil.Profillaenge(False)/2, punkt_objekt=True)
             self.SternFuellen()
-        if self.aktuelles_profil == len(self.profile)-1:
-            self.stern_beendet = True
+        if stern.aktuelles_profil == len(stern.profile)-1:
+            stern.stern_beendet = True
+            # versuch weitere, verdichtende Sterne zu finden
             if self.TestVerdichten():
-                pass #TODO: die gesamte Steuerung jetzt verschachtlelt für die weiteren Sterne
-        self.aktuelles_profil += 1
-        return self.MittelpunktAnfahren()
+                aktueller_stern = self.AktuellerStern()
+                if not aktueller_stern:
+                    return None
+        stern.aktuelles_profil += 1
+        return stern.MittelpunktAnfahren()
 
     # diese Methode immer aufrufen, sobald das Ufer angefahren wird ODER ein Punkt erreicht wird, der angefahren werden sollte
     # punkt: Endpunkt, an dem das Boot auf das Ufer trifft; mode: TrackingMode des Bootes
     # Rückgabe: Liste mit Punkt, der angefahren werden sollte und welche Tracking-Methode das Boot haben sollte
     def NaechsteAktion(self, punkt, mode):
+        stern = self.aktueller_stern
         if mode == TrackingMode.PROFIL: # das Boot soll Messungen auf dem Profil vornehmen
-            punkt = self.ProfilBeenden(punkt)
+            punkt = stern.ProfilBeenden(punkt)
             mode = TrackingMode.AUS
-            self.mittelpunktfahrt = True
-        elif mode == TrackingMode.AUS and self.mittelpunktfahrt: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
-            punkt = self.profile[self.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
+            stern.mittelpunktfahrt = True
+        elif mode == TrackingMode.AUS and stern.mittelpunktfahrt: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
+            punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
             mode = TrackingMode.AUS
-            self.mittelpunktfahrt = False
-        elif mode == TrackingMode.AUS and not self.mittelpunktfahrt:
-            profil = self.profile[self.aktuelles_profil]
+            stern.mittelpunktfahrt = False
+        elif mode == TrackingMode.AUS and not stern.mittelpunktfahrt:
+            profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
         if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
             return
         return [punkt, mode]
-
 
     def MittelpunktAnfahren(self):
         stern = self.aktueller_stern
@@ -274,6 +290,7 @@ class Profil:
     # end_lmbda ist bei den verdichtenden Profilen gegeben
     # grzw_dichte_topo_pkt: Soll-Punktdichte je Meter Profil; grzw_neigungen: grenzwert in gon, ab wann aufeinander folgende Gefälle einen topographisch bedeutsamenm Punkt verursachen
     def __init__(self, richtung, stuetzpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+        self.heading = richtung
         self.richtung = numpy.array([numpy.sin(richtung*numpy.pi/200), numpy.cos(richtung*numpy.pi/200)]) # 2D Richtungsvektor in Soll-Fahrtrichtung
         self.stuetzpunkt = stuetzpunkt.ZuNumpyPunkt(zwei_dim=True) # Anfangspunkt, von dem die Profilmessung startet, wenn start_lambda=0
         self.lamb = start_lambda # aktuelles Lambda der Profilgeraden (da self.richtung normiert, ist es gleichzeitig die Entfernung vom Stuetzpunkt)
@@ -329,13 +346,11 @@ class Profil:
             punktliste = []
             lamb = self.start_lambda
             while lamb < self.end_lambda:
-                punkt = self.BerechneNeuenKurspunkt(lamb)
-                punkt = Punkt(punkt[0], punkt[1])
+                punkt = self.BerechneNeuenKurspunkt(lamb, punkt_objekt=True)
                 punktliste.append(punkt)
                 lamb += abstand
             else:
-                punkt = self.BerechneNeuenKurspunkt(self.end_lambda)
-                punkt = Punkt(punkt[0], punkt[1])
+                punkt = self.BerechneNeuenKurspunkt(self.end_lambda, punkt_objekt=True)
                 punktliste.append(punkt)
             return punktliste
 

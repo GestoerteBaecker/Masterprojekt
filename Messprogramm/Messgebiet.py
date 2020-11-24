@@ -123,19 +123,20 @@ class Stern:
     # grzw_seitenlaenge in Meter, ab wann die auf entsprechender Seite ein verdichtender Stern platziert werden soll
     def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50):
         self.profile = []
-        self.aktuelles_profil = 0 # Index des aktuellen Profils
+        self.aktuelles_profil = 0 # Index des aktuellen Profils bezogen auf self.aktueller_stern
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
         self.mittelpunkt = None
         self.mittelpunktfahrt = False # sagt aus, ob das Boot gerade Richtung Mittelpunkt fährt
         self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
         self.weitere_sterne = []
+        # der aktuelle Stern wird in dieser Variable gesichert, sodass die Methoden statt mit self von dieser Variablen aufgerufen werden (Steuerung von außen geschieht nämlich nur über den einen Init-Stern)
+        self.aktueller_stern = self
         self.winkelinkrement = winkelinkrement
         self.grzw_seitenlaenge = grzw_seitenlaenge
         self.startpunkt = startpunkt # nur für initiales Profil
         self.heading = heading # nur für initiales Profil
         self.profil_grzw_dichte_topo_pkt = profil_grzw_dichte_topo_pkt
         self.profil_grzw_neigungen = profil_grzw_neigungen
-
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self, startpunkt, heading):
@@ -146,16 +147,17 @@ class Stern:
     # Schließt das Init-Profil, berechnet den Sternmittelpunkt und fügt die weiteren Profile ein
     # richtung wird nur angegeben, wenn der Stern nicht initial ist (dann ist richtung das Profil, dessen Seitenlänge den Grenzwert übersteigt
     def SternFuellen(self, richtung=None):
-        winkel = self.winkelinkrement
-        mitte = self.mittelpunkt.ZuNumpyPunkt(zwei_dim=True)
-        if self.initial:
-            richtung = self.profile[0].richtung
-        rot_matrix = numpy.array([[numpy.cos(self.winkelinkrement*numpy.pi/200), numpy.sin(self.winkelinkrement*numpy.pi/200)], [-numpy.sin(self.winkelinkrement*numpy.pi/200), numpy.cos(self.winkelinkrement*numpy.pi/200)]])
-        while (400-winkel-self.winkelinkrement) > self.winkelinkrement/10:
+        stern = self.aktueller_stern
+        winkel = stern.winkelinkrement
+        mitte = stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True)
+        if stern.initial:
+            richtung = stern.profile[0].richtung
+        rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
+        while (400-winkel-stern.winkelinkrement) > stern.winkelinkrement/10:
             richtung = numpy.dot(rot_matrix, richtung)
-            profil = Profil(richtung, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
-            self.profile.append(profil)
-            winkel += self.winkelinkrement
+            profil = Profil(richtung, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
+            stern.profile.append(profil)
+            winkel += stern.winkelinkrement
 
     #TODO: Test, ob die weiteren Sterne auch funktionieren!
     # rekursiver Aufruf, ob jeder in tiefster Ebene befindliche Stern auch nicht mehr abgefahren werden muss
@@ -175,13 +177,34 @@ class Stern:
             for stern in self.weitere_sterne:
                 return stern.TestVerdichten()
 
-    # durchläuft alle Sternemüsste so stimmen
-    def AktuellesProfil(self):
-        if not self.stern_beendet:
-            return self.profile[self.aktuelles_profil]
-        elif len(self.weitere_sterne) != 0:
+    # sucht den aktuellen Stern (möglicherweise rekursiv, falls mehrere Sterne vorhanden sind)
+    # diese Funktion sollte mindestens immer aufgerufen werden, wenn ein Stern abgeschlossen wurde! #TODO
+    def AktuellerStern(self):
+        if self.initial and not self.stern_beendet:
+            self.aktueller_stern = self
+            return True
+        sterne = []
+        def rek(self):
             for stern in self.weitere_sterne:
-                return stern.AktuellesProfil()
+                if not stern.stern_beendet:
+                    sterne.append(stern)
+                rek(stern)
+        rek(self)
+        if len(sterne) > 0:
+            self.aktueller_stern = sterne[0]
+        else:
+            self.aktueller_stern = None # alle Sterne sind gemessen
+        return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
+
+    # durchläuft alle Profile und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
+    def AktuellesProfil(self):
+        stern = self.aktueller_stern
+        for i, profil in enumerate(stern.profile):
+            if not profil.gemessenes_profil:
+                self.aktuelles_profil = i
+                return profil
+        self.aktuelles_profil = -1
+        return
 
     # beendet aktuelles Profil und sucht die bedeutsamen Punkte heraus und ordnet sie in der entsprechenden Liste des Profils hinzu
     def ProfilBeenden(self, punkt):
@@ -220,15 +243,17 @@ class Stern:
 
 
     def MittelpunktAnfahren(self):
-        if self.mittelpunkt:
-            return self.mittelpunkt
+        stern = self.aktueller_stern
+        if stern.mittelpunkt:
+            return stern.mittelpunkt
 
     # pflegt bereits Median-gefilterte Punkte in die entsprechende Liste des aktuellen Profils ein; punkt kann auch eine einziger Punkt sein
     def MedianPunkteEinlesen(self, punkte):
+        stern = self.aktueller_stern
         if type(punkte).__name__ != "list":
             punkte = [punkte]
         for punkt in punkte:
-            self.profile[self.aktuelles_profil].MedianPunktEinfuegen(punkt)
+            stern.profile[stern.aktuelles_profil].MedianPunktEinfuegen(punkt)
 
     # aus den einzelnen Profilen für das TIN
     def TopographischBedeutsamePunkteAbfragen(self):

@@ -37,19 +37,23 @@ class A:
         self.liste.append(a)
 
     def aktuell(self):
-        print(self.id)
         if self.akt:
-            print("return")
             return self.id
-        for a in self.liste:
-            return a.aktuell()
+        liste = []
+        def rek(self):
+            for a in self.liste:
+                if a.akt:
+                    liste.append(a.id)
+                rek(a)
+        rek(self)
+        return liste
 
 a = A()
 a.neu()
 a.neu()
 a.liste[0].neu()
+a.liste[1].akt = True
 a.liste[0].liste[0].akt = True
-#a.aktuell()
 print(a.aktuell())
 i = 0
 

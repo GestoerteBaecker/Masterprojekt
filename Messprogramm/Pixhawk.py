@@ -94,3 +94,6 @@ class Pixhawk:
 
         if self.vehicle: self.vehicle.close()
 
+    #TODO: für sämtliche Funktionen, die auf ein "funktionierendes" Pixhawk zurückgreifen, könnte eine Decorator-Methode implementiert werden, die prüft, ob das Pixhawk verbunden ist, und es ansonsten wieder verbindet
+    # -> allerdings nicht als eigener Thread prüfen!!! (sonst läuft die aufrufende Methode weiter und das Programm bricht ab!) (in einer while True Schleife testen)
+

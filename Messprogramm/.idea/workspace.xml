@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d484fff9-5253-47ed-bbd7-8e240af0eae9" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/Boot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Boot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messgebiet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Pixhawk.py" beforeDir="false" afterPath="$PROJECT_DIR$/Pixhawk.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/_TEST.py" beforeDir="false" afterPath="$PROJECT_DIR$/_TEST.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -13,18 +16,56 @@
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
   </component>
+  <component name="DockManager">
+    <window id="1">
+      <content type="file-editors">
+        <state>
+          <leaf>
+            <file pinned="false" current-in-tab="true">
+              <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="2696">
+                    <caret line="551" column="37" selection-start-line="551" selection-start-column="37" selection-end-line="551" selection-end-column="37" />
+                    <folding>
+                      <element signature="e#0#15#0" expanded="true" />
+                      <element signature="e#18635#25054#0" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+            <file pinned="false" current-in-tab="false">
+              <entry file="file://$PROJECT_DIR$/_TEST.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="454">
+                    <caret line="78" column="15" selection-start-line="78" selection-start-column="5" selection-end-line="78" selection-end-column="15" />
+                    <folding>
+                      <element signature="e#0#12#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+          </leaf>
+        </state>
+      </content>
+    </window>
+  </component>
   <component name="FavoritesManager">
     <favorites_list name="Sensoren" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.42896175">
+    <splitter split-orientation="horizontal" split-proportion="0.18255578">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Boot.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-2236">
-                  <caret line="303" column="12" lean-forward="true" selection-start-line="303" selection-start-column="12" selection-end-line="303" selection-end-column="12" />
+                <state relative-caret-position="526">
+                  <caret line="404" selection-start-line="404" selection-end-line="404" />
+                  <folding>
+                    <element signature="e#0#15#0" expanded="true" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -32,53 +73,20 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Pixhawk.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1462">
-                  <caret line="90" column="12" selection-start-line="90" selection-start-column="12" selection-end-line="90" selection-end-column="12" />
-                  <folding>
-                    <element signature="e#0#27#0" expanded="true" />
-                  </folding>
+                <state relative-caret-position="1428">
+                  <caret line="97" column="164" selection-start-line="97" selection-start-column="164" selection-end-line="97" selection-end-column="164" />
                 </state>
               </provider>
             </entry>
           </file>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/Monitor.py">
+            <entry file="file://$PROJECT_DIR$/test_geradenausgleichung.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="1479">
-                  <caret line="96" lean-forward="true" selection-start-line="96" selection-end-line="96" />
+                  <caret line="88" column="8" selection-start-line="88" selection-start-column="8" selection-end-line="88" selection-end-column="8" />
                   <folding>
-                    <element signature="e#0#21#0" expanded="true" />
+                    <element signature="e#0#12#0" expanded="true" />
                   </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/Karte.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1649">
-                  <caret line="100" column="40" selection-start-line="100" selection-start-column="40" selection-end-line="100" selection-end-column="40" />
-                  <folding>
-                    <element signature="e#0#21#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/OSM Tile Downloader.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="51">
-                  <caret line="3" column="15" selection-start-line="3" selection-start-column="15" selection-end-line="3" selection-end-column="15" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/Sensoren.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="2652">
-                  <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
                 </state>
               </provider>
             </entry>
@@ -86,15 +94,34 @@
         </leaf>
       </split-first>
       <split-second>
-        <leaf>
+        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-3885">
-                  <caret line="80" selection-start-line="80" selection-end-line="80" />
+                <state relative-caret-position="387">
+                  <caret line="283" column="45" lean-forward="true" selection-start-line="283" selection-start-column="45" selection-end-line="283" selection-end-column="45" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
+                    <element signature="e#17447#23866#0" />
                   </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/Sensoren.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="-2029">
+                  <caret line="165" column="28" selection-start-line="165" selection-start-column="28" selection-end-line="165" selection-end-column="28" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/Monitor.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="918">
+                  <caret line="63" column="39" selection-start-line="63" selection-start-column="39" selection-end-line="63" selection-end-column="39" />
                 </state>
               </provider>
             </entry>
@@ -112,17 +139,8 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>32450192.33658 5800482.23522</find>
-      <find>self.</find>
-      <find>self.GNSS1</find>
-      <find>Datenstrom zum Sensor</find>
-      <find>read_sensor_data</find>
-      <find>close_datastream</find>
-      <find>datastream_wiederaufnehmen</find>
-      <find>reconnect_datastream</find>
       <find>db_schreiben_wiederaufnehmen</find>
       <find>Karte kann nicht aktualisiert werden.</find>
-      <find>AktuelleSensordaten</find>
       <find>Datenbank_beschreiben</find>
       <find>Datenaktualisierung</find>
       <find>kill</find>
@@ -132,10 +150,25 @@
       <find>Dateien ungültig</find>
       <find>Flächenberechnung</find>
       <find>Bodenpunkte</find>
-      <find>Bodenpunktberechnung</find>
       <find>uferpunkte</find>
       <find>Sensorliste</find>
       <find>messgebiet</find>
+      <find>gesch</find>
+      <find>Uferpunktberechnung</find>
+      <find>self.uferpunkt</find>
+      <find>Bodenpunktberechnung</find>
+      <find>Exception</find>
+      <find>self.Bodenpunkte</find>
+      <find>ProfilAbschliessen</find>
+      <find>TrackingMode</find>
+      <find>BerechneNeuenKurspunkt</find>
+      <find>self.Messgebiet</find>
+      <find>matrix</find>
+      <find>self.heading</find>
+      <find>print</find>
+      <find>self.lamb</find>
+      <find>AktuelleSensordaten</find>
+      <find>Zelle</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -149,15 +182,16 @@
         <option value="$PROJECT_DIR$/Sensoren.py" />
         <option value="$PROJECT_DIR$/Monitor.py" />
         <option value="$PROJECT_DIR$/Karte.py" />
-        <option value="$PROJECT_DIR$/Pixhawk.py" />
         <option value="$PROJECT_DIR$/test_geradenausgleichung.py" />
+        <option value="$PROJECT_DIR$/_TEST.py" />
+        <option value="$PROJECT_DIR$/Pixhawk.py" />
         <option value="$PROJECT_DIR$/Boot.py" />
         <option value="$PROJECT_DIR$/Messgebiet.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-8" />
+    <option name="x" value="127" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
     <option name="height" value="1056" />
@@ -191,7 +225,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Monitor">
+  <component name="RunManager" selected="Python._TEST">
     <configuration default="true" type="tests" factoryName="Attests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -210,27 +244,6 @@
       <option name="PATTERN" value="" />
       <option name="USE_PATTERN" value="false" />
       <method />
-    </configuration>
-    <configuration name="Boot" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="Sensoren" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Boot.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
     </configuration>
     <configuration name="Messgebiet" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Sensoren" />
@@ -266,6 +279,27 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Monitor.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="_TEST" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Sensoren" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/_TEST.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -338,19 +372,19 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.Boot" />
       <item itemvalue="Python.Messgebiet" />
       <item itemvalue="Python.Monitor" />
       <item itemvalue="Python.db_test_spatial_index" />
       <item itemvalue="Python.test_geradenausgleichung" />
+      <item itemvalue="Python._TEST" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.Monitor" />
+        <item itemvalue="Python._TEST" />
         <item itemvalue="Python.Messgebiet" />
-        <item itemvalue="Python.Boot" />
-        <item itemvalue="Python.db_test_spatial_index" />
+        <item itemvalue="Python.Monitor" />
         <item itemvalue="Python.test_geradenausgleichung" />
+        <item itemvalue="Python.db_test_spatial_index" />
       </list>
     </recent_temporary>
   </component>
@@ -390,12 +424,12 @@
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" weight="0.25" />
-      <window_info active="true" id="Structure" order="1" visible="true" weight="0.11700844" />
+      <window_info active="true" id="Structure" order="1" visible="true" weight="0.1079614" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.16013438" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.25531915" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.31690928" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.2900336" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -406,7 +440,6 @@
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Data View" order="3" />
     </layout>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -463,6 +496,22 @@
     <state width="1345" height="179" key="GridCell.Tab.0.right" />
     <state width="1345" height="179" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/_TEST.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/_TEST.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/../Alte Testdateien/db_spatial_select_testlauf.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -471,24 +520,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test_geradenausgleichung.py" />
-    <entry file="file://$PROJECT_DIR$/Pixhawk.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1462">
-          <caret line="90" column="12" selection-start-line="90" selection-start-column="12" selection-end-line="90" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Karte.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1649">
           <caret line="100" column="40" selection-start-line="100" selection-start-column="40" selection-end-line="100" selection-end-column="40" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -499,37 +534,65 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Sensoren.py">
+    <entry file="file://$PROJECT_DIR$/test_geradenausgleichung.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2652">
-          <caret line="164" column="28" selection-start-line="164" selection-start-column="28" selection-end-line="164" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3885">
-          <caret line="80" selection-start-line="80" selection-end-line="80" />
+        <state relative-caret-position="1479">
+          <caret line="88" column="8" selection-start-line="88" selection-start-column="8" selection-end-line="88" selection-end-column="8" />
           <folding>
-            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#0#12#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Monitor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1479">
-          <caret line="96" lean-forward="true" selection-start-line="96" selection-end-line="96" />
+        <state relative-caret-position="918">
+          <caret line="63" column="39" selection-start-line="63" selection-start-column="39" selection-end-line="63" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Sensoren.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2029">
+          <caret line="165" column="28" selection-start-line="165" selection-start-column="28" selection-end-line="165" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/_TEST.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="454">
+          <caret line="78" column="15" selection-start-line="78" selection-start-column="5" selection-end-line="78" selection-end-column="15" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#0#12#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Pixhawk.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1428">
+          <caret line="97" column="164" selection-start-line="97" selection-start-column="164" selection-end-line="97" selection-end-column="164" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Boot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2236">
-          <caret line="303" column="12" lean-forward="true" selection-start-line="303" selection-start-column="12" selection-end-line="303" selection-end-column="12" />
+        <state relative-caret-position="526">
+          <caret line="404" selection-start-line="404" selection-end-line="404" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messgebiet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="387">
+          <caret line="283" column="45" lean-forward="true" selection-start-line="283" selection-start-column="45" selection-end-line="283" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#17447#23866#0" />
+          </folding>
         </state>
       </provider>
     </entry>

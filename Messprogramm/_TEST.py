@@ -21,7 +21,7 @@ for pkt in range(10):
 #    print(pkt)
 #print(time.time()-t)
 """
-
+"""
 startpunkt = Messgebiet.Punkt(0,0)
 heading = 50
 stern = Messgebiet.Stern(startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50)
@@ -30,7 +30,7 @@ stern.profile[0].gemessenes_profil = True
 stern.mittelpunkt = Messgebiet.Punkt(0,50)
 stern.SternFuellen()
 i=0
-
+"""
 
 
 """
@@ -67,6 +67,22 @@ a.liste[0].liste[0].akt = True
 print(a.aktuell())
 i = 0
 """
+
+class Test(object):
+    def _decorator(foo):
+        def magic( self ) :
+            print("start magic")
+            foo( self )
+            print("end magic")
+        return magic
+
+    @_decorator
+    def bar( self ) :
+        print("normal call")
+
+test = Test()
+
+test.bar()
 
 """
 def check_with_list(dd, check_value, other_value=None):

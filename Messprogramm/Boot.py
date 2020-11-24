@@ -52,6 +52,8 @@ class Boot:
         self.boot_lebt = True
         self.geschwindigkeit = 2 # in km/h
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+        self.punkt_anfahren = False
+        self.position = None # Punkt des Bootes
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -295,6 +297,9 @@ class Boot:
         Bootsmitte = [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]]
         Bootsbug =   [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
 
+        # aktuelle Position des Bootes
+        self.position = Messgebiet.Punkt(Bootsmitte[0], Bootsmitte[1])
+
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
         heading_rad = numpy.arctan((Bootsbug[0]-Bootsmitte[0]) / (Bootsbug[1]-Bootsmitte[1]))
 
@@ -351,24 +356,52 @@ class Boot:
 
         # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
         self.Messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
+        self.SternAbfahren(self.position, self.heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50)
+        topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
+        #... weiter mit TIN
 
     def GeschwindigkeitSetzen(self, geschw):
         self.PixHawk.Geschwindigkeit_setzen(geschw)
 
-    def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
-        try:
-            self.PixHawk.Geschwindigkeit_setzen(geschw)
-            self.PixHawk.Wegpunkt_anfahren(e, n)
-            print("Fahre Punkt mit Koordinaten E:", e, "N:", n, "an")
-        except:
-            print("Punktanfahren nicht möglich: Erneuter Verbindungsversuch mit PixHawk")
-            self.PixHawk.verbindung_hergestellt = False
-            self.PixHawk.Verbinden()
+    # TODO: evtl Rechteck abhängig von Geschw. oder direkt Rechteck um das Boot legen
+    # TODO: toleranz muss auf die Pixhawk interne Toleranz passen (Pixhawk-Toleranz muss kleiner gleich toleranz sein)
+    def Punkt_anfahren(self, punkt, geschw =2.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+        self.PixHawk.Geschwindigkeit_setzen(geschw)
+        self.PixHawk.Wegpunkt_anfahren(punkt.x, punkt.y)
+        self.punkt_anfahren = True
+        print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
+        punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
-            # todo: In Klasse Pixhawk verlegen
+        def punkt_anfahren_test(self):
+            self.punkt_anfahren = True
+            while self.punkt_anfahren:
+                test = punkt_box.enthaelt_punkt(self.position)
+                if test:
+                    self.punkt_anfahren = False
+                time.sleep(self.akt_takt)
+        thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
+        thread.start()
 
     def Wegberechnung(self):
         pass
+
+    def SternAbfahren(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50):
+        self.stern = Messgebiet.Stern(startpunkt, heading, winkelinkrement, grzw_seitenlaenge, initial, profil_grzw_dichte_topo_pkt, profil_grzw_neigungen)
+        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+        punkt = self.stern.InitProfil()
+        self.Punkt_anfahren(punkt)
+        while True:
+            if self.ist_am_ufer == UferPosition.AM_UFER or not self.punkt_anfahren:
+                self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
+                time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+                self.stern.MedianPunkteEinlesen(self.median_punkte)
+                self.median_punkte = []
+                [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
+                self.tracking_mode = neues_tracking
+                if neuer_kurspunkt is None:
+                    break
+                self.Punkt_anfahren(neuer_kurspunkt)
+            time.sleep(self.akt_takt)
 
     def Gewaesseraufnahme(self):
         pass

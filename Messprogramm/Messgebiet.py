@@ -229,10 +229,13 @@ class Stern:
         if stern.aktuelles_profil == len(stern.profile)-1:
             stern.stern_beendet = True
             # versuch weitere, verdichtende Sterne zu finden
-            if self.TestVerdichten():
-                aktueller_stern = self.AktuellerStern()
-                if not aktueller_stern:
-                    return None
+            self.TestVerdichten() # bewirkt nur eine Verdichtung, wenn noch keine weiteren Sterne in stern vorliegen
+            aktueller_stern = self.AktuellerStern()
+            if not aktueller_stern:
+                return None
+            else:
+                self.aktueller_stern.aktuelles_profil = 0
+                return self.aktueller_stern.MittelpunktAnfahren()
         stern.aktuelles_profil += 1
         return stern.MittelpunktAnfahren()
 
@@ -273,9 +276,14 @@ class Stern:
 
     # aus den einzelnen Profilen für das TIN
     def TopographischBedeutsamePunkteAbfragen(self):
-        # auch wieder rekursiv aus allen Sternen
-        pass
-
+        # auch wieder rekursiv aus allen Sternen und den Profilen darin
+        topographisch_bedeutsame_punkte = []
+        def sterne_durchlaufen(self):
+            for profil in self.profile:
+                topographisch_bedeutsame_punkte.extend(profil.topographisch_bedeutsame_punkte)
+            for stern in self.weitere_sterne:
+                sterne_durchlaufen(stern)
+        return topographisch_bedeutsame_punkte
 
 class Profil:
 

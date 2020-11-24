@@ -54,6 +54,7 @@ class Boot:
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         self.punkt_anfahren = False
         self.position = None # Punkt des Bootes
+        self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()

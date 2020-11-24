@@ -11,7 +11,8 @@ import pyvista as pv
 
 # Einlesen der Testdaten================================================================================================
 
-Testdaten_txt = open("Test_DHM.txt","r")
+#Testdaten_txt = open("Test_DHM.txt","r")
+Testdaten_txt = open("Test_Pyramide.txt","r")
 
 Datenzeile = Testdaten_txt.readline().replace("\n","").split(";")
 
@@ -31,7 +32,9 @@ while Datenzeile != ['']:
     Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
     laenge += 1
 
-Testdaten_txt = open("Test_DHM.txt","r")
+#Testdaten_txt = open("Test_DHM.txt","r")
+Testdaten_txt = open("Test_Pyramide.txt","r")
+
 Datenzeile = Testdaten_txt.readline().replace("\n","").split(";")
 Punktliste_array = np.zeros(shape=(laenge,3))
 
@@ -64,8 +67,10 @@ cloud.show()
 # Test pyvista ==========================================================================================================
 
 cloud = pv.PolyData(Punktliste_array)
-surf = cloud.delaunay_2d()
-surf.plot(show_edges=True)
+mesh = cloud.delaunay_2d()
+faces = mesh.faces
+print(faces)
+mesh.plot(show_edges=True)
 
 #https://docs.pyvista.org/examples/00-load/create-tri-surface.html
 

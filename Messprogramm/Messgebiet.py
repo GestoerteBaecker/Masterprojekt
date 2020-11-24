@@ -2,6 +2,7 @@ import numpy
 import random
 import time
 import numpy as np
+import pyvista as pv
 import matplotlib.pyplot as plt
 
 # Berechnet die Fläche des angeg. Polygons
@@ -24,8 +25,7 @@ class Punkt:
         Punkt.id += 1
         self.x = x
         self.y = y
-        if z:
-            self.z = z
+        self.z = z
         self.zelle = self.Zellenzugehoerigkeit()
 
     def Zellenzugehoerigkeit(self):
@@ -46,6 +46,136 @@ class Bodenpunkt(Punkt):
     def __init__(self, x, y, z, Sedimentstaerke= None):    # z muss angegeben werde, da Tiefe wichtg; Sedimentstaerke berechnet sich aus Differenz zwischen tiefe mit niedriger und hoher Messfrequenz
         super().__init__(x, y, z)
         self.Sedimentstaerke = Sedimentstaerke
+
+class TIN_Punkt(Punkt):
+
+    def __init__(self, x, y, z, TIN_id):
+        super().__init__(x,y,z)
+        self.TIN_id = TIN_id
+
+class TIN_Kante:
+
+    def __init__(self, Anfangspunkt, Endpunkt, Dreiecke):
+        self.Anfangspunkt= Anfangspunkt
+        self.Endpunkt = Endpunkt
+        self.Dreiecke = Dreiecke
+
+    def leange(self):
+        pass
+
+    def mitte(self):
+        x = (self.Anfangspunkt.x + self.Endpunkt.x) / 2
+        y = (self.Anfangspunkt.y + self.Endpunkt.y) / 2
+        z = (self.Anfangspunkt.z + self.Endpunkt.z) / 2
+
+        mitte = Punkt(x,y,z)
+
+        return (mitte)
+
+    def winkel(self):
+
+        n1_list = self.Dreiecke[0].Normalenvector.tolist()
+        n2_list = self.Dreiecke[1].Normalenvector.tolist()
+
+        n1 = numpy.array([n1_list[0], n1_list[1], n1_list[2]])
+        n2 = numpy.array([n2_list[0], n2_list[1], n2_list[2]])
+
+        alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
+
+        return alpha
+
+class TIN_Dreieck:
+
+    def __init__(self, Punkt1, Punkt2, Punkt3, Normalenvector, DreieckId):
+        self.Dreieckspunkte = [Punkt1, Punkt2, Punkt3]
+        self.Normalenvector = Normalenvector
+        self.Nachbardreiecke = []
+        self.DreieckId = DreieckId
+        self.kanten = 0
+        self.offen = True
+
+class TIN:
+
+    def __init__(self, Punktliste, Max_len = 0.0):
+
+        self.Punktliste_array = np.zeros(shape=(len(Punktliste), 3))
+        self.TIN_punkte = []
+        self.Kantenliste = []
+        self.Dreieckliste = []
+
+
+        # Punkte in Numpy-Array überführen
+        for i, punkt in enumerate(Punktliste):
+            punkt_in_liste = [punkt.x, punkt.y, punkt.z]
+            self.Punktliste_array[i] = punkt_in_liste
+
+        # Triangulation mit dem PyVista-Package
+        cloud = pv.PolyData(self.Punktliste_array)
+
+        if Max_len == 0.0:
+            self.mesh = cloud.delaunay_2d()
+        else:
+            self.mesh = cloud.delaunay_2d(Max_len)
+
+        # Punkt ID's belegen
+
+        for i, koords in enumerate(self.mesh.points.tolist()):
+
+            tin_punkt = TIN_Punkt(koords[0],koords[1],koords[2],i)
+            self.TIN_punkte.append(tin_punkt)
+
+        #Dreiecke aus mesh Extrhieren
+        for i in range(0,self.mesh.faces.shape[0],4):
+            dreieck_mesh = self.mesh.faces[i:i+4]
+            dreieckpunkte = dreieck_mesh.tolist()
+            dreieckpunkte.pop(0)
+
+            Dreieckpunkte = []
+
+            # Punkte in Punktliste suchen und Dreieckobjekt bilden
+            for Punktindex in dreieckpunkte:
+                for punkt in self.TIN_punkte:
+                    if punkt.TIN_id == Punktindex:
+
+                        Dreieckpunkte.append(punkt)
+                        if len(Dreieckpunkte)== 3: break
+
+            DreieckId = int(i/4)
+            normalenvektor = self.mesh.face_normals[DreieckId]
+
+            dreieckobjekt = TIN_Dreieck(Dreieckpunkte[0],Dreieckpunkte[1],Dreieckpunkte[2],normalenvektor, int(DreieckId))
+
+            # Nach Nachbardreiecken suchen
+
+            for dreieckalt in self.Dreieckliste:
+                for punkt1 in dreieckalt.Dreieckspunkte:
+                    if punkt1 in Dreieckpunkte:
+                        for punkt2 in dreieckalt.Dreieckspunkte:
+                            if punkt2 != punkt1 and punkt2 in Dreieckpunkte:
+
+                                # Abfrage, ob Kante in umgekehrter Form bereits existiert
+                                vorhanden = False
+                                for Kantealt in self.Kantenliste:
+                                    if Kantealt.Anfangspunkt == punkt2:
+                                        vorhanden = True
+
+                                # Kante Bilden und abspeichern
+                                if not vorhanden:
+                                    kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
+                                    self.Kantenliste.append(kante)
+                                    dreieckobjekt.kanten += 1
+                                    dreieckalt.kanten += 1
+                                    if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
+                                    if dreieckobjekt.kanten == 3: dreieckalt.offen = False
+
+            self.Dreieckliste.append(dreieckobjekt)
+
+
+    def Anzufahrende_Kanten(self):
+        pass
+
+    def plot(self):
+        self.mesh.plot()
 
 
 class Zelle:
@@ -457,7 +587,7 @@ if __name__=="__main__":
     stuetz2 = numpy.array([5,0])
     print("========")
     print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))
-    """
+    
     # Test Quadtree
 
     initialrechteck = Zelle(0,0,2000,2000)
@@ -478,7 +608,6 @@ if __name__=="__main__":
     print("Quadtree angelegt")
     Testquadtree.zeichnen()
 
-    """
     for i in range(0,1000):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)
@@ -492,3 +621,20 @@ if __name__=="__main__":
     zeitdifferenz = endzeit-startzeit
     print(zeitdifferenz)
     """
+
+    # Testdaten für Mesh
+
+    punkt1 = Bodenpunkt(0, 0, 0)
+    punkt2 = Bodenpunkt(0, 10, 0)
+    punkt3 = Bodenpunkt(15, 10, 0)
+    punkt4 = Bodenpunkt(15, 0, 0)
+    punkt5 = Bodenpunkt(7.5, 5, 0 )
+
+    Topographisch_bedeutsame_Bodenpunkte = [punkt1, punkt2, punkt3, punkt4, punkt5]
+
+    tin = TIN(Topographisch_bedeutsame_Bodenpunkte)
+
+    for kante in tin.Kantenliste:
+        print(kante.winkel())
+
+    print("Break")

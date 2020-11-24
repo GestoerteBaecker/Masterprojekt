@@ -893,7 +893,7 @@ if __name__=="__main__":
     stuetz2 = numpy.array([5,0])
     print("========")
     print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))
-    
+    """
     # Test Quadtree
 
     startzeit = time.time()
@@ -956,11 +956,12 @@ if __name__=="__main__":
 
     xpos=451880
     ypos=5884944
-    stuetzpunkt=(xpos,ypos)
+    pkt = Punkt(xpos, ypos)
     xsuch=5
     ysuch=5
     richtung=50+random.random()
-    testprofil=Profil(richtung, stuetzpunkt, 0, 1000)
+    testprofil=Profil(richtung, pkt, True, 0, 100)
+    testprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
     profilpunkte=testprofil.BerechneZwischenpunkte(2)
 
     for punkt in profilpunkte:
@@ -1001,6 +1002,7 @@ if __name__=="__main__":
 
         wert = Testquadtree.ebene_von_punkt(p)
         print(i, wert)
+        """
     """
 
     endzeit = time.time()

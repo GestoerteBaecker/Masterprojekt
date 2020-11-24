@@ -415,7 +415,7 @@ class Uferpunktquadtree:
 # Klasse, die Daten der Messung temporär speichert
 class Messgebiet:
 
-    def __init__(self, initale_position_x, initale_position_y, hoehe = 1000, breite = 1000):
+    def __init__(self, initale_position_x, initale_position_y, hoehe = 2000, breite = 2000):
         """
         :param initale_position: Mittige Position des zu vermessenden Gebiets (in utm), um das sich der Quadtree legen soll
         :param initiale_ausdehnung: grobe Ausdehnung in Meter
@@ -489,10 +489,10 @@ if __name__=="__main__":
     ymin=min(y_testdaten)-10
     ymax=max(y_testdaten)+10
 
-    xdiff=xmax-xmin
-    ydiff=ymax-ymin
-    xzentrum=xmin+xdiff/2
-    yzentrum=ymin+ydiff/2
+    xdiff = xmax - xmin
+    ydiff = ymax - ymin
+    xzentrum = xmin + xdiff / 2
+    yzentrum = ymin + ydiff / 2
 
     initialrechteck = Zelle(xzentrum,yzentrum,xdiff,ydiff)
     Testdaten_quadtree = Uferpunktquadtree(initialrechteck)

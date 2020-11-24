@@ -11,6 +11,7 @@ import time
 import random
 import math
 import numpy
+import csv
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
 # self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
@@ -46,6 +47,44 @@ class Boot:
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
+
+        ################################# S I M U L A T I O N ##########################################################
+        #SIMULATIONSPARAMETER
+        self.xpos1_start_sim = 451880
+        self.ypos1_start_sim = 5884944
+        self.stuetzpunkt_sum = (self.xpos1_start_sim, self.ypos1_start_sim)
+        self.xpos2_start_sim = 451880.2
+        self.ypos2_start_sim = 5884944.2
+        self.xsuch_sim = 5
+        self.ysuch_sim = 5
+
+        # EINLESEN DES MODELLS ALS QUADTREE
+        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding :)
+        lines = csv.reader(testdaten, delimiter=";")
+        id_testdaten = []
+        self.x_testdaten = []
+        self.y_testdaten = []
+        self.tiefe_testdaten = []
+
+        # Lesen der Datei
+        for line in lines:
+            id_testdaten.append(int(line[0]))
+            self.x_testdaten.append(float(line[1]))
+            self.y_testdaten.append(float(line[2]))
+            self.tiefe_testdaten.append(float(line[3]))
+        testdaten.close()
+
+        testdaten_xmin = min(self.x_testdaten) - 10
+        testdaten_xmax = max(self.x_testdaten) + 10
+        testdaten_ymin = min(self.y_testdaten) - 10
+        testdaten_ymax = max(self.y_testdaten) + 10
+
+        self.xdiff = testdaten_xmax - testdaten_xmin
+        self.ydiff = testdaten_ymax - testdaten_ymin
+        self.xzentrum = testdaten_xmin + self.xdiff / 2
+        self.yzentrum = testdaten_ymin + self.ydiff / 2
+
+        ################################################################################################################
 
         self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
         takt = []
@@ -185,6 +224,19 @@ class Boot:
                         sensor = self.Sensorliste[i]
                         if sensor.aktdaten:
                             self.AktuelleSensordaten[i] = sensor.aktdaten
+
+                            ########## S I M U L A T I O N #############################################################
+                            #if self.Sensorliste[i].simulation:
+                               # self.AktuelleSensordaten[0].daten[0]=self.xpos1_start_sim
+                               # self.AktuelleSensordaten[0].daten[1]=self.ypos1_start_sim
+                                #self.AktuelleSensordaten[1].daten[0]=self.xpos2_start_sim
+                                #self.AktuelleSensordaten[1].daten[1]=self.ypos2_start_sim
+
+
+
+                                #self.AktuelleSensordaten[2].daten[1]=TIEFE
+
+                            ############################################################################################
                             #print("aktuelle Daten in Überschreibungsfkt, sensor", self.Sensorliste[i], sensor.aktdaten, i, time.time())
 
                 # Abgeleitete Daten berechnen und überschreiben
@@ -309,7 +361,25 @@ class Boot:
     def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
 
         # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
-        self.Messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
+        self.erkundung_gestartet=True
+        self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
+
+        #################### S I M U L A T I O N ######################################################################
+        # Einlesen der Testdaten
+        initialrechteck = self.messgebiet.Zelle(self.xzentrum, self.yzentrum, self.xdiff, self.ydiff)
+        self.Testdaten_quadtree = self.messgebiet.Uferpunktquadtree(initialrechteck)
+
+        # Generieren des Quadtree
+        for i in range(len(self.x_testdaten)):
+            x = self.x_testdaten[i]
+            y = self.y_testdaten[i]
+            tiefe = self.tiefe_testdaten[i]
+
+            p = Messgebiet.Bodenpunkt(x, y, tiefe)
+
+            self.Testdaten_quadtree.punkt_einfuegen(p)
+        ################################################################################################################
+        ################################################################################################################
 
     def Punkt_anfahren(self, e, n, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         try:

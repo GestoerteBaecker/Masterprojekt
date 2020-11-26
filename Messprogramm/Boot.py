@@ -22,11 +22,21 @@ class UferPosition(enum.Enum):
 # -> d.h. damit zB self. datenbankbeschreiben True ist müssen mind. die anderen beiden auch True sein
 class Boot:
 
-    #TODO: GNSS muss beim Trennen rot werden; Datenbankschreiben hört bei unterbrochenem Echolot auf, Heading, Abfangen von Parsefehler in der Karte; GNSS1 Signalverlust in Datenbank abfangen ; Häufung von Datenverlusten manuell Signal abbrechen; Trennfunktion berichtigen
+    #TODO: GNSS muss beim Trennen rot werden; Datenbankschreiben hört bei unterbrochenem Echolot auf, Abfangen von Parsefehler in der Karte; GNSS1 Signalverlust in Datenbank abfangen ; Häufung von Datenverlusten manuell Signal abbrechen; Trennfunktion berichtigen
 
 
     def __init__(self):
 
+        # Einlesen der Parameter aus JSON Datei
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.stern_winkelinkrement = json_daten["Boot"]["stern_winkelinkrement"] # Winkel der konvergenten Strahlen des Sterns
+        self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
+        self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"] # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"] # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.messgebiet_ausdehnung = json_daten["Boot"]["messgebiet_ausdehnung"] # Breite und Höhe in m
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
         self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
@@ -40,8 +50,8 @@ class Boot:
         self.db_database = None
         self.db_table = None
         self.heading = None
-        self.Offset_GNSSmitte_Disto = 0.5   # TODO: Tatsächliches Offset messen und ergänzen
-        self.Winkeloffset_dist = 0          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
+        self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
+        self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.uferpunkt = None
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
@@ -56,9 +66,6 @@ class Boot:
         self.punkt_anfahren = False
         self.position = None # Punkt des Bootes
         self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
-        datei = open("boot_init.json", "r")
-        json_daten = json.load(datei)
-        datei.close()
 
         ################################# S I M U L A T I O N ##########################################################
         #SIMULATIONSPARAMETER
@@ -410,7 +417,7 @@ class Boot:
 
         # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
         self.erkundung_gestartet=True
-        self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
+        self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
 
         #################### S I M U L A T I O N ######################################################################
         # Einlesen der Testdaten
@@ -429,7 +436,7 @@ class Boot:
         ################################################################################################################
         ################################################################################################################
 
-        self.SternAbfahren(self.position, self.heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50)
+        self.SternAbfahren(self.position, self.heading, initial=True)
         topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
         #... weiter mit TIN
 
@@ -458,8 +465,8 @@ class Boot:
     def Wegberechnung(self):
         pass
 
-    def SternAbfahren(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50):
-        self.stern = Messgebiet.Stern(startpunkt, heading, winkelinkrement, grzw_seitenlaenge, initial, profil_grzw_dichte_topo_pkt, profil_grzw_neigungen)
+    def SternAbfahren(self, startpunkt, heading, initial=True):
+        self.stern = Messgebiet.Stern(startpunkt, heading, self.stern_winkelinkrement, self.stern_grzw_seitenlaenge, initial, self.profil_grzw_dichte_topographischer_punkte, self.profil_grzw_neigungen_topographischer_punkte)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)

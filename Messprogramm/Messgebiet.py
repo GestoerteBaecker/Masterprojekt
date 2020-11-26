@@ -465,6 +465,15 @@ class Profil:
         else:
             self.ist_definiert = Profil.Definition.NUR_RICHTUNG
 
+    @classmethod
+    def VerdichtendesProfil(cls, dreieckskante):
+        # dreieckskante ist ein TIN_Kante-Objekt (besitzt Start und Entpunkt)
+        # hier soll eine Dreieckskante eingesetzt werden (wie auch immer definiert) und ein Profil ausgegeben werden, das so direkt abgefahren werden kann
+        # switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
+        profil = cls(...)
+        return profil
+
+
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
     def ProfilBeginnen(self, punkt):
         if self.ist_definiert == Profil.Definition.NUR_RICHTUNG:

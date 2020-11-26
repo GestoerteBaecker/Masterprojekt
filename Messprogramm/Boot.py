@@ -422,7 +422,6 @@ class Boot:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
-                print("Länge Medianpunkte", self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
                 self.tracking_mode = neues_tracking

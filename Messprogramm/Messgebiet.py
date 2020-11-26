@@ -682,9 +682,8 @@ class Profil:
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
                     größter_abstand = 0
                     index = None
-                    print("index_zugefügter_medianpunkte", index_zugefügter_medianpunkte, "Länge median punkte", len(self.median_punkte))
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
-                    test_indizes = [0, *index_zugefügter_medianpunkte, len(index_zugefügter_medianpunkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
+                    test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
@@ -693,7 +692,7 @@ class Profil:
                         richtung = richtung / numpy.linalg.norm(richtung)
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
-                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index]))
+                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt()))
                             if größter_abstand < abstand:
                                 größter_abstand = abstand
                                 index = median_index

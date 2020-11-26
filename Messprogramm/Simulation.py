@@ -2,6 +2,7 @@ import Boot
 import csv
 import json
 import Messgebiet
+import numpy
 import random
 import Sensoren
 import statistics
@@ -98,21 +99,16 @@ class Boot_Simulation(Boot.Boot):
                 t = time.time()
 
                 ########## S I M U L A T I O N #############################################################
-
-                self.AktuelleSensordaten[0] = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
-
-
-                gnss2 = self.Uferpunktberechnung(1)
-                self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
-
-                gnss_north, gnss_east = self.AktuelleSensordaten[0].daten[0], \
-                                        self.AktuelleSensordaten[0].daten[1]
-                #print("SIM GNSS: ",gnss_north, gnss_east)
-
                 suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
 
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
+
+                self.AktuelleSensordaten[0] = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
+
+                gnss2 = self.Uferpunktberechnung(1)
+                self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
+
                 self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
 
                 p1, p2 = sympy.Point(self.position.x, self.position.y), sympy.Point(gnss2.x, gnss2.y)
@@ -143,8 +139,7 @@ class Boot_Simulation(Boot.Boot):
                     self.heading = self.Headingberechnung()
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[
-                    3]:  # Uferpunktberechnung
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:  # Uferpunktberechnung
                     self.uferpunkt = self.Uferpunktberechnung()
                     if self.Messgebiet != None:
                         Messgebiet.Uferpunkt_abspeichern(self.uferpunkt)
@@ -169,7 +164,6 @@ class Boot_Simulation(Boot.Boot):
                         Letzte_Bodenpunkte = []
 
                 diff = time.time()-t
-                print(len(self.median_punkte))
                 if self.akt_takt*4-diff > 0:
                     time.sleep(self.akt_takt*4-diff)
 
@@ -186,6 +180,7 @@ class Boot_Simulation(Boot.Boot):
     def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
+        self.heading = Headingberechnung(self.position, punkt)
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
 
         distanz = self.position.Abstand(punkt)
@@ -194,7 +189,7 @@ class Boot_Simulation(Boot.Boot):
         profilpunkte = testprofil.BerechneZwischenpunkte(geschw*self.akt_takt)
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
-            while True:
+            while self.punkt_anfahren:
                 self.position = profilpunkte[index]
                 index += 1
                 time.sleep(self.akt_takt*4)
@@ -213,6 +208,28 @@ class Boot_Simulation(Boot.Boot):
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
+
+def Headingberechnung(p1, p2):
+    # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
+    heading_rad = numpy.arctan((p2.x-p1.x) / (p2.y-p1.y))
+
+    # Quadrantenabfrage
+
+    if p2.x > p1.x:
+        if p2.y > p1.y:
+            q_zuschl = 0                # Quadrant 1
+        else:
+            q_zuschl = numpy.pi         # Quadrant 2
+    else:
+        if p2.y > p1.y:
+            q_zuschl = 2*numpy.pi       # Quadrant 4
+        else:
+            q_zuschl = numpy.pi         # Quadrant 3
+
+    heading_rad += q_zuschl
+    heading_gon = heading_rad * (200/numpy.pi)
+
+    return heading_gon
 
 
 if __name__ == "__main__":

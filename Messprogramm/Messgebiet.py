@@ -104,9 +104,10 @@ class TIN_Kante:
         self.Anfangspunkt= Anfangspunkt
         self.Endpunkt = Endpunkt
         self.Dreiecke = Dreiecke
+        self.gewicht = 0
 
-    def leange(self):
-        pass
+    def laenge(self):
+        return numpy.sqrt((self.Endpunkt.x-self.Anfangspunkt.x)**2+(self.Endpunkt.y-self.Anfangspunkt.y)**2+(self.Endpunkt.z-self.Anfangspunkt.z)**2)
 
     def mitte(self):
         x = (self.Anfangspunkt.x + self.Endpunkt.x) / 2
@@ -147,6 +148,7 @@ class TIN:
         self.TIN_punkte = []
         self.Kantenliste = []
         self.Dreieckliste = []
+        self.max_Kantenlaenge = 0
 
 
         # Punkte in Numpy-Array überführen
@@ -160,7 +162,7 @@ class TIN:
         if Max_len == 0.0:
             self.mesh = cloud.delaunay_2d()
         else:
-            self.mesh = cloud.delaunay_2d(Max_len)
+            self.mesh = cloud.delaunay_2d(alpha=Max_len)
 
         # Punkt ID's belegen
 
@@ -208,6 +210,11 @@ class TIN:
                                 if not vorhanden:
                                     kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
                                     self.Kantenliste.append(kante)
+
+                                    # Maximale Kantenlänge wird zum Normieren bei der Methode "Anzufahrende_Kanten" gebraucht
+
+                                    if kante.laenge() > self.max_Kantenlaenge:
+                                        self.max_Kantenlaenge = kante.laenge()
                                     dreieckobjekt.kanten += 1
                                     dreieckalt.kanten += 1
                                     if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
@@ -216,8 +223,34 @@ class TIN:
             self.Dreieckliste.append(dreieckobjekt)
 
 
-    def Anzufahrende_Kanten(self):
-        pass
+    def Anzufahrende_Kanten(self,Anz):
+        # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
+
+        anzufahrende_Kanten = []
+
+        for kante in self.Kantenliste:
+
+            if kante.gewicht == 0:
+                #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
+                laenge_norm = kante.laenge()/self.max_Kantenlaenge
+                kante.gewicht = laenge_norm*kante.winkel()
+
+            for i,kante_i in enumerate(anzufahrende_Kanten):
+                if kante.gewicht > kante_i.gewicht:
+                    anzufahrende_Kanten.insert(i,kante)
+                    if len(anzufahrende_Kanten) > Anz:
+                        anzufahrende_Kanten.pop()
+                    break
+
+            if len(anzufahrende_Kanten) < Anz and kante not in anzufahrende_Kanten:
+                anzufahrende_Kanten.append(kante)
+
+
+
+            if anzufahrende_Kanten == []:              # nur für ersten Durchgang benötigt
+                anzufahrende_Kanten.append(kante)
+
+        return anzufahrende_Kanten
 
     def plot(self):
         self.mesh.plot()
@@ -981,7 +1014,7 @@ if __name__=="__main__":
     #plt.show()
 
 
-    """
+    
     for i in range(0,10000):
         x = random.randint(-1000, 1000)
         y = random.randint(-1000, 1000)
@@ -1001,7 +1034,7 @@ if __name__=="__main__":
 
         wert = Testquadtree.ebene_von_punkt(p)
         print(i, wert)
-    """
+    
 
     endzeit = time.time()
     zeitdifferenz = endzeit-startzeit
@@ -1010,17 +1043,45 @@ if __name__=="__main__":
 
     # Testdaten für Mesh
 
+    """
     punkt1 = Bodenpunkt(0, 0, 0)
     punkt2 = Bodenpunkt(0, 10, 0)
     punkt3 = Bodenpunkt(15, 10, 0)
     punkt4 = Bodenpunkt(15, 0, 0)
-    punkt5 = Bodenpunkt(7.5, 5, 0 )
+    punkt5 = Bodenpunkt(7.5, 5, 5)
+    """
 
-    Topographisch_bedeutsame_Bodenpunkte = [punkt1, punkt2, punkt3, punkt4, punkt5]
+    Testdaten_txt = open("Test_DHM.txt", "r")
+    Topographisch_bedeutsame_Bodenpunkte = []
+    Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
+    laenge = 0
+    anfangszeit = time.time()
+    #while laenge < 20:
+    while Datenzeile != ['']:
+        tin_punkt = Bodenpunkt(float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3]))
+        punkt_in_liste = [float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3])]
 
-    tin = TIN(Topographisch_bedeutsame_Bodenpunkte)
+        Topographisch_bedeutsame_Bodenpunkte.append(tin_punkt)
+        # Punktliste_arry.insert(punkt_in_liste)
 
-    for kante in tin.Kantenliste:
-        print(kante.winkel())
+        print(laenge)
+
+        Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
+        laenge += 1
+
+
+
+    tin = TIN(Topographisch_bedeutsame_Bodenpunkte,10.0)
+
+    endzeit = time.time()
+
+    print(endzeit-anfangszeit)
+
+
+    #for kante in tin.Kantenliste:
+        #print(kante.laenge())
+
+    naechsteKanten = tin.Anzufahrende_Kanten(5)
+    #print(time.time()-endzeit)
 
     print("Break")

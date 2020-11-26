@@ -6,6 +6,7 @@ plt.ion() # Aktivieren eines dynamischen Plots
 import math
 import rasterio
 from rasterio.plot import show
+import csv
 import time
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
@@ -40,6 +41,24 @@ class Anwendung_Karte():
         # Anzeigen der geotiff
         self.geotiff = rasterio.open(self.geotiff_path)
         show(self.geotiff, adjust='None', ax=self.ax)
+
+        # Quadtree von DHM berechnen
+        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding :)
+        lines = csv.reader(testdaten, delimiter=";")
+        id_testdaten = []
+        x_testdaten = []
+        y_testdaten = []
+        tiefe_testdaten = []
+
+        # Lesen der Datei
+        for line in lines:
+            id_testdaten.append(int(line[0]))
+            x_testdaten.append(float(line[1]))
+            y_testdaten.append(float(line[2]))
+            tiefe_testdaten.append(float(line[3]))
+        testdaten.close()
+
+        self.ax.scatter(x_testdaten, y_testdaten, s=1)
 
         # Variablen für das spätere Boot setzen
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")

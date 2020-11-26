@@ -2,7 +2,7 @@ import numpy
 import time
 import Messgebiet
 
-"""
+
 t = time.time()
 start_punkt = Messgebiet.Bodenpunkt(0,0,0)
 profil = Messgebiet.Profil(50, start_punkt, True, 0, 100, 0, 50)
@@ -15,11 +15,11 @@ for pkt in range(10):
     punkt = Messgebiet.Bodenpunkt(10*pkt, 10*pkt, z)
     profil.MedianPunktEinfuegen(punkt)
 
-#profil.ProfilAbschliessenUndTopoPunkteFinden()
-#topo = profil.topographisch_bedeutsame_punkte
-#for pkt in topo:
-#    print(pkt)
-#print(time.time()-t)
+profil.ProfilAbschliessenUndTopoPunkteFinden()
+topo = profil.topographisch_bedeutsame_punkte
+for pkt in topo:
+    print(pkt)
+print(time.time()-t)
 """
 """
 startpunkt = Messgebiet.Punkt(0,0)
@@ -30,7 +30,7 @@ stern.profile[0].gemessenes_profil = True
 stern.mittelpunkt = Messgebiet.Punkt(0,50)
 stern.SternFuellen()
 i=0
-"""
+
 
 
 """

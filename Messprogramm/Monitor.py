@@ -318,8 +318,8 @@ class Anwendung(Frame):
                     else:
                         self.con_qual_echolot.config(bg="blue")
                     try:
-                        t1 = int(self.boot.AktuelleSensordaten[2].daten[0]) #TODO
-                        t2 = int(self.boot.AktuelleSensordaten[2].daten[1]) #TODO
+                        t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2) #TODO
+                        t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2) #TODO
                         if not echolot.simulation:
                             self.con_qual_echolot.config(bg="green")
                         else:

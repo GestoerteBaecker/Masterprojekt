@@ -682,6 +682,7 @@ class Profil:
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
                     größter_abstand = 0
                     index = None
+                    print("index_zugefügter_medianpunkte", index_zugefügter_medianpunkte, "Länge median punkte", len(self.median_punkte))
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
                     test_indizes = [0, *index_zugefügter_medianpunkte, len(index_zugefügter_medianpunkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):

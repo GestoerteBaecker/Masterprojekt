@@ -95,6 +95,7 @@ class Boot_Simulation(Boot.Boot):
 
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
+                t = time.time()
 
                 ########## S I M U L A T I O N #############################################################
 
@@ -106,7 +107,7 @@ class Boot_Simulation(Boot.Boot):
 
                 gnss_north, gnss_east = self.AktuelleSensordaten[0].daten[0], \
                                         self.AktuelleSensordaten[0].daten[1]
-                print("SIM GNSS: ",gnss_north, gnss_east)
+                #print("SIM GNSS: ",gnss_north, gnss_east)
 
                 suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
@@ -131,7 +132,8 @@ class Boot_Simulation(Boot.Boot):
                 distanz = ((ufer_punkt.x-p1.x)**2 + (ufer_punkt.y-p1.y)**2) ** 0.5
                 distanz = random.gauss(distanz, 0.1)
                 self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
-                print("SIM DIST: ", distanz)
+                #print("SIM DIST: ", distanz)
+                t2 = time.time()
                 ###########################################################################################
 
                 # Abgeleitete Daten berechnen und überschreiben
@@ -161,10 +163,15 @@ class Boot_Simulation(Boot.Boot):
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
                         else:
-                            self.median_punkte = []
+                            if len(self.median_punkte) > 0:
+                                time.sleep(0.5)  # TODO: vllt nicht nötig
+                                self.median_punkte = []
                         Letzte_Bodenpunkte = []
 
-                time.sleep(self.akt_takt)
+                diff = time.time()-t
+                print(len(self.median_punkte))
+                if self.akt_takt*4-diff > 0:
+                    time.sleep(self.akt_takt*4-diff)
 
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self,), daemon=True)
         self.aktualisierungsprozess.start()
@@ -175,7 +182,8 @@ class Boot_Simulation(Boot.Boot):
             self.PixHawk.homepoint = punkt
 
 
-    def Punkt_anfahren(self, punkt, geschw=2.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+    #TODO: nicht mehr anpacken, läuft
+    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
@@ -189,12 +197,14 @@ class Boot_Simulation(Boot.Boot):
             while True:
                 self.position = profilpunkte[index]
                 index += 1
-                time.sleep(self.akt_takt)
+                time.sleep(self.akt_takt*4)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte, ), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
         def punkt_anfahren_test(self):
+            if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+                self.Ufererkennung()
             self.punkt_anfahren = True
             while self.punkt_anfahren:
                 test = punkt_box.enthaelt_punkt(self.position)

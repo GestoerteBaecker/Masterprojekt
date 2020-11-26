@@ -22,6 +22,7 @@ class UferPosition(enum.Enum):
 class Boot:
 
     #TODO: GNSS muss beim Trennen rot werden; Datenbankschreiben hört bei unterbrochenem Echolot auf, Abfangen von Parsefehler in der Karte; GNSS1 Signalverlust in Datenbank abfangen ; Häufung von Datenverlusten manuell Signal abbrechen; Trennfunktion berichtigen
+    #TODO: sleep Zeiten Probe lesen
 
     def __init__(self):
 
@@ -60,9 +61,10 @@ class Boot:
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.geschwindigkeit = 2 # in km/h
-        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+        self.tracking_mode = Messgebiet.TrackingMode.AUS
         self.punkt_anfahren = False
         self.position = None # Punkt des Bootes
+        self.ufererkennung_aktiv = False
         self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
 
         self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
@@ -197,6 +199,7 @@ class Boot:
 
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
+                t = time.time()
 
                 # Aktualisierung des Attributs self.AktuelleSensordaten
                 for i in range(0, len(self.Sensorliste)):
@@ -231,10 +234,15 @@ class Boot:
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
                         else:
-                            self.median_punkte = []
+                            if len(self.median_punkte) > 0:
+                                time.sleep(0.5) #TODO: vllt nicht nötig
+                                self.median_punkte = []
                         Letzte_Bodenpunkte = []
-                    
-                time.sleep(self.akt_takt)
+
+                diff = time.time() - t
+
+                time.sleep(self.akt_takt - diff)
+
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
 
@@ -331,43 +339,50 @@ class Boot:
     # prüft durchgehend, ob das Boot nah am Ufer kommt (über Dimetix und Echolot)
     # Entfernungswerte tracken und mit vorherigen Messungen abgleichen
     # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
+    # self.ufererkennung_aktiv wird auf False gesetzt falls das Ufer erreicht wurde
     def Ufererkennung(self):
+        self.ufererkennung_aktiv = True
 
         def ufererkennung_thread(self):
-            while self.boot_lebt:
+            while self.boot_lebt and self.ufererkennung_aktiv:
                 if len(self.Bodenpunkte) >= 2:
                     p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
-                steigung = p2.NeigungBerechnen(p1)
-                extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
-                entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
-                tiefe = self.AktuelleSensordaten[2].daten[0] #TODO: Richtige Frequenz wählen
-                #TODO: Gewichten wann welche Kategorie gewählt werden soll
-                if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
-                    if entfernung < 20 or steigung > 0:
-                        self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
+                    steigung = p2.NeigungBerechnen(p1)
+                    extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
+                    entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
+                    tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
+                    #TODO: Gewichten wann welche Kategorie gewählt werden soll
+                    if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
+                        if entfernung < 20 or steigung > 0:
+                            self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
+                            self.ufererkennung_aktiv = False
+                        else:
+                            self.ist_am_ufer = [UferPosition.AM_UFER, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
+                    elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
+                        if entfernung < 50 or steigung > 0:
+                            self.ist_am_ufer = [UferPosition.NAH_AM_UFER, True]  # sehr kurz davor und Boot guckt Richtung Ufer
+                        else:
+                            self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                     else:
-                        self.ist_am_ufer = [UferPosition.AM_UFER, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
-                elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
-                    if entfernung < 50 or steigung > 0:
-                        self.ist_am_ufer = [UferPosition.NAH_AM_UFER, True]  # sehr kurz davor und Boot guckt Richtung Ufer
-                    else:
-                        self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
-                else:
-                    self.ist_am_ufer = [UferPosition.AM_UFER, False] # weit entfernt
+                        self.ist_am_ufer = [UferPosition.IM_WASSER, False] # weit entfernt
+                    #print(self.ist_am_ufer)
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
         thread.start()
 
 
     def Erkunden(self):   # Art des Gewässers (optional)
+        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+        def erkunden_extern(self):
 
-        # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
-        self.erkundung_gestartet=True
-        self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
+            # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
+            self.erkundung_gestartet=True
+            self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
 
-        self.SternAbfahren(self.position, self.heading, initial=True)
-        topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
-        #... weiter mit TIN
+            self.SternAbfahren(self.position, self.heading, initial=True)
+            topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
+            #... weiter mit TIN
+        threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
     def GeschwindigkeitSetzen(self, geschw):
         self.PixHawk.Geschwindigkeit_setzen(geschw)
@@ -382,6 +397,8 @@ class Boot:
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
         def punkt_anfahren_test(self):
+            if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+                self.Ufererkennung()
             self.punkt_anfahren = True
             while self.punkt_anfahren:
                 test = punkt_box.enthaelt_punkt(self.position)
@@ -395,22 +412,24 @@ class Boot:
         pass
 
     def SternAbfahren(self, startpunkt, heading, initial=True):
+        self.Ufererkennung()
         self.stern = Messgebiet.Stern(startpunkt, heading, self.stern_winkelinkrement, self.stern_grzw_seitenlaenge, initial, self.profil_grzw_dichte_topographischer_punkte, self.profil_grzw_neigungen_topographischer_punkte)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
         while True:
-            if self.ist_am_ufer == UferPosition.AM_UFER or not self.punkt_anfahren:
+            if self.ist_am_ufer[0] == UferPosition.AM_UFER or not self.punkt_anfahren:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
+                print("Länge Medianpunkte", self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
                 self.Punkt_anfahren(neuer_kurspunkt)
-            time.sleep(self.akt_takt)
+            time.sleep(self.akt_takt/10)
 
     def Gewaesseraufnahme(self):
         pass

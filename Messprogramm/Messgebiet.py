@@ -815,7 +815,7 @@ class Uferpunktquadtree:
 
         return False
 
-    def abfrage(self, suchgebiet, gefundene_punkte):
+    def abfrage(self, suchgebiet, gefundene_punkte=[]):
         if not suchgebiet.gebiet_in_zelle(suchgebiet):
             return False
 

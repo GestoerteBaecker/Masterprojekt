@@ -2,12 +2,15 @@ import Boot
 import csv
 import json
 import Messgebiet
+import random
 import Sensoren
 import sympy
 import threading
 import time
+import matplotlib.pyplot as plt
+plt.ion()
 
-class Boot_Simulation(Boot):
+class Boot_Simulation(Boot.Boot):
 
     def __init__(self):
 
@@ -93,18 +96,34 @@ class Boot_Simulation(Boot):
             while self.fortlaufende_aktualisierung:
 
                 ########## S I M U L A T I O N #############################################################
-                gnss 0 daten = [koords[2]*10**6+koords[0], koords[1], nmea.horizontal_dil, nmea.altitude, nmea.gps_qual] # Ausgeben von lat, lon, Höhe, Qualität,
-                        db_objekt = Daten(GNSS.id, daten, time.time())
 
-                
-                distanz =
-                tiefe =
+                self.AktuelleSensordaten[0].daten = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
 
-                self.AktuelleSensordaten[0].daten[0] = self.xpos1_start_sim
-                self.AktuelleSensordaten[0].daten[1] = self.ypos1_start_sim
-                self.AktuelleSensordaten[1].daten[0] = self.xpos2_start_sim
-                self.AktuelleSensordaten[1].daten[1] = self.ypos2_start_s
+                gnss2 = self.Uferpunktberechnung(1)
+                self.AktuelleSensordaten[1].daten = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
+
+                suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
+                tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
+
+                tiefe = mean(tiefenpunkte)
                 self.AktuelleSensordaten[2].daten = Sensoren.Daten(0, [tiefe, tiefe], time.time())
+
+                p1, p2 = sympy.Point(self.position.x, self.position.y), sympy.Point(gnss2.x, gnss2.y)
+                strahl = sympy.Line(p1, p2)
+                schnitt = self.ufer_polygon.intersection(strahl)
+                # Finden des Punkts, der das Ufer als erstes schneidet
+                ufer_punkt = None
+                diff = p2 - p1
+                skalar = 100000
+                for pkt in schnitt:
+                    diff_pkt = pkt-p1
+                    skalar_test = diff_pkt.x*diff.x + diff_pkt.y*diff.y
+                    if skalar_test >= 0:
+                        if skalar_test < skalar:
+                            skalar = skalar_test
+                            ufer_punkt = pkt
+                distanz = ((ufer_punkt.x-p1.x)**2 + (ufer_punkt.y-p1.y)**2) ** 0.5
+                distanz = random.gauss(distanz, 5)
                 self.AktuelleSensordaten[3].daten = Sensoren.Daten(0, distanz, time.time())
                 ###########################################################################################
 
@@ -166,3 +185,73 @@ class Boot_Simulation(Boot):
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
+
+
+if __name__ == "__main__":
+    # EINLESEN DES TEST POLYGONS
+    testdaten_path = open("Testdaten_Polygon.txt", "r")
+    lines = csv.reader(testdaten_path, delimiter=";")
+    testdaten_poly = []
+
+    # Lesen der Datei
+    for line in lines:
+        testdaten_poly.append(sympy.Point(tuple([float(komp) for komp in line])))
+    testdaten_path.close()
+    ufer_polygon = sympy.Polygon(*testdaten_poly)
+
+    p1, p2 = sympy.Point(451914.7237857745, 26869983909136309080730271 / 4565964803450000000-2), sympy.Point(451914.7237857745, 26869983909136309080730271 / 4565964803450000000)
+    line = sympy.Line(p1, p2)
+
+    schnitt = line.intersection(ufer_polygon)
+
+    # EINLESEN DES MODELLS ALS QUADTREE
+    testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+    lines = csv.reader(testdaten, delimiter=";")
+    id_testdaten = []
+    x_testdaten = []
+    y_testdaten = []
+    tiefe_testdaten = []
+
+    # Lesen der Datei
+    for line in lines:
+        id_testdaten.append(int(line[0]))
+        x_testdaten.append(float(line[1]))
+        y_testdaten.append(float(line[2]))
+        tiefe_testdaten.append(float(line[3]))
+
+    testdaten.close()
+    figure, ax = plt.subplots()
+    ax.plot([451914.7237857745, 451914.7237857745], [26869983909136309080730271 / 4565964803450000000-2, 26869983909136309080730271 / 4565964803450000000], lw=1)
+    ax.scatter([x_testdaten], [y_testdaten])
+    ax.plot()
+
+    x=[]
+    y=[]
+
+
+    x_poly = []
+    y_poly = []
+    for polypunkt in testdaten_poly:
+        x_poly.append(polypunkt.x)
+        y_poly.append(polypunkt.y)
+
+
+
+    schnitt_poly,=ax.plot([],[],marker='o',lw=0)
+
+    ax.plot(x_poly,y_poly,lw=2)
+
+    while True:
+
+        for schnittpunkt in schnitt:
+            x.append(schnittpunkt.x)
+            y.append(schnittpunkt.y)
+
+            schnitt_poly.set_xdata(x)
+            schnitt_poly.set_ydata(y)
+
+            plt.pause(0.5)
+
+
+
+    i=0

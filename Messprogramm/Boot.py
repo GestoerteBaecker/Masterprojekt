@@ -359,7 +359,7 @@ class Boot:
         thread.start()
 
 
-    def Erkunden(self, Art_d_Gewaessers):   # Art des Gewässers (optional)
+    def Erkunden(self):   # Art des Gewässers (optional)
 
         # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
         self.erkundung_gestartet=True

@@ -7,6 +7,7 @@ import time
 
 # Import der aufzurufenden Skripte
 import Karte
+import Simulation
 import Boot
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
@@ -33,14 +34,14 @@ class Anwendung(Frame):
 
         # OptionMenu mit den Messmethoden
         # Anlegen der Labels; die zwei unteren Label werden je nach Eingabe geändert und werden daher mit einer Variablen verknüpft
-        Label(self, text="Methode:").grid(row=1,column=0)
+        Label(self, text="Simulation:").grid(row=1,column=0)
         # Einführen einer Variablen für ein OptionMenu; hier wird die Auswahl über die Einheit des einzugebenen Winkels getroffen
         self.__om_variable = StringVar(self)
-        self.__om_variable.set("See")
+        self.__om_variable.set("Ja")
         # Liste von Einheiten, in die der Winkel umgerechnet werden soll; muss je nach Eingabe des OptionMenu geändert werden
-        self.__methoden = ["Fluss", "Meer"]
+        self.__methoden = ["Nein"]
         # OptionMenu zur Auswahl der Winkeleinheit und Platzierung innerhalb des Gitters
-        self.om = OptionMenu(self, self.__om_variable, *["See", "Fluss", "Meer"], command=self.aktuelle_methode)
+        self.om = OptionMenu(self, self.__om_variable, *["Ja", "Nein"], command=self.aktuelle_methode)
         self.om.grid(row=1, column=1,padx=(0,5),sticky="ew")
 
 
@@ -170,7 +171,10 @@ class Anwendung(Frame):
     def boot_verbinden(self):
         try:
             self.verbindung_initialisiert = True
-            self.boot = Boot.Boot()
+            if self.__om_variable.get() == "Nein":
+                self.boot = Boot.Boot()
+            elif self.__om_variable.get() == "Ja":
+                self.boot = Simulation.Boot_Simulation()
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -194,7 +198,7 @@ class Anwendung(Frame):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
-        pass
+        self.boot.Erkunden()
 
     def boot_aufnehmen(self):
         print("Aufnahme wird gestartet")
@@ -256,6 +260,7 @@ class Anwendung(Frame):
                                 self.con_qual_gnss1.config(bg="blue")
                         if self.karte_window!= None:
                             #try:
+                                print(gnss_north)
                                 self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading,self.t)
                             #except:
                                 #print("Karte kann nicht aktualisiert werden.")
@@ -343,7 +348,7 @@ class Anwendung(Frame):
                             self.con_qual_dimetix.config(bg="green")
                         else:
                             self.con_qual_dimetix.config(bg="dark blue")
-                        self.var_current_distance.set(str(d))
+                        self.var_current_distance.set(str(round(d,2)))
                     except:
                         if not dimetix.simulation:
                             self.con_qual_dimetix.config(bg="orange")

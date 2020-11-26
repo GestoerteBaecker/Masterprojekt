@@ -4,6 +4,7 @@ import json
 import Messgebiet
 import random
 import Sensoren
+import statistics
 import sympy
 import threading
 import time
@@ -14,7 +15,7 @@ class Boot_Simulation(Boot.Boot):
 
     def __init__(self):
 
-        super().__init__(self)
+        super().__init__()
         ################################# S I M U L A T I O N ##########################################################
         #SIMULATIONSPARAMETER
         # Einlesen der Parameter aus JSON Datei
@@ -97,16 +98,21 @@ class Boot_Simulation(Boot.Boot):
 
                 ########## S I M U L A T I O N #############################################################
 
-                self.AktuelleSensordaten[0].daten = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
+                self.AktuelleSensordaten[0] = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
+
 
                 gnss2 = self.Uferpunktberechnung(1)
-                self.AktuelleSensordaten[1].daten = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
+                self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
+
+                gnss_north, gnss_east = self.AktuelleSensordaten[0].daten[0], \
+                                        self.AktuelleSensordaten[0].daten[1]
+                print("SIM GNSS: ",gnss_north, gnss_east)
 
                 suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
 
-                tiefe = mean(tiefenpunkte)
-                self.AktuelleSensordaten[2].daten = Sensoren.Daten(0, [tiefe, tiefe], time.time())
+                tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
+                self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
 
                 p1, p2 = sympy.Point(self.position.x, self.position.y), sympy.Point(gnss2.x, gnss2.y)
                 strahl = sympy.Line(p1, p2)
@@ -123,8 +129,9 @@ class Boot_Simulation(Boot.Boot):
                             skalar = skalar_test
                             ufer_punkt = pkt
                 distanz = ((ufer_punkt.x-p1.x)**2 + (ufer_punkt.y-p1.y)**2) ** 0.5
-                distanz = random.gauss(distanz, 5)
-                self.AktuelleSensordaten[3].daten = Sensoren.Daten(0, distanz, time.time())
+                distanz = random.gauss(distanz, 0.1)
+                self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
+                print("SIM DIST: ", distanz)
                 ###########################################################################################
 
                 # Abgeleitete Daten berechnen und überschreiben
@@ -167,13 +174,24 @@ class Boot_Simulation(Boot.Boot):
             punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
             self.PixHawk.homepoint = punkt
 
-    # TODO: evtl Rechteck abhängig von Geschw. oder direkt Rechteck um das Boot legen
-    # TODO: toleranz muss auf die Pixhawk interne Toleranz passen (Pixhawk-Toleranz muss kleiner gleich toleranz sein)
+
     def Punkt_anfahren(self, punkt, geschw=2.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
-        self.PixHawk.Geschwindigkeit_setzen(geschw)
-        self.PixHawk.Wegpunkt_anfahren(punkt.x, punkt.y)
+
         self.punkt_anfahren = True
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
+
+        distanz = self.position.Abstand(punkt)
+        testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz)
+        testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
+        profilpunkte = testprofil.BerechneZwischenpunkte(geschw*self.akt_takt)
+
+        def inkrementelles_anfahren(self, profilpunkte, index=0):
+            while True:
+                self.position = profilpunkte[index]
+                index += 1
+                time.sleep(self.akt_takt)
+        threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte, ), daemon=True).start()
+
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
         def punkt_anfahren_test(self):
@@ -223,6 +241,7 @@ if __name__ == "__main__":
     figure, ax = plt.subplots()
     ax.plot([451914.7237857745, 451914.7237857745], [26869983909136309080730271 / 4565964803450000000-2, 26869983909136309080730271 / 4565964803450000000], lw=1)
     ax.scatter([x_testdaten], [y_testdaten])
+    ax.scatter([451880], [5884944], marker='o')
     ax.plot()
 
     x=[]

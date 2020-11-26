@@ -4,11 +4,9 @@ from pyproj import Proj, transform
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
-import numpy as np
 import rasterio
 from rasterio.plot import show
 import time
-import utm
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
 class Anwendung_Karte():
@@ -56,12 +54,12 @@ class Anwendung_Karte():
         thismanager=self.plt.get_current_fig_manager()
         positionx,positiony=self.position
         #TODO: Positionierung nachgucken
-        thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+        #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
         update_interval = 10
-        self.gnss_north=gnss_north-32000000
+        self.gnss_north=gnss_north#-32000000
         self.gnss_east=gnss_east
         self.gnss_heading=gnss_heading
 

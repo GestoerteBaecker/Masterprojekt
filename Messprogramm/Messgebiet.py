@@ -467,6 +467,7 @@ class Profil:
 
     @classmethod
     def VerdichtendesProfil(cls, dreieckskante):
+        #TODO: implementieren
         # dreieckskante ist ein TIN_Kante-Objekt (besitzt Start und Entpunkt)
         # hier soll eine Dreieckskante eingesetzt werden (wie auch immer definiert) und ein Profil ausgegeben werden, das so direkt abgefahren werden kann
         # switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte

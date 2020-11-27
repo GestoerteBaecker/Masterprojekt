@@ -403,8 +403,8 @@ class Stern:
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-        if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
-            return
+        #if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
+        #    return
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):

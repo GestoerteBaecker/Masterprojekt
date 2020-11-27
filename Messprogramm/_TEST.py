@@ -2,7 +2,9 @@ import numpy
 import time
 import Messgebiet
 import csv
+import Simulation
 
+"""
 t = time.time()
 profil = Messgebiet.Profil(50, Messgebiet.Bodenpunkt(451880, 5884978, 0), stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50)
 end_punkt = Messgebiet.Bodenpunkt(451943.3846900004, 5885041.384689885,0)
@@ -25,11 +27,17 @@ for punkt in median_punkte:
 profil.ProfilAbschliessenUndTopoPunkteFinden(end_punkt)
 
 print("Länge median punkte", len(median_punkte), "länge topo punkte", len(profil.topographisch_bedeutsame_punkte))
+"""
 
+boot = Simulation.Boot_Simulation()
+time.sleep(0.3)
+boot.Datenaktualisierung()
+time.sleep(0.3)
+boot.Erkunden()
 
-
-
-
+while not boot.stern_beendet:
+    time.sleep(0.1)
+print("Fertig gemessen")
 
 
 #

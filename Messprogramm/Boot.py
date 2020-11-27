@@ -60,6 +60,7 @@ class Boot:
         self.Messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
+        self.stern_beendet = False
         self.geschwindigkeit = 2 # in km/h
         self.tracking_mode = Messgebiet.TrackingMode.AUS
         self.punkt_anfahren = False
@@ -345,7 +346,7 @@ class Boot:
 
         def ufererkennung_thread(self):
             while self.boot_lebt and self.ufererkennung_aktiv:
-                if len(self.Bodenpunkte) >= 2:
+                if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.AUS: #TODO: ist das so ok? bei TrackingMode AUS fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
                     p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
                     steigung = p2.NeigungBerechnen(p1)
                     extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
@@ -418,17 +419,24 @@ class Boot:
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
         while True:
-            if self.ist_am_ufer[0] == UferPosition.AM_UFER or not self.punkt_anfahren:
+            if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.tracking_mode != Messgebiet.TrackingMode.AUS) or not self.punkt_anfahren:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
-                time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+                self.ufererkennung_aktiv = False
+                time.sleep(self.akt_takt*5) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
+                print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                print("sternmitte", self.stern.mittelpunkt)
+                print("self position", self.position)
+                print("==============")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
                 self.Punkt_anfahren(neuer_kurspunkt)
+                time.sleep(self.akt_takt*4) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/10)
+        self.stern_beendet = True
 
     def Gewaesseraufnahme(self):
         pass

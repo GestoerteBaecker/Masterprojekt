@@ -260,7 +260,7 @@ class Anwendung(Frame):
                                 self.con_qual_gnss1.config(bg="blue")
                         if self.karte_window!= None:
                             #try:
-                                print(gnss_north)
+                                #(gnss_north)
                                 self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading,self.t)
                             #except:
                                 #print("Karte kann nicht aktualisiert werden.")

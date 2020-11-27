@@ -188,6 +188,8 @@ class Boot_Simulation(Boot.Boot):
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
         profilpunkte = testprofil.BerechneZwischenpunkte(geschw*self.akt_takt)
 
+        #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
+
         def inkrementelles_anfahren(self, profilpunkte, index=0):
             while self.punkt_anfahren:
                 self.position = profilpunkte[index]

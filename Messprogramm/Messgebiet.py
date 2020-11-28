@@ -12,9 +12,13 @@ import pyvista as pv
 # Definition von Enums zur besseren Lesbarkeit
 # Tracking Mode, das das Boot haben soll
 class TrackingMode(enum.Enum):
-    PROFIL = 0
-    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen
-    AUS = 2
+    # ab hier soll Tracking und Ufererkennung erfolgen
+    PROFIL = 0 # volles Tracking
+    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen; ausgedünntes Tracking
+    # ab hier soll kein Tracking erfolgen
+    UFERERKENNUNG = 10 # kein Tracking, aber Ufererkennung
+    # ab hier weder Ufererkennung noch Tracking
+    BLINDFAHRT = 20
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -273,7 +277,6 @@ class Stern:
         self.aktuelles_profil = 0 # Index des aktuellen Profils bezogen auf self.aktueller_stern
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
         self.mittelpunkt = None
-        self.mittelpunktfahrt = False # sagt aus, ob das Boot gerade Richtung Mittelpunkt fährt
         self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
         self.weitere_sterne = []
         # der aktuelle Stern wird in dieser Variable gesichert, sodass die Methoden statt mit self von dieser Variablen aufgerufen werden (Steuerung von außen geschieht nämlich nur über den einen Init-Stern)
@@ -388,23 +391,20 @@ class Stern:
     # diese Methode immer aufrufen, sobald das Ufer angefahren wird ODER ein Punkt erreicht wird, der angefahren werden sollte
     # punkt: Endpunkt, an dem das Boot auf das Ufer trifft; mode: TrackingMode des Bootes
     # Rückgabe: Liste mit Punkt, der angefahren werden sollte und welche Tracking-Methode das Boot haben sollte
+    # return punkt = None, wenn der Stern/ die Sterne fertig gemessen wurden
     def NaechsteAktion(self, punkt, mode):
         stern = self.aktueller_stern
         if mode == TrackingMode.PROFIL: # das Boot soll Messungen auf dem Profil vornehmen
             punkt = stern.ProfilBeenden(punkt)
-            mode = TrackingMode.AUS
-            stern.mittelpunktfahrt = True
-        elif mode == TrackingMode.AUS and stern.mittelpunktfahrt: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
+            mode = TrackingMode.BLINDFAHRT
+        elif mode == TrackingMode.BLINDFAHRT: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
             punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
-            mode = TrackingMode.AUS
-            stern.mittelpunktfahrt = False
-        elif mode == TrackingMode.AUS and not stern.mittelpunktfahrt:
+            mode = TrackingMode.UFERERKENNUNG
+        elif mode == TrackingMode.UFERERKENNUNG:
             profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-        #if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
-        #    return
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):

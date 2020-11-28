@@ -62,7 +62,7 @@ class Boot:
         self.boot_lebt = True
         self.stern_beendet = False
         self.geschwindigkeit = 2 # in km/h
-        self.tracking_mode = Messgebiet.TrackingMode.AUS
+        self.tracking_mode = Messgebiet.TrackingMode.BLINDFAHRT
         self.punkt_anfahren = False
         self.position = None # Punkt des Bootes
         self.ufererkennung_aktiv = False
@@ -234,10 +234,10 @@ class Boot:
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
-                        else:
-                            if len(self.median_punkte) > 0:
-                                time.sleep(0.5) #TODO: vllt nicht nötig
-                                self.median_punkte = []
+                        #else:
+                        #    if len(self.median_punkte) > 0:
+                        #        time.sleep(0.5) #TODO: vllt nicht nötig
+                        #        self.median_punkte = []
                         Letzte_Bodenpunkte = []
 
                 diff = time.time() - t
@@ -346,7 +346,7 @@ class Boot:
 
         def ufererkennung_thread(self):
             while self.boot_lebt and self.ufererkennung_aktiv:
-                if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.AUS: #TODO: ist das so ok? bei TrackingMode AUS fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
+                if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.BLINDFAHRT: #TODO: ist das so ok? bei TrackingMode BLINDFAHRT fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
                     p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
                     steigung = p2.NeigungBerechnen(p1)
                     extrapolation = p2.z + (steigung * self.geschwindigkeit * self.akt_takt) # voraussichtliche Tiefe in self.akt_takt Sekunden
@@ -366,7 +366,6 @@ class Boot:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                     else:
                         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # weit entfernt
-                    #print(self.ist_am_ufer)
                 time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
         thread.start()
@@ -377,8 +376,8 @@ class Boot:
         def erkunden_extern(self):
 
             # Messgebiet mit Profilen, Sternen, Topographisch bedeutsamen Punkte, TIN und Uferpunktquadtree anlegen
-            self.erkundung_gestartet=True
-            self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
+            self.erkundung_gestartet = True
+            self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
 
             self.SternAbfahren(self.position, self.heading, initial=True)
             topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
@@ -398,7 +397,7 @@ class Boot:
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
         def punkt_anfahren_test(self):
-            if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+            if self.tracking_mode.value <= 10:
                 self.Ufererkennung()
             self.punkt_anfahren = True
             while self.punkt_anfahren:
@@ -419,17 +418,17 @@ class Boot:
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
         while True:
-            if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.tracking_mode != Messgebiet.TrackingMode.AUS) or not self.punkt_anfahren:
+            if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*5) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                print("sternmitte", self.stern.mittelpunkt)
-                print("self position", self.position)
-                print("==============")
+                #print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                #print("sternmitte", self.stern.mittelpunkt)
+                #print("self position", self.position)
+                #print("==============")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break

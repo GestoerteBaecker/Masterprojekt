@@ -29,6 +29,7 @@ class Boot_Simulation(Boot.Boot):
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
+        self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
 
         # EINLESEN DES MODELLS ALS QUADTREE
         testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
@@ -97,6 +98,7 @@ class Boot_Simulation(Boot.Boot):
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
                 t = time.time()
+                #print("Boot Position und Zeit:", self.position, t)
 
                 ########## S I M U L A T I O N #############################################################
                 suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
@@ -128,8 +130,6 @@ class Boot_Simulation(Boot.Boot):
                 distanz = ((ufer_punkt.x-p1.x)**2 + (ufer_punkt.y-p1.y)**2) ** 0.5
                 distanz = random.gauss(distanz, 0.1)
                 self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
-                #print("SIM DIST: ", distanz)
-                t2 = time.time()
                 ###########################################################################################
 
                 # Abgeleitete Daten berechnen und überschreiben
@@ -157,15 +157,15 @@ class Boot_Simulation(Boot.Boot):
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
-                        else:
-                            if len(self.median_punkte) > 0:
-                                time.sleep(0.5)  # TODO: vllt nicht nötig
-                                self.median_punkte = []
+                        #else:
+                        #    if len(self.median_punkte) > 0:
+                        #        time.sleep(0.5)  # TODO: vllt nicht nötig
+                        #        self.median_punkte = []
                         Letzte_Bodenpunkte = []
 
                 diff = time.time()-t
-                if self.akt_takt*4-diff > 0:
-                    time.sleep(self.akt_takt*4-diff)
+                if self.akt_takt-diff > 0:
+                    time.sleep(self.akt_takt-diff)
 
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self,), daemon=True)
         self.aktualisierungsprozess.start()
@@ -194,13 +194,13 @@ class Boot_Simulation(Boot.Boot):
             while self.punkt_anfahren:
                 self.position = profilpunkte[index]
                 index += 1
-                time.sleep(self.akt_takt*4)
+                time.sleep(self.akt_takt)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte, ), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
         def punkt_anfahren_test(self):
-            if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+            if self.tracking_mode.value <= 10:
                 self.Ufererkennung()
             self.punkt_anfahren = True
             while self.punkt_anfahren:

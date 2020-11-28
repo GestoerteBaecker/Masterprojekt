@@ -3,6 +3,7 @@ import time
 import Messgebiet
 import csv
 import Simulation
+import threading
 
 """
 t = time.time()
@@ -29,7 +30,9 @@ profil.ProfilAbschliessenUndTopoPunkteFinden(end_punkt)
 print("Länge median punkte", len(median_punkte), "länge topo punkte", len(profil.topographisch_bedeutsame_punkte))
 """
 
+
 boot = Simulation.Boot_Simulation()
+boot.auslesen = True
 time.sleep(0.3)
 boot.Datenaktualisierung()
 time.sleep(0.3)
@@ -38,6 +41,46 @@ boot.Erkunden()
 while not boot.stern_beendet:
     time.sleep(0.1)
 print("Fertig gemessen")
+
+"""
+
+class A:
+    def __init__(self):
+        self.a = 0
+        time.sleep(0.1)
+
+        def plus(self, liste, index=0):
+            while True:
+                self.a = liste[index]
+                index += 1
+                print("self.a", self.a, "thread:", threading.get_ident())
+                time.sleep(0.1)
+        threading.Thread(target=plus, args=(self, ["Element Nr. " + str(i) for i in list(range(10000))], 0), daemon=True).start()
+
+
+    #def test(self):
+        #while True:
+            #print(self.a)
+            #time.sleep(0.1)
+
+    def verändern(self):
+        def intern(self):
+            while True:
+                print("Einmal self.a", self.a, "thread:", threading.get_ident())
+                time.sleep(0.1)
+                print("Nochmal self.a", self.a, "thread:", threading.get_ident())
+                time.sleep(0.4)
+        threading.Thread(target=intern, args=(self, ), daemon=True).start()
+
+a = A()
+a.verändern()
+#a.test()
+while True:
+    pass
+
+"""
+
+
 
 
 #

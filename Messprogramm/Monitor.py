@@ -212,6 +212,7 @@ class Anwendung(Frame):
 
     def status_und_daten_aktualisieren(self):
         # Anzahl der Durchläufe für die Bootsroute
+        t = time.time()
         if self.verbindung_initialisiert==True:
             self.t+=1
             if self.boot.PixHawk.verbindung_hergestellt==True:
@@ -357,7 +358,9 @@ class Anwendung(Frame):
                 else:
                     self.con_qual_dimetix.config(bg="red")
 
-        self.after(500, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
+        schlafen = int(max(0, 500 - (time.time() - t)))
+        #print(time.time())
+        self.after(schlafen, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 
     def alles_schliessen(self):
         if self.verbindung_initialisiert == True: self.boot_trennen()

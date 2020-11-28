@@ -64,7 +64,7 @@ class Boot:
         self.geschwindigkeit = 2 # in km/h
         self.tracking_mode = Messgebiet.TrackingMode.BLINDFAHRT
         self.punkt_anfahren = False
-        self.position = None # Punkt des Bootes
+        self.position = Messgebiet.Punkt(0,0,0) # Punkt des Bootes
         self.ufererkennung_aktiv = False
         self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
 
@@ -114,9 +114,9 @@ class Boot:
         if mode == 0:
 
             def Datenbank_Boot(self):
+                db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
                 while self.datenbankbeschreiben:
                     t = time.time()
-                    db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
                     zeiten = []
                     db_temp = ""
                     db_schreiben = True
@@ -135,7 +135,7 @@ class Boot:
                         print(db_text)
                         self.db_zeiger.execute(db_text)
                         self.db_zeiger.commit()
-                    schlafen = abs(self.db_takt - (time.time() - t))
+                    schlafen = max(0, self.db_takt - (time.time() - t))
                     time.sleep(schlafen)
 
             if not self.datenbankbeschreiben:
@@ -240,9 +240,8 @@ class Boot:
                         #        self.median_punkte = []
                         Letzte_Bodenpunkte = []
 
-                diff = time.time() - t
-
-                time.sleep(self.akt_takt - diff)
+                schlafen = max(0, self.akt_takt - (time.time() - t))
+                time.sleep(schlafen)
 
         self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
         self.aktualisierungsprozess.start()
@@ -346,6 +345,7 @@ class Boot:
 
         def ufererkennung_thread(self):
             while self.boot_lebt and self.ufererkennung_aktiv:
+                t = time.time()
                 if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.BLINDFAHRT: #TODO: ist das so ok? bei TrackingMode BLINDFAHRT fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
                     p1, p2 = self.Bodenpunkte[-2], self.Bodenpunkte[-1]
                     steigung = p2.NeigungBerechnen(p1)
@@ -366,8 +366,9 @@ class Boot:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                     else:
                         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # weit entfernt
-                time.sleep(self.akt_takt)
-        thread = threading.Thread(target=ufererkennung_thread, args=(self, ))
+                schlafen = max(0, self.akt_takt/2 - (time.time() - t))
+                time.sleep(schlafen)
+        thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
 
 
@@ -401,10 +402,12 @@ class Boot:
                 self.Ufererkennung()
             self.punkt_anfahren = True
             while self.punkt_anfahren:
+                t = time.time()
                 test = punkt_box.enthaelt_punkt(self.position)
                 if test:
                     self.punkt_anfahren = False
-                time.sleep(self.akt_takt)
+                schlafen = max(0, self.akt_takt / 2 - (time.time() - t))
+                time.sleep(schlafen)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
@@ -421,7 +424,7 @@ class Boot:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
-                time.sleep(self.akt_takt*5) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+                time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
@@ -433,8 +436,8 @@ class Boot:
                 if neuer_kurspunkt is None:
                     break
                 self.Punkt_anfahren(neuer_kurspunkt)
-                time.sleep(self.akt_takt*4) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
-            time.sleep(self.akt_takt/10)
+                time.sleep(self.akt_takt*2) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
+            time.sleep(self.akt_takt/2)
         self.stern_beendet = True
 
     def Gewaesseraufnahme(self):

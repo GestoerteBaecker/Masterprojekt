@@ -82,6 +82,9 @@ class Boot_Simulation(Boot.Boot):
         testdaten_path.close()
         self.ufer_polygon = sympy.Polygon(*testdaten)
 
+        ### TEST ###
+        self.test = 0
+
         ################################################################################################################
         ################################################################################################################
 
@@ -98,6 +101,7 @@ class Boot_Simulation(Boot.Boot):
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung:
                 t = time.time()
+                self.test += 1
                 #print("Boot Position und Zeit:", self.position, t)
 
                 ########## S I M U L A T I O N #############################################################
@@ -163,12 +167,12 @@ class Boot_Simulation(Boot.Boot):
                         #        self.median_punkte = []
                         Letzte_Bodenpunkte = []
 
-                diff = time.time()-t
-                if self.akt_takt-diff > 0:
-                    time.sleep(self.akt_takt-diff)
+                schlafen = max(0, self.akt_takt - (time.time() - t))
+                print("self.position", self.position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                time.sleep(schlafen)
 
-        self.aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self,), daemon=True)
-        self.aktualisierungsprozess.start()
+        aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
+        aktualisierungsprozess.start()
 
         time.sleep(0.1)
         if not self.PixHawk.homepoint:
@@ -186,7 +190,7 @@ class Boot_Simulation(Boot.Boot):
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(geschw*self.akt_takt)
+        profilpunkte = testprofil.BerechneZwischenpunkte(geschw*(self.akt_takt/2))
 
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 
@@ -194,8 +198,9 @@ class Boot_Simulation(Boot.Boot):
             while self.punkt_anfahren:
                 self.position = profilpunkte[index]
                 index += 1
-                time.sleep(self.akt_takt)
-        threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte, ), daemon=True).start()
+                print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
+                time.sleep(self.akt_takt/2)
+        threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
 
@@ -207,7 +212,7 @@ class Boot_Simulation(Boot.Boot):
                 test = punkt_box.enthaelt_punkt(self.position)
                 if test:
                     self.punkt_anfahren = False
-                time.sleep(self.akt_takt)
+                time.sleep(self.akt_takt/2)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 

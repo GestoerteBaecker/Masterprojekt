@@ -12,6 +12,7 @@ import time
 import matplotlib.pyplot as plt
 plt.ion()
 
+
 class Boot_Simulation(Boot.Boot):
 
     def __init__(self):
@@ -101,21 +102,24 @@ class Boot_Simulation(Boot.Boot):
                 t = time.time()
 
                 ########## S I M U L A T I O N #############################################################
-                suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
+                with Boot.schloss:
+                    position = self.position
+                    heading = self.heading
+                suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
-
+                print("erstes print", time.time()-t)
+                t_test = time.time()
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
 
-                self.AktuelleSensordaten[0] = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 4], time.time())
+                gnss2 = PolaresAnhaengen(position, heading, dist=1)
 
-                gnss2 = self.Uferpunktberechnung(1)
-                self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
-
-                self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
-
-                p1, p2 = sympy.Point(self.position.x, self.position.y), sympy.Point(gnss2.x, gnss2.y)
+                p1, p2 = sympy.Point(position.x, position.y), sympy.Point(gnss2.x, gnss2.y)
                 strahl = sympy.Line(p1, p2)
+                print("zweites print", time.time()-t_test)
+                t_test = time.time()
                 schnitt = self.ufer_polygon.intersection(strahl)
+                print("drittes print", time.time() - t_test)
+                t_test = time.time()
                 # Finden des Punkts, der das Ufer als erstes schneidet
                 ufer_punkt = None
                 diff = p2 - p1
@@ -129,10 +133,16 @@ class Boot_Simulation(Boot.Boot):
                             ufer_punkt = pkt
                 distanz = ((ufer_punkt.x - p1.x) ** 2 + (ufer_punkt.y - p1.y) ** 2) ** 0.5
                 distanz = random.gauss(distanz, 0.1)
-                self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
+                print("viertes print", time.time()-t_test)
+
+                with Boot.schloss:
+                    self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
+                    self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
+                    self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
+                    self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
-                print("self.position simulation", self.position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
                 ###########################################################################################
 
@@ -144,50 +154,67 @@ class Boot_Simulation(Boot.Boot):
             while self.fortlaufende_aktualisierung:
                 t = time.time()
                 self.test += 1
-                #print("Boot Position und Zeit:", self.position, t)
+
+                # auslesen der geteilten Variablen
+                with Boot.schloss:
+                    gnss1 = self.AktuelleSensordaten[0]
+                    gnss2 = self.AktuelleSensordaten[1]
+                    echolot = self.AktuelleSensordaten[2]
+                    disto = self.AktuelleSensordaten[3]
+                    track_mode = self.tracking_mode.value
 
                 # Abgeleitete Daten berechnen und überschreiben
+                Bodenpunkt = None
+                position = None
 
                 # aktuelles Heading berechnen und zum Boot abspeichern
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:  # Headingberechnung
-                    self.heading = self.Headingberechnung()
-                    print("bootsmitte", [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]])
+                heading = self.Headingberechnung()
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:  # Uferpunktberechnung
-                    self.uferpunkt = self.Uferpunktberechnung()
+                if gnss1 and gnss2 and disto:  # Uferpunktberechnung
+                    #print("bootsmitte", [gnss1.daten[0], gnss1.daten[1]])
+                    position = Messgebiet.Punkt(gnss1.daten[0], gnss1.daten[1])
+                    uferpunkt = self.Uferpunktberechnung()
                     if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(self.uferpunkt)
+                        Messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
-                    Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
+                if gnss1 and echolot:
+                    Bodendaten = (gnss1, echolot)
                     Letzte_Bodenpunkte.append(Bodendaten)
 
                     if len(Letzte_Bodenpunkte) > 10:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
+                        Letzte_Bodenpunkte = []
+
+                # setzen der geteilten Variablen
+                with Boot.schloss:
+                    if heading is not None:
+                        self.heading = heading
+
+                    if position is not None:
+                        self.position = position
+
+                    if Bodenpunkt is not None:
                         self.Bodenpunkte.append(Bodenpunkt)
                         if len(self.Bodenpunkte) > 2:
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
-                        if self.tracking_mode.value < 2:
+                        if track_mode < 2:
                             self.median_punkte.append(Bodenpunkt)
-                        #else:
-                        #    if len(self.median_punkte) > 0:
-                        #        time.sleep(0.5)  # TODO: vllt nicht nötig
-                        #        self.median_punkte = []
-                        Letzte_Bodenpunkte = []
+
+                    #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
-                print("self.position", self.position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
 
         threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True).start()
 
-        time.sleep(0.1)
+        time.sleep(2)
         if not self.PixHawk.homepoint:
-            punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
-            self.PixHawk.homepoint = punkt
+            with Boot.schloss:
+                punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
+                self.PixHawk.homepoint = punkt
 
 
     #TODO: nicht mehr anpacken, läuft
@@ -206,9 +233,10 @@ class Boot_Simulation(Boot.Boot):
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
             while self.punkt_anfahren:
-                self.position = profilpunkte[index]
-                index += 1
-                print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
+                with Boot.schloss:
+                    self.position = profilpunkte[index]
+                    index += 1
+                    #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
                 time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
@@ -248,6 +276,14 @@ def Headingberechnung(p1, p2):
     heading_gon = heading_rad * (200/numpy.pi)
 
     return heading_gon
+
+
+def PolaresAnhaengen(position, heading, dist):
+
+    e = position.x + numpy.sin(heading / (200 / numpy.pi)) * dist
+    n = position.y + numpy.cos(heading / (200 / numpy.pi)) * dist
+
+    return Messgebiet.Punkt(e, n)
 
 
 if __name__ == "__main__":

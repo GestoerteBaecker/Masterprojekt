@@ -30,7 +30,6 @@ profil.ProfilAbschliessenUndTopoPunkteFinden(end_punkt)
 print("Länge median punkte", len(median_punkte), "länge topo punkte", len(profil.topographisch_bedeutsame_punkte))
 """
 
-
 boot = Simulation.Boot_Simulation()
 boot.auslesen = True
 time.sleep(0.3)

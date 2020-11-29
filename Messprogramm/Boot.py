@@ -10,6 +10,8 @@ import time
 import numpy
 import enum
 
+schloss = threading.RLock()
+
 # Definition von Enums zur besseren Lesbarkeit
 class UferPosition(enum.Enum):
     IM_WASSER = 0
@@ -51,7 +53,6 @@ class Boot:
         self.heading = None
         self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
-        self.uferpunkt = None
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
@@ -217,9 +218,9 @@ class Boot:
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
-                    self.uferpunkt = self.Uferpunktberechnung()
+                    uferpunkt = self.Uferpunktberechnung()
                     if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(self.uferpunkt)
+                        Messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -253,13 +254,17 @@ class Boot:
 
     def Uferpunktberechnung(self, dist=False):
 
-        if not dist:                                    # Falls keine Distanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
-            dist = self.AktuelleSensordaten[3].daten
+        with schloss:
+            if not dist:  # Falls keine Distanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
+                dist = self.AktuelleSensordaten[3].daten
+            x = self.AktuelleSensordaten[0].daten[0]
+            y = self.AktuelleSensordaten[0].daten[1]
+            heading = self.heading
 
         strecke = dist + self.Offset_GNSSmitte_Disto
 
-        e = self.AktuelleSensordaten[0].daten[0] + numpy.sin((self.heading+self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
-        n = self.AktuelleSensordaten[0].daten[1] + numpy.cos((self.heading+self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        e = x + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        n = y + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
 
         return Messgebiet.Uferpunkt(e, n)
 
@@ -309,24 +314,29 @@ class Boot:
 
     def Headingberechnung(self):
 
-        Bootsmitte = [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]]
-        Bootsbug =   [self.AktuelleSensordaten[1].daten[0], self.AktuelleSensordaten[1].daten[1]]
+        test = False
+        with schloss:
+            if not self.AktuelleSensordaten[0]:
+                test = True
 
-        # aktuelle Position des Bootes
-        self.position = Messgebiet.Punkt(Bootsmitte[0], Bootsmitte[1])
+            gnss1 = self.AktuelleSensordaten[0]
+            gnss2 = self.AktuelleSensordaten[1]
+
+        if test:
+            return None
 
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-        heading_rad = numpy.arctan((Bootsbug[0]-Bootsmitte[0]) / (Bootsbug[1]-Bootsmitte[1]))
+        heading_rad = numpy.arctan((gnss2.daten[0]-gnss1.daten[0]) / (gnss2.daten[1]-gnss1.daten[1]))
 
         # Quadrantenabfrage
 
-        if Bootsbug[0] > Bootsmitte[0]:
-            if Bootsbug[1] > Bootsmitte[1]:
+        if gnss2.daten[0] > gnss1.daten[0]:
+            if gnss2.daten[1] > gnss1.daten[1]:
                 q_zuschl = 0                # Quadrant 1
             else:
                 q_zuschl = numpy.pi         # Quadrant 2
         else:
-            if Bootsbug[1] > Bootsmitte[1]:
+            if gnss2.daten[1] > gnss1.daten[1]:
                 q_zuschl = 2*numpy.pi       # Quadrant 4
             else:
                 q_zuschl = numpy.pi         # Quadrant 3

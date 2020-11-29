@@ -5,6 +5,9 @@ import Messgebiet
 import numpy
 import random
 import Sensoren
+import shapely.geometry as shp
+import shapely
+shapely.speedups.disable()
 import statistics
 import sympy
 import threading
@@ -79,9 +82,9 @@ class Boot_Simulation(Boot.Boot):
 
         # Lesen der Datei
         for line in lines:
-            testdaten.append(sympy.Point(tuple([float(komp) for komp in line])))
+            testdaten.append(tuple([float(komp) for komp in line]))
         testdaten_path.close()
-        self.ufer_polygon = sympy.Polygon(*testdaten)
+        self.ufer_polygon = shp.Polygon(testdaten)
 
         ### TEST ###
         self.test = 0
@@ -107,34 +110,35 @@ class Boot_Simulation(Boot.Boot):
                     heading = self.heading
                 suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
-                print("erstes print", time.time()-t)
-                t_test = time.time()
+                #print("erstes print", time.time()-t)
+                #t_test = time.time()
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
 
                 gnss2 = PolaresAnhaengen(position, heading, dist=1)
+                kurs = PolaresAnhaengen(position, heading, dist=1000)
 
-                p1, p2 = sympy.Point(position.x, position.y), sympy.Point(gnss2.x, gnss2.y)
-                strahl = sympy.Line(p1, p2)
-                print("zweites print", time.time()-t_test)
-                t_test = time.time()
-                schnitt = self.ufer_polygon.intersection(strahl)
-                print("drittes print", time.time() - t_test)
-                t_test = time.time()
+                p1, p2 = numpy.array([position.x, position.y]), numpy.array([kurs.x, kurs.y])
+                strahl = shp.LineString([(position.x, position.y), (kurs.x, kurs.y)])
+                #print("zweites print", time.time()-t_test)
+                #t_test = time.time()
+                schnitt = list(self.ufer_polygon.intersection(strahl).coords)
+                #print("drittes print", time.time() - t_test)
+                #t_test = time.time()
                 # Finden des Punkts, der das Ufer als erstes schneidet
                 ufer_punkt = None
                 diff = p2 - p1
                 skalar = 100000
-                for pkt in schnitt:
+                for i in range(1, len(schnitt)): # der erste Punkt ist immer an der self.position selbst
+                    pkt = numpy.array([schnitt[i][0], schnitt[i][1]])
                     diff_pkt = pkt - p1
-                    skalar_test = diff_pkt.x * diff.x + diff_pkt.y * diff.y
-                    if skalar_test >= 0:
+                    skalar_test = diff_pkt[0] * diff[0] + diff_pkt[1] * diff[1]
+                    if skalar_test >= 2: # näher als 2 * Strecke zwischen
                         if skalar_test < skalar:
                             skalar = skalar_test
                             ufer_punkt = pkt
-                distanz = ((ufer_punkt.x - p1.x) ** 2 + (ufer_punkt.y - p1.y) ** 2) ** 0.5
+                distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
                 distanz = random.gauss(distanz, 0.1)
-                print("viertes print", time.time()-t_test)
-
+                #print("viertes print", time.time()-t_test)
                 with Boot.schloss:
                     self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
@@ -142,7 +146,7 @@ class Boot_Simulation(Boot.Boot):
                     self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
-                #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
                 ###########################################################################################
 

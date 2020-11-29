@@ -96,13 +96,9 @@ class Boot_Simulation(Boot.Boot):
 
         self.fortlaufende_aktualisierung = True
 
-        def Ueberschreibungsfunktion(self):
-
-            Letzte_Bodenpunkte = []
+        def simulation(self):
             while self.fortlaufende_aktualisierung:
                 t = time.time()
-                self.test += 1
-                #print("Boot Position und Zeit:", self.position, t)
 
                 ########## S I M U L A T I O N #############################################################
                 suchgebiet = Messgebiet.Zelle(self.position.x, self.position.y, self.suchbereich, self.suchbereich)
@@ -125,22 +121,37 @@ class Boot_Simulation(Boot.Boot):
                 diff = p2 - p1
                 skalar = 100000
                 for pkt in schnitt:
-                    diff_pkt = pkt-p1
-                    skalar_test = diff_pkt.x*diff.x + diff_pkt.y*diff.y
+                    diff_pkt = pkt - p1
+                    skalar_test = diff_pkt.x * diff.x + diff_pkt.y * diff.y
                     if skalar_test >= 0:
                         if skalar_test < skalar:
                             skalar = skalar_test
                             ufer_punkt = pkt
-                distanz = ((ufer_punkt.x-p1.x)**2 + (ufer_punkt.y-p1.y)**2) ** 0.5
+                distanz = ((ufer_punkt.x - p1.x) ** 2 + (ufer_punkt.y - p1.y) ** 2) ** 0.5
                 distanz = random.gauss(distanz, 0.1)
                 self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
+
+                schlafen = max(0, self.akt_takt - (time.time() - t))
+                print("self.position simulation", self.position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                time.sleep(schlafen)
                 ###########################################################################################
+
+        threading.Thread(target=simulation, args=(self,), daemon=True).start()
+
+        def Ueberschreibungsfunktion(self):
+
+            Letzte_Bodenpunkte = []
+            while self.fortlaufende_aktualisierung:
+                t = time.time()
+                self.test += 1
+                #print("Boot Position und Zeit:", self.position, t)
 
                 # Abgeleitete Daten berechnen und überschreiben
 
                 # aktuelles Heading berechnen und zum Boot abspeichern
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:  # Headingberechnung
                     self.heading = self.Headingberechnung()
+                    print("bootsmitte", [self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]])
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:  # Uferpunktberechnung
@@ -171,8 +182,7 @@ class Boot_Simulation(Boot.Boot):
                 print("self.position", self.position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
 
-        aktualisierungsprozess = threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True)
-        aktualisierungsprozess.start()
+        threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True).start()
 
         time.sleep(0.1)
         if not self.PixHawk.homepoint:
@@ -210,6 +220,7 @@ class Boot_Simulation(Boot.Boot):
             self.punkt_anfahren = True
             while self.punkt_anfahren:
                 test = punkt_box.enthaelt_punkt(self.position)
+                #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:
                     self.punkt_anfahren = False
                 time.sleep(self.akt_takt/2)

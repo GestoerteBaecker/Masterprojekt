@@ -424,11 +424,12 @@ class Stern:
     def TopographischBedeutsamePunkteAbfragen(self):
         # auch wieder rekursiv aus allen Sternen und den Profilen darin
         topographisch_bedeutsame_punkte = []
-        def sterne_durchlaufen(self):
+        def sterne_durchlaufen(self, topographisch_bedeutsame_punkte):
             for profil in self.profile:
                 topographisch_bedeutsame_punkte.extend(profil.topographisch_bedeutsame_punkte)
             for stern in self.weitere_sterne:
-                sterne_durchlaufen(stern)
+                sterne_durchlaufen(stern, topographisch_bedeutsame_punkte)
+        sterne_durchlaufen(self, topographisch_bedeutsame_punkte)
         return topographisch_bedeutsame_punkte
 
 class Profil:

@@ -235,7 +235,7 @@ class Boot_Simulation(Boot.Boot):
 
 
     #TODO: nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=10.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
         with Boot.schloss:
@@ -273,29 +273,6 @@ class Boot_Simulation(Boot.Boot):
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
-"""
-def Headingberechnung(p1, p2):
-    # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-    heading_rad = numpy.arctan((p2.x-p1.x) / (p2.y-p1.y))
-
-    # Quadrantenabfrage
-
-    if p2.x > p1.x:
-        if p2.y > p1.y:
-            q_zuschl = 0                # Quadrant 1
-        else:
-            q_zuschl = numpy.pi         # Quadrant 2
-    else:
-        if p2.y > p1.y:
-            q_zuschl = 2*numpy.pi       # Quadrant 4
-        else:
-            q_zuschl = numpy.pi         # Quadrant 3
-
-    heading_rad += q_zuschl
-    heading_gon = heading_rad * (200/numpy.pi)
-
-    return heading_gon
-"""
 
 def PolaresAnhaengen(position, heading, dist):
 

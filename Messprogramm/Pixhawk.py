@@ -13,6 +13,7 @@ class Pixhawk:
         self.verbindung_hergestellt = False
         self.initialisierung = False
         self.homepoint = None # für RTL
+        self.verbindungsversuch = True
 
         def Initialisierungsfuntion(self):  # Wird aufgerufen, damit das Hauptprogramm nicht aufgehalten wird, wenn kein Pixhawk angeschlossen ist, oder der Verbindungsvorgang sehr lange dauert
             try:
@@ -36,7 +37,7 @@ class Pixhawk:
 
     def Verbinden(self):
 
-        while True:
+        while self.verbindungsversuch:
             if hasattr(self, 'vehicle'):
                 self.verbindung_hergestellt = True
                 break
@@ -93,6 +94,7 @@ class Pixhawk:
     def Trennen(self):
 
         if self.vehicle: self.vehicle.close()
+        self.verbindungsversuch = False
 
     #TODO: für sämtliche Funktionen, die auf ein "funktionierendes" Pixhawk zurückgreifen, könnte eine Decorator-Methode implementiert werden, die prüft, ob das Pixhawk verbunden ist, und es ansonsten wieder verbindet
     # -> allerdings nicht als eigener Thread prüfen!!! (sonst läuft die aufrufende Methode weiter und das Programm bricht ab!) (in einer while True Schleife testen)

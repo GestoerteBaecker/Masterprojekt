@@ -84,7 +84,7 @@ class Boot_Simulation(Boot.Boot):
         for line in lines:
             testdaten.append(tuple([float(komp) for komp in line]))
         testdaten_path.close()
-        self.ufer_polygon = shp.Polygon(testdaten)
+        self.ufer_polygon = shp.LinearRing(testdaten)
 
         ### TEST ###
         self.test = 0
@@ -101,7 +101,7 @@ class Boot_Simulation(Boot.Boot):
         self.fortlaufende_aktualisierung = True
 
         def simulation(self):
-            while self.fortlaufende_aktualisierung:
+            while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
 
                 ########## S I M U L A T I O N #############################################################
@@ -121,15 +121,19 @@ class Boot_Simulation(Boot.Boot):
                 strahl = shp.LineString([(position.x, position.y), (kurs.x, kurs.y)])
                 #print("zweites print", time.time()-t_test)
                 #t_test = time.time()
-                schnitt = list(self.ufer_polygon.intersection(strahl).coords)
+                schnitt = self.ufer_polygon.intersection(strahl)
+                if type(schnitt).__name__ == "MultiPoint":
+                    schnitt = [numpy.array([pkt.x, pkt.y]) for pkt in schnitt]
+                else:
+                    schnitt = [numpy.array([schnitt.x, schnitt.y])]
                 #print("drittes print", time.time() - t_test)
                 #t_test = time.time()
                 # Finden des Punkts, der das Ufer als erstes schneidet
                 ufer_punkt = None
                 diff = p2 - p1
-                skalar = 100000
-                for i in range(1, len(schnitt)): # der erste Punkt ist immer an der self.position selbst
-                    pkt = numpy.array([schnitt[i][0], schnitt[i][1]])
+                skalar = numpy.inf
+                for pkt in schnitt:
+                    #pkt = numpy.array([schnitt[i][0], schnitt[i][1]])
                     diff_pkt = pkt - p1
                     skalar_test = diff_pkt[0] * diff[0] + diff_pkt[1] * diff[1]
                     if skalar_test >= 2: # näher als 2 * Strecke zwischen
@@ -138,9 +142,10 @@ class Boot_Simulation(Boot.Boot):
                             ufer_punkt = pkt
                 if ufer_punkt is None:
                     distanz = 1000
-                    print("Ausnahme bei der Duistanz")
+                    print("Ausnahme bei der Distanz. self.heading ist ", self.heading)
+                    print("position", self.position, "strahl", strahl, "polygon", self.ufer_polygon)
                 else:
-                    print("schnittpunkte", schnitt)
+                    #print("schnittpunkte", schnitt)
                     #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
                     distanz = random.gauss(distanz, 0.1)
@@ -161,7 +166,7 @@ class Boot_Simulation(Boot.Boot):
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
-            while self.fortlaufende_aktualisierung:
+            while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
                 self.test += 1
 
@@ -178,7 +183,7 @@ class Boot_Simulation(Boot.Boot):
                 position = None
 
                 # aktuelles Heading berechnen und zum Boot abspeichern
-                heading = self.Headingberechnung()
+                #heading = self.Headingberechnung()
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if gnss1 and gnss2 and disto:  # Uferpunktberechnung
@@ -199,8 +204,9 @@ class Boot_Simulation(Boot.Boot):
 
                 # setzen der geteilten Variablen
                 with Boot.schloss:
-                    if heading is not None:
-                        self.heading = heading
+                    #if heading is not None:
+                    #    self.heading = heading
+                    #print("aktualisiertes heading", self.heading)
 
                     if position is not None:
                         self.position = position
@@ -211,6 +217,7 @@ class Boot_Simulation(Boot.Boot):
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
+                            print("medianpunkt", Bodenpunkt)
                             self.median_punkte.append(Bodenpunkt)
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
@@ -228,10 +235,11 @@ class Boot_Simulation(Boot.Boot):
 
 
     #TODO: nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw=10.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
-        self.heading = Headingberechnung(self.position, punkt)
+        with Boot.schloss:
+            self.heading = self.Headingberechnung(punkt)
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
 
         distanz = self.position.Abstand(punkt)
@@ -254,7 +262,7 @@ class Boot_Simulation(Boot.Boot):
 
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
-                self.Ufererkennung()
+                self.Ufererkennung(self.heading)
             self.punkt_anfahren = True
             while self.punkt_anfahren:
                 test = punkt_box.enthaelt_punkt(self.position)
@@ -265,6 +273,7 @@ class Boot_Simulation(Boot.Boot):
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
+"""
 def Headingberechnung(p1, p2):
     # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
     heading_rad = numpy.arctan((p2.x-p1.x) / (p2.y-p1.y))
@@ -286,7 +295,7 @@ def Headingberechnung(p1, p2):
     heading_gon = heading_rad * (200/numpy.pi)
 
     return heading_gon
-
+"""
 
 def PolaresAnhaengen(position, heading, dist):
 

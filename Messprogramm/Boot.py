@@ -200,7 +200,7 @@ class Boot:
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
-            while self.fortlaufende_aktualisierung:
+            while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
 
                 # Aktualisierung des Attributs self.AktuelleSensordaten
@@ -312,31 +312,34 @@ class Boot:
 
             return Bodenpunkt
 
-    def Headingberechnung(self):
+    def Headingberechnung(self, sollpunkt=None):
 
-        test = False
         with schloss:
             if not self.AktuelleSensordaten[0]:
-                test = True
+                print("self.heading ist None")
+                return None
 
             gnss1 = self.AktuelleSensordaten[0]
             gnss2 = self.AktuelleSensordaten[1]
+            x = gnss2.daten[0]
+            y = gnss2.daten[1]
 
-        if test:
-            return None
+        if sollpunkt is not None:
+            x = sollpunkt.x
+            y = sollpunkt.y
 
         # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-        heading_rad = numpy.arctan((gnss2.daten[0]-gnss1.daten[0]) / (gnss2.daten[1]-gnss1.daten[1]))
+        heading_rad = numpy.arctan((x-gnss1.daten[0]) / (y-gnss1.daten[1]))
 
         # Quadrantenabfrage
 
-        if gnss2.daten[0] > gnss1.daten[0]:
-            if gnss2.daten[1] > gnss1.daten[1]:
+        if x > gnss1.daten[0]:
+            if y > gnss1.daten[1]:
                 q_zuschl = 0                # Quadrant 1
             else:
                 q_zuschl = numpy.pi         # Quadrant 2
         else:
-            if gnss2.daten[1] > gnss1.daten[1]:
+            if y > gnss1.daten[1]:
                 q_zuschl = 2*numpy.pi       # Quadrant 4
             else:
                 q_zuschl = numpy.pi         # Quadrant 3
@@ -350,10 +353,14 @@ class Boot:
     # Entfernungswerte tracken und mit vorherigen Messungen abgleichen
     # Tiefenwerte tracken und mit vorherigen Messwerten vergleichen
     # self.ufererkennung_aktiv wird auf False gesetzt falls das Ufer erreicht wurde
-    def Ufererkennung(self):
+    def Ufererkennung(self, sollheading):
         self.ufererkennung_aktiv = True
+        #TODO: in Realität testen, ob das Boot zB über den Mittelpunkt drüber gefahren ist (wenn entsprechendes Tracking aktiv) oder dass das Heading des Boots in die Richtung weist, in die es soll
+        time.sleep(1) # warten, dass das Boot von dem gerade erfassten Ufer weg fährt
 
         def ufererkennung_thread(self): #TODO: extrapolation beruht auf alten Daten und kann daher bei dem U-Turn fehlerhaft AM_UFER und True ausgeben, sodass die Ufererkennung erst nach ein paar Sekunden ausgestoßen werden sollte, wenn sich die Bodenpunkte neu gefüllt haben (10 neue Werte = 2 sek + ein bisschen)
+            while not abs(sollheading-self.heading) < 20: # Boot soll sich zumindest in Richtung des neuen Punkts drehen
+                time.sleep(0.2)
             while self.boot_lebt and self.ufererkennung_aktiv:
                 t = time.time()
                 if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.BLINDFAHRT: #TODO: ist das so ok? bei TrackingMode BLINDFAHRT fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
@@ -366,6 +373,7 @@ class Boot:
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
                     if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                         if entfernung < 20 or steigung > 0:
+                            print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             self.ufererkennung_aktiv = False
                         else:
@@ -393,6 +401,9 @@ class Boot:
 
             self.SternAbfahren(self.position, self.heading, initial=True)
             topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
+            print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
+            self.fortlaufende_aktualisierung = False
+            self.boot_lebt = False
             #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
@@ -407,10 +418,11 @@ class Boot:
         self.punkt_anfahren = True
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
+        sollheading = self.Headingberechnung(punkt)
 
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
-                self.Ufererkennung()
+                self.Ufererkennung(sollheading)
             self.punkt_anfahren = True
             while self.punkt_anfahren:
                 t = time.time()
@@ -426,28 +438,28 @@ class Boot:
         pass
 
     def SternAbfahren(self, startpunkt, heading, initial=True):
-        self.Ufererkennung()
+        self.Ufererkennung(heading)
         self.stern = Messgebiet.Stern(startpunkt, heading, self.stern_winkelinkrement, self.stern_grzw_seitenlaenge, initial, self.profil_grzw_dichte_topographischer_punkte, self.profil_grzw_neigungen_topographischer_punkte)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
         while True:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
+                print("in Stern abfahren: self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer, "tracking", self.tracking_mode, "self.punt anfahren", self.punkt_anfahren)
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+                #if len(self.median_punkte) > 1:
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                print("sternmitte", self.stern.mittelpunkt)
-                print("self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer)
-                print("==============")
+                print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
-                self.Punkt_anfahren(neuer_kurspunkt)
                 self.punkt_anfahren = True
+                self.Punkt_anfahren(neuer_kurspunkt)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True

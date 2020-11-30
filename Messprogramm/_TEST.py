@@ -29,7 +29,7 @@ profil.ProfilAbschliessenUndTopoPunkteFinden(end_punkt)
 
 print("Länge median punkte", len(median_punkte), "länge topo punkte", len(profil.topographisch_bedeutsame_punkte))
 """
-
+"""
 boot = Simulation.Boot_Simulation()
 boot.auslesen = True
 time.sleep(0.3)
@@ -40,8 +40,43 @@ boot.Erkunden()
 while not boot.stern_beendet:
     time.sleep(0.1)
 print("Fertig gemessen")
+"""
+
+
+
+
+
+import shapely.geometry as shp
+
+#ring = shp.LinearRing([(0,0), (200,0), (200,200), (0,200)])
+
+#line = shp.LineString([(10,100), (2000,100)])
+
+ring = shp.LinearRing([(451913.7237857745, 5885059.348336109), (451956.6619978332, 5885033.343503454), (452029.838387398, 5884991.614818496), (452066.7289639555, 5884974.076675542), (452067.3337275056, 5884957.143296138), (452018.9526434958, 5884868.243054271), (451990.52875664, 5884855.543019718), (451974.2001407868, 5884828.328659963), (451979.0382491877, 5884802.928590857), (451887.7189531192, 5884859.171601019), (451933.0762193784, 5884919.043192481), (451853.2474307623, 5884983.148128794), (451860.5045933637, 5885001.291035297), (451920.3761848258, 5885036.972084755), (451913.7237857745, 5885059.348336109)])
+line = shp.LineString([(451988.6982560926, 5885007.317037198), (451281.5914749061, 5884300.210256011)])
+
+
+schnitt = ring.intersection(line)
+
+print(schnitt)
+
+if type(schnitt).__name__ == "MultiPoint":
+    schnitt = [numpy.array([pkt.x, pkt.y]) for pkt in schnitt]
+else:
+    schnitt = [numpy.array([schnitt.x, schnitt.y])]
+
+print(schnitt)
+
+
+
+
+
+
+
 
 """
+
+
 
 class A:
     def __init__(self):

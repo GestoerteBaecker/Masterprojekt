@@ -353,7 +353,7 @@ class Boot:
     def Ufererkennung(self):
         self.ufererkennung_aktiv = True
 
-        def ufererkennung_thread(self):
+        def ufererkennung_thread(self): #TODO: extrapolation beruht auf alten Daten und kann daher bei dem U-Turn fehlerhaft AM_UFER und True ausgeben, sodass die Ufererkennung erst nach ein paar Sekunden ausgestoßen werden sollte, wenn sich die Bodenpunkte neu gefüllt haben (10 neue Werte = 2 sek + ein bisschen)
             while self.boot_lebt and self.ufererkennung_aktiv:
                 t = time.time()
                 if len(self.Bodenpunkte) >= 2 and self.tracking_mode != Messgebiet.TrackingMode.BLINDFAHRT: #TODO: ist das so ok? bei TrackingMode BLINDFAHRT fährt das Boot zwar nur auf Strecken, die es als sicher erachtet hat, da bereits einmal befahren, aber das Boot könnte trotzdem leicht vom Kurs abkommen und dann unbemertk auf Grund laufen
@@ -363,6 +363,7 @@ class Boot:
                     entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
                     tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
                     #TODO: Gewichten wann welche Kategorie gewählt werden soll
+                    #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
                     if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                         if entfernung < 20 or steigung > 0:
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
@@ -431,22 +432,23 @@ class Boot:
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
         while True:
-            if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
+            if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                #print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                #print("sternmitte", self.stern.mittelpunkt)
-                #print("self position", self.position)
-                #print("==============")
+                print("neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                print("sternmitte", self.stern.mittelpunkt)
+                print("self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer)
+                print("==============")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
                 self.Punkt_anfahren(neuer_kurspunkt)
-                time.sleep(self.akt_takt*2) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
+                self.punkt_anfahren = True
+                time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True
 

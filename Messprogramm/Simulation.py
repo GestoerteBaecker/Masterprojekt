@@ -136,8 +136,14 @@ class Boot_Simulation(Boot.Boot):
                         if skalar_test < skalar:
                             skalar = skalar_test
                             ufer_punkt = pkt
-                distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
-                distanz = random.gauss(distanz, 0.1)
+                if ufer_punkt is None:
+                    distanz = 1000
+                    print("Ausnahme bei der Duistanz")
+                else:
+                    print("schnittpunkte", schnitt)
+                    #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
+                    distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
+                    distanz = random.gauss(distanz, 0.1)
                 #print("viertes print", time.time()-t_test)
                 with Boot.schloss:
                     self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
@@ -146,7 +152,7 @@ class Boot_Simulation(Boot.Boot):
                     self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
-                print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
                 ###########################################################################################
 

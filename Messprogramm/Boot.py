@@ -10,8 +10,6 @@ import time
 import numpy
 import enum
 
-schloss = threading.RLock()
-
 # Definition von Enums zur besseren Lesbarkeit
 class UferPosition(enum.Enum):
     IM_WASSER = 0
@@ -254,7 +252,7 @@ class Boot:
 
     def Uferpunktberechnung(self, dist=False):
 
-        with schloss:
+        with Messgebiet.schloss:
             if not dist:  # Falls keine Distanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
                 dist = self.AktuelleSensordaten[3].daten
             x = self.AktuelleSensordaten[0].daten[0]
@@ -313,7 +311,7 @@ class Boot:
             return Bodenpunkt
 
     def Headingberechnung(self, sollpunkt=None):
-        return Headingberechnung(self, sollpunkt, None)
+        return Messgebiet.Headingberechnung(self, sollpunkt, None)
 
     # prüft durchgehend, ob das Boot nah am Ufer kommt (über Dimetix und Echolot)
     # Entfernungswerte tracken und mit vorherigen Messungen abgleichen
@@ -603,49 +601,6 @@ class Boot:
             y.append(pkt[1])
             tiefe.append(pkt[2])
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
-
-
-def Headingberechnung(boot=None, richtungspunkt=None, position=None):
-    if boot is not None:
-        with schloss:
-            if not boot.AktuelleSensordaten[0]:
-                print("self.heading ist None")
-                return None
-
-            gnss1 = boot.AktuelleSensordaten[0]
-            gnss2 = boot.AktuelleSensordaten[1]
-            x_richtung = gnss2.daten[0]
-            y_richtung = gnss2.daten[1]
-            x_position = gnss1.daten[0]
-            y_position = gnss1.daten[1]
-    else:
-        x_position = position.x
-        y_position = position.y
-
-    if richtungspunkt is not None:
-        x_richtung = richtungspunkt.x
-        y_richtung = richtungspunkt.y
-
-    # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-    heading_rad = numpy.arctan((x_richtung - x_position) / (y_richtung - y_position))
-
-    # Quadrantenabfrage
-
-    if x_richtung > x_position:
-        if y_richtung > y_position:
-            q_zuschl = 0  # Quadrant 1
-        else:
-            q_zuschl = numpy.pi  # Quadrant 2
-    else:
-        if y_richtung > y_position:
-            q_zuschl = 2 * numpy.pi  # Quadrant 4
-        else:
-            q_zuschl = numpy.pi  # Quadrant 3
-
-    heading_rad += q_zuschl
-    heading_gon = heading_rad * (200 / numpy.pi)
-
-    return heading_gon
 
 
 # Zum Testen

@@ -8,6 +8,9 @@ import enum
 import copy
 import numpy as np
 import pyvista as pv
+import threading
+
+schloss = threading.RLock()
 
 # Definition von Enums zur besseren Lesbarkeit
 # Tracking Mode, das das Boot haben soll
@@ -505,20 +508,27 @@ class Profil:
 
     @classmethod
     def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
-        #TODO: implementieren
-        # dreieckskante ist ein TIN_Kante-Objekt (besitzt Start und Entpunkt)
-        # hier soll eine Dreieckskante eingesetzt werden (wie auch immer definiert) und ein Profil ausgegeben werden, das so direkt abgefahren werden kann
-        # switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
         p1 = dreieckskante.Anfangspunkt
         p2 = dreieckskante.Endpunkt
-        temp_richtung = 0
-        temp_profil = cls
-        profil = cls(...)
+        temp_profil = cls.ProfilAusZweiPunkten(p1, p2)
+        abstand = temp_profil.Profillaenge(akt_laenge=False)/2
+        start = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=-abstand, punkt_objekt=True)
+        end = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=abstand, punkt_objekt=True)
+        profil = cls.ProfilAusZweiPunkten(start, end, grzw_dichte_topo_pkt, grzw_neigungen)
+        return profil
+
+    # definiert ein Profil aus 2 Puntken
+    @classmethod
+    def ProfilAusZweiPunkten(cls, p1, p2, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+        heading = Headingberechnung(None, p2, p1)
+        profil = cls(heading, p1, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=grzw_dichte_topo_pkt, grzw_neigungen=grzw_neigungen)
+        profil.end_lambda = profil.Profillaenge(akt_laenge=False)
         return profil
 
     # überprüfen, ob der zumindest der Startpunkt des Profils innerhalb der bereits gefundenen Grenzen des Sees liegt; falls nicht, Test ob der Endpunkt drinnen liegt und ggf. beide Punkte vertauschen
     # liegt keiner von beiden drinnen, muss das Profil so eingekürzt werden, bis mind. einer der beiden Punkte ansteuerbar ist
     def TestPunkteAnfahrbar(self, quadtree):
+        #TODO: switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
         pass
 
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
@@ -777,6 +787,48 @@ def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, lamb_intervall_1=No
             return None
     punkt = stuetz1 + lambdas[0] * richtung1
     return punkt
+
+def Headingberechnung(boot=None, richtungspunkt=None, position=None):
+    if boot is not None:
+        with schloss:
+            if not boot.AktuelleSensordaten[0]:
+                print("self.heading ist None")
+                return None
+
+            gnss1 = boot.AktuelleSensordaten[0]
+            gnss2 = boot.AktuelleSensordaten[1]
+            x_richtung = gnss2.daten[0]
+            y_richtung = gnss2.daten[1]
+            x_position = gnss1.daten[0]
+            y_position = gnss1.daten[1]
+    else:
+        x_position = position.x
+        y_position = position.y
+
+    if richtungspunkt is not None:
+        x_richtung = richtungspunkt.x
+        y_richtung = richtungspunkt.y
+
+    # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
+    heading_rad = numpy.arctan((x_richtung - x_position) / (y_richtung - y_position))
+
+    # Quadrantenabfrage
+
+    if x_richtung > x_position:
+        if y_richtung > y_position:
+            q_zuschl = 0  # Quadrant 1
+        else:
+            q_zuschl = numpy.pi  # Quadrant 2
+    else:
+        if y_richtung > y_position:
+            q_zuschl = 2 * numpy.pi  # Quadrant 4
+        else:
+            q_zuschl = numpy.pi  # Quadrant 3
+
+    heading_rad += q_zuschl
+    heading_gon = heading_rad * (200 / numpy.pi)
+
+    return heading_gon
 
 class Uferpunktquadtree:
 

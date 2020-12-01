@@ -105,7 +105,7 @@ class Boot_Simulation(Boot.Boot):
                 t = time.time()
 
                 ########## S I M U L A T I O N #############################################################
-                with Boot.schloss:
+                with Messgebiet.schloss:
                     position = self.position
                     heading = self.heading
                 suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
@@ -150,7 +150,7 @@ class Boot_Simulation(Boot.Boot):
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
                     distanz = random.gauss(distanz, 0.1)
                 #print("viertes print", time.time()-t_test)
-                with Boot.schloss:
+                with Messgebiet.schloss:
                     self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
@@ -171,7 +171,7 @@ class Boot_Simulation(Boot.Boot):
                 self.test += 1
 
                 # auslesen der geteilten Variablen
-                with Boot.schloss:
+                with Messgebiet.schloss:
                     gnss1 = self.AktuelleSensordaten[0]
                     gnss2 = self.AktuelleSensordaten[1]
                     echolot = self.AktuelleSensordaten[2]
@@ -203,7 +203,7 @@ class Boot_Simulation(Boot.Boot):
                         Letzte_Bodenpunkte = []
 
                 # setzen der geteilten Variablen
-                with Boot.schloss:
+                with Messgebiet.schloss:
                     #if heading is not None:
                     #    self.heading = heading
                     #print("aktualisiertes heading", self.heading)
@@ -229,7 +229,7 @@ class Boot_Simulation(Boot.Boot):
 
         time.sleep(2)
         if not self.PixHawk.homepoint:
-            with Boot.schloss:
+            with Messgebiet.schloss:
                 punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
                 self.PixHawk.homepoint = punkt
 
@@ -238,7 +238,7 @@ class Boot_Simulation(Boot.Boot):
     def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
-        with Boot.schloss:
+        with Messgebiet.schloss:
             self.heading = self.Headingberechnung(punkt)
         print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
 
@@ -251,7 +251,7 @@ class Boot_Simulation(Boot.Boot):
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
             while self.punkt_anfahren:
-                with Boot.schloss:
+                with Messgebiet.schloss:
                     self.position = profilpunkte[index]
                     index += 1
                     #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())

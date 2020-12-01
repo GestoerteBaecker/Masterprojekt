@@ -467,14 +467,22 @@ class Profil:
             self.ist_definiert = Profil.Definition.NUR_RICHTUNG
 
     @classmethod
-    def VerdichtendesProfil(cls, dreieckskante):
+    def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
         #TODO: implementieren
         # dreieckskante ist ein TIN_Kante-Objekt (besitzt Start und Entpunkt)
         # hier soll eine Dreieckskante eingesetzt werden (wie auch immer definiert) und ein Profil ausgegeben werden, das so direkt abgefahren werden kann
         # switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
+        p1 = dreieckskante.Anfangspunkt
+        p2 = dreieckskante.Endpunkt
+        temp_richtung = 0
+        temp_profil = cls
         profil = cls(...)
         return profil
 
+    # überprüfen, ob der zumindest der Startpunkt des Profils innerhalb der bereits gefundenen Grenzen des Sees liegt; falls nicht, Test ob der Endpunkt drinnen liegt und ggf. beide Punkte vertauschen
+    # liegt keiner von beiden drinnen, muss das Profil so eingekürzt werden, bis mind. einer der beiden Punkte ansteuerbar ist
+    def TestPunkteAnfahrbar(self, quadtree):
+        pass
 
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
     def ProfilBeginnen(self, punkt):

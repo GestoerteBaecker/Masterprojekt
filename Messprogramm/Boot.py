@@ -367,9 +367,11 @@ class Boot:
 
             self.SternAbfahren(self.position, self.heading, initial=True)
             topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
-            print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
+            #print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
             self.fortlaufende_aktualisierung = False
             self.boot_lebt = False
+            tin = Messgebiet.TIN(topographische_punkte)
+            tin.plot()
             #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 

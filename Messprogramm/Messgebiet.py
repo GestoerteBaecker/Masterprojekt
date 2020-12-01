@@ -949,7 +949,7 @@ if __name__=="__main__":
     stuetz2 = numpy.array([5,0])
     print("========")
     print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))
-    """
+    
     # Test Quadtree
 
     startzeit = time.time()
@@ -1062,17 +1062,17 @@ if __name__=="__main__":
     endzeit = time.time()
     zeitdifferenz = endzeit-startzeit
     print(zeitdifferenz)
-    """
+
 
     # Testdaten für Mesh
 
-    """
+
     punkt1 = Bodenpunkt(0, 0, 0)
     punkt2 = Bodenpunkt(0, 10, 0)
     punkt3 = Bodenpunkt(15, 10, 0)
     punkt4 = Bodenpunkt(15, 0, 0)
     punkt5 = Bodenpunkt(7.5, 5, 5)
-    """
+   
 
     Testdaten_txt = open("Test_DHM.txt", "r")
     Topographisch_bedeutsame_Bodenpunkte = []
@@ -1109,3 +1109,4 @@ if __name__=="__main__":
     #print(time.time()-endzeit)
 
     print("Break")
+    """

@@ -245,20 +245,20 @@ class Anwendung(Frame):
                             if not gnss.simulation:
                                 self.con_qual_gnss1.config(bg="green")
                             else:
-                                self.con_qual_gnss1.config(bg="dark blue")
+                                self.con_qual_gnss1.config(bg="green")
                             self.var_current_state1.set("RTK fix")
                         elif gnss_qual_indikator==5:
                             if not gnss.simulation:
                                 self.con_qual_gnss1.config(bg="yellow")
                             else:
-                                self.con_qual_gnss1.config(bg="light blue")
+                                self.con_qual_gnss1.config(bg="yellow")
                             self.var_current_state1.set(str(gnss_qual_indikator)+": RTK float")
                         else:
                             self.var_current_state1.set(str(gnss_qual_indikator)+": kein RTK")
                             if not gnss.simulation:
                                 self.con_qual_gnss1.config(bg="yellow")
                             else:
-                                self.con_qual_gnss1.config(bg="blue")
+                                self.con_qual_gnss1.config(bg="yellow")
                         if self.karte_window!= None:
                             #try:
                                 #(gnss_north)
@@ -270,7 +270,7 @@ class Anwendung(Frame):
                             self.con_qual_gnss1.config(bg="orange")
                             if self.karte_window: self.karte_window.karte_updaten(None, None, None, None)
                         else:
-                            self.con_qual_gnss1.config(bg="blue")
+                            self.con_qual_gnss1.config(bg="orange")
                 else:
                     if self.karte_window: self.karte_window.karte_updaten(None, None, None, None)
                     self.con_qual_gnss1.config(bg="red")
@@ -287,25 +287,25 @@ class Anwendung(Frame):
                             if not gnss2.simulation:
                                 self.con_qual_gnss2.config(bg="green")
                             else:
-                                self.con_qual_gnss2.config(bg="dark blue")
+                                self.con_qual_gnss2.config(bg="green")
                             self.var_current_state2.set("RTK fix")
                         elif gnss_qual_indikator==5:
                             if not gnss2.simulation:
                                 self.con_qual_gnss2.config(bg="yellow")
                             else:
-                                self.con_qual_gnss2.config(bg="light blue")
+                                self.con_qual_gnss2.config(bg="yellow")
                             self.var_current_state2.set(str(gnss_qual_indikator)+": RTK float")
                         else:
                             self.var_current_state2.set(str(gnss_qual_indikator)+": kein RTK")
                             if not gnss2.simulation:
                                 self.con_qual_gnss2.config(bg="yellow")
                             else:
-                                self.con_qual_gnss2.config(bg="blue")
+                                self.con_qual_gnss2.config(bg="yellow")
                     except:
                         if not gnss2.simulation:
                             self.con_qual_gnss2.config(bg="orange")
                         else:
-                            self.con_qual_gnss2.config(bg="blue")
+                            self.con_qual_gnss2.config(bg="orange")
                 else:
                     self.con_qual_gnss2.config(bg="red")
 
@@ -317,20 +317,20 @@ class Anwendung(Frame):
                     if not echolot.simulation:
                         self.con_qual_echolot.config(bg="orange")
                     else:
-                        self.con_qual_echolot.config(bg="blue")
+                        self.con_qual_echolot.config(bg="orange")
                     try:
                         t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2) #TODO
                         t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2) #TODO
                         if not echolot.simulation:
                             self.con_qual_echolot.config(bg="green")
                         else:
-                            self.con_qual_echolot.config(bg="dark blue")
+                            self.con_qual_echolot.config(bg="green")
                         self.var_current_depth.set(str(t1) + "  |  " + str(t2))
                     except:
                         if not echolot.simulation:
                             self.con_qual_echolot.config(bg="orange")
                         else:
-                            self.con_qual_echolot.config(bg="blue")
+                            self.con_qual_echolot.config(bg="orange")
                 else:
                     self.con_qual_echolot.config(bg="red")
 
@@ -342,19 +342,19 @@ class Anwendung(Frame):
                     if not dimetix.simulation:
                         self.con_qual_dimetix.config(bg="orange")
                     else:
-                        self.con_qual_dimetix.config(bg="blue")
+                        self.con_qual_dimetix.config(bg="orange")
                     try:
                         d = self.boot.AktuelleSensordaten[3].daten #TODO
                         if not dimetix.simulation:
                             self.con_qual_dimetix.config(bg="green")
                         else:
-                            self.con_qual_dimetix.config(bg="dark blue")
+                            self.con_qual_dimetix.config(bg="green")
                         self.var_current_distance.set(str(round(d,2)))
                     except:
                         if not dimetix.simulation:
                             self.con_qual_dimetix.config(bg="orange")
                         else:
-                            self.con_qual_dimetix.config(bg="blue")
+                            self.con_qual_dimetix.config(bg="orange")
                 else:
                     self.con_qual_dimetix.config(bg="red")
 

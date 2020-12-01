@@ -1,4 +1,19 @@
 {
+  "Boot":
+    {
+	"simulation_start_x": 451880,
+	"simulation_start_y": 5884978,
+	"simulation_start_heading": 50,
+	"simulation_suchbereich": 2,
+	"simulation_aktualisierungstakt": 0.1,
+	"stern_winkelinkrement": 50,
+	"stern_grzw_seitenlaenge": 500,
+	"profil_grzw_dichte_topographischer_punkte": 0.1,
+	"profil_grzw_neigungen_topographischer_punkte": 50,
+	"messgebiet_ausdehnung": [2000, 2000],
+	"offset_gnss_echolot": 0.5,
+	"offset_achsen_distometer_gnss": 0
+	},
   "Pixhawk":
     {
     "COM": "com13"

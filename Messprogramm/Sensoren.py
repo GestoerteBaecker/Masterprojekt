@@ -149,6 +149,7 @@ class Sensor:
         # hier durchgehend (in while True) testen, ob Daten ankommen und in Daten-Objekte organisieren
         def nested_read(self):
             while self.datastream and self.verbindung_hergestellt:
+                t = time.time()
                 try:
                     daten = self.read_sensor_data()
                     if daten:
@@ -156,7 +157,8 @@ class Sensor:
                         self.daten.put(daten)
                     else:
                         self.aktdaten = False
-                    time.sleep(self.taktrate)
+                    schlafen = max(0, self.taktrate - (time.time() - t))
+                    time.sleep(schlafen)
                 except Exception as e: # hierin werden Ausnahmen behandelt, bei denen die Verbindung zur seriellen Schnittstelle nachweislich abgebrochen wurde
                     self.close_datastream() # schließen, da vermutlich keine Verbindung zum Sensor besteht
                     self.verbindung_hergestellt = False
@@ -165,7 +167,8 @@ class Sensor:
                     print(e)
                 except: #TODO: hierin werden Ausnahmen behandelt, bei der der Sensor nachweislich verbunden ist, aber zunächst keine Signale liefert (hierbei darf die Behandlung nicht in den read_data-Methoden der abgeleitetn Klassen erfolgen)
                     print("Datenstrom zum Sensor \"{}\" kurzzeitig abgebrochen".format(type(self).__name__))
-                    time.sleep(self.taktrate)
+                    schlafen = max(0, self.taktrate - (time.time() - t))
+                    time.sleep(schlafen)
             else:
                 # der Thread muss nicht gekillt werden, wenn seine Target-Funktion terminiert
                 # was sie tut, sobald self.datastream == False ist

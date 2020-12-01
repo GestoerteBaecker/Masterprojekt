@@ -4,11 +4,10 @@ from pyproj import Proj, transform
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
-import numpy as np
 import rasterio
 from rasterio.plot import show
+import csv
 import time
-import utm
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
 class Anwendung_Karte():
@@ -43,6 +42,24 @@ class Anwendung_Karte():
         self.geotiff = rasterio.open(self.geotiff_path)
         show(self.geotiff, adjust='None', ax=self.ax)
 
+        # Quadtree von DHM berechnen
+        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding :)
+        lines = csv.reader(testdaten, delimiter=";")
+        id_testdaten = []
+        x_testdaten = []
+        y_testdaten = []
+        tiefe_testdaten = []
+
+        # Lesen der Datei
+        for line in lines:
+            id_testdaten.append(int(line[0]))
+            x_testdaten.append(float(line[1]))
+            y_testdaten.append(float(line[2]))
+            tiefe_testdaten.append(float(line[3]))
+        testdaten.close()
+
+        self.ax.scatter(x_testdaten, y_testdaten, s=1)
+
         # Variablen für das spätere Boot setzen
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
@@ -56,12 +73,12 @@ class Anwendung_Karte():
         thismanager=self.plt.get_current_fig_manager()
         positionx,positiony=self.position
         #TODO: Positionierung nachgucken
-        thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+        #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
         update_interval = 10
-        self.gnss_north=gnss_north-32000000
+        self.gnss_north=gnss_north#-32000000
         self.gnss_east=gnss_east
         self.gnss_heading=gnss_heading
 

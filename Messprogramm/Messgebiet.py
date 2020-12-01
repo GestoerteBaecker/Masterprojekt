@@ -12,9 +12,13 @@ import pyvista as pv
 # Definition von Enums zur besseren Lesbarkeit
 # Tracking Mode, das das Boot haben soll
 class TrackingMode(enum.Enum):
-    PROFIL = 0
-    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen
-    AUS = 2
+    # ab hier soll Tracking und Ufererkennung erfolgen
+    PROFIL = 0 # volles Tracking
+    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen; ausgedünntes Tracking
+    # ab hier soll kein Tracking erfolgen
+    UFERERKENNUNG = 10 # kein Tracking, aber Ufererkennung
+    # ab hier weder Ufererkennung noch Tracking
+    BLINDFAHRT = 20
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -310,7 +314,6 @@ class Stern:
         self.aktuelles_profil = 0 # Index des aktuellen Profils bezogen auf self.aktueller_stern
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
         self.mittelpunkt = None
-        self.mittelpunktfahrt = False # sagt aus, ob das Boot gerade Richtung Mittelpunkt fährt
         self.stern_beendet = False # sagt nur aus, ob der self-Stern beendet ist, nicht, ob verdichtende Sterne fertuig sind
         self.weitere_sterne = []
         # der aktuelle Stern wird in dieser Variable gesichert, sodass die Methoden statt mit self von dieser Variablen aufgerufen werden (Steuerung von außen geschieht nämlich nur über den einen Init-Stern)
@@ -425,23 +428,20 @@ class Stern:
     # diese Methode immer aufrufen, sobald das Ufer angefahren wird ODER ein Punkt erreicht wird, der angefahren werden sollte
     # punkt: Endpunkt, an dem das Boot auf das Ufer trifft; mode: TrackingMode des Bootes
     # Rückgabe: Liste mit Punkt, der angefahren werden sollte und welche Tracking-Methode das Boot haben sollte
+    # return punkt = None, wenn der Stern/ die Sterne fertig gemessen wurden
     def NaechsteAktion(self, punkt, mode):
         stern = self.aktueller_stern
         if mode == TrackingMode.PROFIL: # das Boot soll Messungen auf dem Profil vornehmen
             punkt = stern.ProfilBeenden(punkt)
-            mode = TrackingMode.AUS
-            stern.mittelpunktfahrt = True
-        elif mode == TrackingMode.AUS and stern.mittelpunktfahrt: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
+            mode = TrackingMode.BLINDFAHRT
+        elif mode == TrackingMode.BLINDFAHRT: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
             punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
-            mode = TrackingMode.AUS
-            stern.mittelpunktfahrt = False
-        elif mode == TrackingMode.AUS and not stern.mittelpunktfahrt:
+            mode = TrackingMode.UFERERKENNUNG
+        elif mode == TrackingMode.UFERERKENNUNG:
             profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-        if punkt is None: # dann ist der Stern / die Sterne abgeschlossen
-            return
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):
@@ -461,11 +461,12 @@ class Stern:
     def TopographischBedeutsamePunkteAbfragen(self):
         # auch wieder rekursiv aus allen Sternen und den Profilen darin
         topographisch_bedeutsame_punkte = []
-        def sterne_durchlaufen(self):
+        def sterne_durchlaufen(self, topographisch_bedeutsame_punkte):
             for profil in self.profile:
                 topographisch_bedeutsame_punkte.extend(profil.topographisch_bedeutsame_punkte)
             for stern in self.weitere_sterne:
-                sterne_durchlaufen(stern)
+                sterne_durchlaufen(stern, topographisch_bedeutsame_punkte)
+        sterne_durchlaufen(self, topographisch_bedeutsame_punkte)
         return topographisch_bedeutsame_punkte
 
 class Profil:
@@ -501,6 +502,24 @@ class Profil:
                 self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
         else:
             self.ist_definiert = Profil.Definition.NUR_RICHTUNG
+
+    @classmethod
+    def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+        #TODO: implementieren
+        # dreieckskante ist ein TIN_Kante-Objekt (besitzt Start und Entpunkt)
+        # hier soll eine Dreieckskante eingesetzt werden (wie auch immer definiert) und ein Profil ausgegeben werden, das so direkt abgefahren werden kann
+        # switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
+        p1 = dreieckskante.Anfangspunkt
+        p2 = dreieckskante.Endpunkt
+        temp_richtung = 0
+        temp_profil = cls
+        profil = cls(...)
+        return profil
+
+    # überprüfen, ob der zumindest der Startpunkt des Profils innerhalb der bereits gefundenen Grenzen des Sees liegt; falls nicht, Test ob der Endpunkt drinnen liegt und ggf. beide Punkte vertauschen
+    # liegt keiner von beiden drinnen, muss das Profil so eingekürzt werden, bis mind. einer der beiden Punkte ansteuerbar ist
+    def TestPunkteAnfahrbar(self, quadtree):
+        pass
 
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
     def ProfilBeginnen(self, punkt):
@@ -710,7 +729,7 @@ class Profil:
                     größter_abstand = 0
                     index = None
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
-                    test_indizes = [0, *index_zugefügter_medianpunkte, len(index_zugefügter_medianpunkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
+                    test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
@@ -719,7 +738,7 @@ class Profil:
                         richtung = richtung / numpy.linalg.norm(richtung)
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
-                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index]))
+                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt()))
                             if größter_abstand < abstand:
                                 größter_abstand = abstand
                                 index = median_index
@@ -842,7 +861,7 @@ class Uferpunktquadtree:
 
         return False
 
-    def abfrage(self, suchgebiet, gefundene_punkte):
+    def abfrage(self, suchgebiet, gefundene_punkte=[]):
         if not suchgebiet.gebiet_in_zelle(suchgebiet):
             return False
 
@@ -930,7 +949,7 @@ if __name__=="__main__":
     stuetz2 = numpy.array([5,0])
     print("========")
     print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))
-    
+    """
     # Test Quadtree
 
     startzeit = time.time()
@@ -993,11 +1012,12 @@ if __name__=="__main__":
 
     xpos=451880
     ypos=5884944
-    stuetzpunkt=(xpos,ypos)
+    pkt = Punkt(xpos, ypos)
     xsuch=5
     ysuch=5
     richtung=50+random.random()
-    testprofil=Profil(richtung, stuetzpunkt, 0, 1000)
+    testprofil=Profil(richtung, pkt, True, 0, 100)
+    testprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
     profilpunkte=testprofil.BerechneZwischenpunkte(2)
 
     for punkt in profilpunkte:
@@ -1038,7 +1058,6 @@ if __name__=="__main__":
 
         wert = Testquadtree.ebene_von_punkt(p)
         print(i, wert)
-    
 
     endzeit = time.time()
     zeitdifferenz = endzeit-startzeit

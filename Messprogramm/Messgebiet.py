@@ -74,7 +74,8 @@ class Bodenpunkt(Punkt):
         super().__init__(x, y, z)
         self.Sedimentstaerke = Sedimentstaerke
 
-    # Berechnet die Neigung zwischen dem self und bodenpunkt; bei zurueck=True wird das Gefälle vom Bodenpunkt zum self-Punkt betrachtet (bodenpunkt liegt in Fahrtrichtung nach hinten)
+    # Berechnet die Neigung zwischen dem
+    # self und bodenpunkt; bei zurueck=True wird das Gefälle vom Bodenpunkt zum self-Punkt betrachtet (bodenpunkt liegt in Fahrtrichtung nach hinten)
     # Profilansicht. Fahrtrichtung nach rechts
     # bei zurueck=True gilt also:  Neigung ist negativ     |  bei zurueck=False gilt also:  Neigung ist negativ
     # bodenpunkt->  .                                      |  self ->  .
@@ -126,7 +127,10 @@ class TIN_Kante:
         n1 = numpy.array([n1_list[0], n1_list[1], n1_list[2]])
         n2 = numpy.array([n2_list[0], n2_list[1], n2_list[2]])
 
-        alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
+        if numpy.array_equal(n1,n2):  # Normalenvekroten sind paralel zueinander und arccos kann nicht berechnet werden
+            alpha = 0
+        else:
+            alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
 
         return alpha
 
@@ -1056,7 +1060,7 @@ if __name__=="__main__":
     Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
     laenge = 0
     anfangszeit = time.time()
-    #while laenge < 20:
+    #while laenge < 200:
     while Datenzeile != ['']:
         tin_punkt = Bodenpunkt(float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3]))
         punkt_in_liste = [float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3])]
@@ -1078,9 +1082,10 @@ if __name__=="__main__":
     print(endzeit-anfangszeit)
 
 
-    #for kante in tin.Kantenliste:
-        #print(kante.laenge())
+    for kante in tin.Kantenliste:
+        print(kante.winkel())
 
+    tin.plot()
     naechsteKanten = tin.Anzufahrende_Kanten(5)
     #print(time.time()-endzeit)
 

@@ -8,6 +8,7 @@ import enum
 import copy
 import numpy as np
 import pyvista as pv
+import statistics
 import threading
 
 schloss = threading.RLock()
@@ -352,29 +353,39 @@ class Stern:
 
         def berechne_mitte(stern, profil, entfernung_vom_startpunkt):
             neue_mitte = profil.BerechneNeuenKurspunkt(entfernung_vom_startpunkt, punkt_objekt=True)
-            neuer_stern = Stern(neue_mitte, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen)
+            neuer_stern = Stern(profil.stuetzpunkt, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen)
             # nicht stern.init, da dieses Profil bereits vom übergeordneten Stern gemessen wurde; stattdessen soll dieses Profil als bereits gemessen übernommen werden
             neuer_stern.profile.append(copy.deepcopy(stern.profile[0]))
+            neuer_stern.mittelpunkt = neue_mitte
+            neuer_stern.aktuelles_profil = 1
+            neuer_stern.SternFuellen()
             return neuer_stern
+
+        def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
+            gesamtlänge = profil.Profillaenge(akt_laenge=False)
+            profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
+            seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True)  # Anfang bis Mitte
+            seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte  # Mitte bis Ende
+            liste_laengen[profilindex] = seitenlänge_vor_mitte
+            liste_laengen[profilindex + len(stern.profile)] = seitenlänge_nach_mitte
+            return liste_laengen
 
         stern = self.aktueller_stern
         if len(stern.weitere_sterne) == 0:
             neue_messung = False
-            for profil in stern.profile:
-                gesamtlänge = profil.Profillaenge(akt_laenge=False)
-                profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
-                seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True) #Anfang bis Mitte
-                seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte # Mitte bis Ende
-                if seitenlänge_vor_mitte > stern.grzw_seitenlaenge:
+            laengen = [0] * (2 *len(stern.profile))
+            for i, profil in enumerate(stern.profile):
+                laengen = profillaenge_von_mitte(stern, profil, i, laengen)
+            median = statistics.median(laengen)
+            for i, laenge in enumerate(laengen):
+                if laenge >= self.grzw_seitenlaenge or laenge >= 2*median:
                     neue_messung = True
-                    entfernung = seitenlänge_vor_mitte/2
-                elif seitenlänge_nach_mitte > stern.grzw_seitenlaenge:
-                    neue_messung = True
-                    entfernung = seitenlänge_vor_mitte + seitenlänge_nach_mitte / 2
-                else:
-                    continue
-                neuer_stern = berechne_mitte(stern, profil, entfernung)
-                stern.weitere_sterne.append(neuer_stern)
+                    if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
+                        entfernung = laengen[i%len(stern.profile)] + laenge/2
+                    else: # so liegt das neue Zentrum zwischen STart und Mitte
+                        entfernung = laenge/2
+                    neuer_stern = berechne_mitte(stern, stern.profile[i%len(stern.profile)], entfernung)
+                    stern.weitere_sterne.append(neuer_stern)
             return neue_messung
 
     # sucht den aktuellen Stern (möglicherweise rekursiv, falls mehrere Sterne vorhanden sind)
@@ -418,13 +429,11 @@ class Stern:
         if stern.aktuelles_profil == len(stern.profile)-1:
             stern.stern_beendet = True
             # versuch weitere, verdichtende Sterne zu finden
-            self.TestVerdichten() # bewirkt nur eine Verdichtung, wenn noch keine weiteren Sterne in stern vorliegen
-            aktueller_stern = self.AktuellerStern()
-            if not aktueller_stern:
-                return None
-            else:
-                self.aktueller_stern.aktuelles_profil = 0
+            if self.TestVerdichten(): # bewirkt nur eine Verdichtung, wenn noch keine weiteren Sterne in stern vorliegen
+                self.AktuellerStern()
                 return self.aktueller_stern.MittelpunktAnfahren()
+            else:
+                return None
         stern.aktuelles_profil += 1
         return stern.MittelpunktAnfahren()
 

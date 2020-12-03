@@ -8,6 +8,7 @@ import enum
 import copy
 import numpy as np
 import pyvista as pv
+import threading
 
 # Definition von Enums zur besseren Lesbarkeit
 # Tracking Mode, das das Boot haben soll
@@ -110,6 +111,7 @@ class TIN_Kante:
         self.Endpunkt = Endpunkt
         self.Dreiecke = Dreiecke
         self.gewicht = 0
+        self.Randkante = False
 
     def laenge(self):
         return numpy.sqrt((self.Endpunkt.x-self.Anfangspunkt.x)**2+(self.Endpunkt.y-self.Anfangspunkt.y)**2+(self.Endpunkt.z-self.Anfangspunkt.z)**2)
@@ -232,7 +234,7 @@ class TIN:
 
 
     def Anzufahrende_Kanten(self,Anz):
-        # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
+        # Gibt eine Liste mit den abzufahrenden Kantenobjekten wieder.
 
         anzufahrende_Kanten = []
 
@@ -1072,8 +1074,9 @@ if __name__=="__main__":
     punkt3 = Bodenpunkt(15, 10, 0)
     punkt4 = Bodenpunkt(15, 0, 0)
     punkt5 = Bodenpunkt(7.5, 5, 5)
-   
-
+   """
+    x_koordinaten = []
+    y_koordinaten = []
     Testdaten_txt = open("Test_DHM.txt", "r")
     Topographisch_bedeutsame_Bodenpunkte = []
     Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
@@ -1083,6 +1086,9 @@ if __name__=="__main__":
     while Datenzeile != ['']:
         tin_punkt = Bodenpunkt(float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3]))
         punkt_in_liste = [float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3])]
+
+        x_koordinaten.append(float(Datenzeile[1]))
+        y_koordinaten.append(float(Datenzeile[2]))
 
         Topographisch_bedeutsame_Bodenpunkte.append(tin_punkt)
         # Punktliste_arry.insert(punkt_in_liste)
@@ -1099,14 +1105,51 @@ if __name__=="__main__":
     endzeit = time.time()
 
     print(endzeit-anfangszeit)
-
-
-    for kante in tin.Kantenliste:
-        print(kante.winkel())
-
-    tin.plot()
     naechsteKanten = tin.Anzufahrende_Kanten(5)
+
+    maximalesKantengewicht = 0
+    for kante in tin.Kantenliste:
+        if kante.gewicht > maximalesKantengewicht: maximalesKantengewicht = kante.gewicht
+
+    x = []
+    y = []
+    grauwerte = []
+    for kante in tin.Kantenliste:
+        x1, y1 = kante.Anfangspunkt.x, kante.Anfangspunkt.y
+        x2, y2 = kante.Endpunkt.x, kante.Endpunkt.y
+        x.append(x1)
+        x.append(x2)
+        y.append(y1)
+        y.append(y2)
+        grauwert = kante.gewicht/maximalesKantengewicht
+        grauwerte.append((-grauwert+1))
+
+    fig, ax = plt.subplots()
+
+    def connectpoints(x, y, p1, p2, g):
+        x1, x2 = x[p1], x[p2]
+        y1, y2 = y[p1], y[p2]
+        ax.plot([x1, x2], [y1, y2], color= g)
+
+
+    for i in range(0,len(x),2):
+        g = (i)//2
+        connectpoints(x,y,i,i+1, str(grauwerte[g]))
+
+    def plot_mat():
+        plt.ioff()
+        plt.show()
+    def plot_tin():
+        tin.plot()
+
+
+    ax.plot(x_koordinaten, y_koordinaten, 'r+')
+    #plot_tin()
+    plot_mat()
+
+    #threading.Thread(target=plot_mat(), args=(), daemon=True)
+    #threading.Thread(target=plot_tin(), args=(), daemon=True)
+
     #print(time.time()-endzeit)
 
     print("Break")
-    """

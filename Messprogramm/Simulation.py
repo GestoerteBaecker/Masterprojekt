@@ -155,7 +155,7 @@ class Boot_Simulation(Boot.Boot):
                     self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
                     self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
 
-                schlafen = max(0, self.akt_takt - (time.time() - t))
+                schlafen = max(0, (self.akt_takt/4) - (time.time() - t))
                 #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
                 time.sleep(schlafen)
                 ###########################################################################################
@@ -216,7 +216,6 @@ class Boot_Simulation(Boot.Boot):
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
-                            print("medianpunkt", Bodenpunkt)
                             self.median_punkte.append(Bodenpunkt)
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
@@ -239,7 +238,7 @@ class Boot_Simulation(Boot.Boot):
         self.punkt_anfahren = True
         with Messgebiet.schloss:
             self.heading = self.Headingberechnung(punkt)
-        print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
+        #print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
 
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz)
@@ -254,7 +253,7 @@ class Boot_Simulation(Boot.Boot):
                     self.position = profilpunkte[index]
                     index += 1
                     #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
-                time.sleep(self.akt_takt/2)
+                time.sleep(self.akt_takt/20)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)

@@ -355,11 +355,11 @@ class Stern:
             neue_mitte = profil.BerechneNeuenKurspunkt(entfernung_vom_startpunkt, punkt_objekt=True)
             neuer_stern = Stern(profil.stuetzpunkt, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen)
             # nicht stern.init, da dieses Profil bereits vom übergeordneten Stern gemessen wurde; stattdessen soll dieses Profil als bereits gemessen übernommen werden
-            neuer_stern.profile.append(copy.deepcopy(stern.profile[0]))
+            neuer_stern.profile.append(profil)
             neuer_stern.mittelpunkt = neue_mitte
             neuer_stern.aktuelles_profil = 1
             neuer_stern.SternFuellen()
-            print("sternmitte des neuen sterns", neue_mitte)
+            print("sternmitte des neuen sterns", neue_mitte, "Ausgangsprofil", profil.heading)
             return neuer_stern
 
         def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
@@ -378,7 +378,7 @@ class Stern:
             for i, profil in enumerate(stern.profile):
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             median = statistics.median(laengen)
-            print("die längen der einzelnen seiten des sterns", laengen, "median", median)
+            #print("die längen der einzelnen seiten des sterns", laengen, "median", median)
             for i, laenge in enumerate(laengen):
                 if laenge >= self.grzw_seitenlaenge or laenge >= 2*median:
                     neue_messung = True
@@ -407,6 +407,8 @@ class Stern:
             self.aktueller_stern = sterne[0]
         else:
             self.aktueller_stern = None # alle Sterne sind gemessen
+
+        print("Aktueller Stern:", self.aktueller_stern)
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
@@ -432,9 +434,16 @@ class Stern:
             stern.stern_beendet = True
             # versuch weitere, verdichtende Sterne zu finden
             if self.TestVerdichten(): # bewirkt nur eine Verdichtung, wenn noch keine weiteren Sterne in stern vorliegen
-                self.AktuellerStern()
-                return self.aktueller_stern.MittelpunktAnfahren()
+                # Erst zentrum vom ferigen Stern anfahren (geschieht nur, wenn das profil beendet ist)
+                stern.MittelpunktAnfahren()
+                self.AktuellerStern()  # neuer Stern wird belegt
+                return stern.mittelpunkt # alten Sternmittelpunkt anfahren
+                #return self.aktueller_stern.MittelpunktAnfahren()
+
             else:
+                self.AktuellerStern()
+
+            if self.aktueller_stern == None:
                 return None
         stern.aktuelles_profil += 1
         return stern.MittelpunktAnfahren()
@@ -445,17 +454,26 @@ class Stern:
     # return punkt = None, wenn der Stern/ die Sterne fertig gemessen wurden
     def NaechsteAktion(self, punkt, mode):
         stern = self.aktueller_stern
+        print(stern)
         if mode == TrackingMode.PROFIL: # das Boot soll Messungen auf dem Profil vornehmen
-            punkt = stern.ProfilBeenden(punkt)
+            punkt = self.ProfilBeenden(punkt)
             mode = TrackingMode.BLINDFAHRT
         elif mode == TrackingMode.BLINDFAHRT: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
-            punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
-            mode = TrackingMode.UFERERKENNUNG
+            #print(stern, stern.profile[stern.aktuelles_profil].heading, stern.mittelpunkt)
+            if Zelle(stern.mittelpunkt.x,stern.mittelpunkt.y,5,5).enthaelt_punkt(punkt):
+                punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
+                mode = TrackingMode.UFERERKENNUNG
+                print("Ufererkundung auf Profil starten")
+                print(self.aktueller_stern.mittelpunkt,"Profilerkundung starten")
+                return [punkt, mode]
+            else:
+                return [stern.mittelpunkt, TrackingMode.BLINDFAHRT]
         elif mode == TrackingMode.UFERERKENNUNG:
             profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
+            print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):
@@ -598,7 +616,7 @@ class Profil:
         return abs(abstand) < toleranz
 
     # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
-    def PruefPunktInProfil(self, punkt, profilbreite=5):
+    def PruefPunktInProfil(self, punkt, profilbreite=20):
         if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             if self.PruefPunktAufProfil(punkt, profilbreite):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))

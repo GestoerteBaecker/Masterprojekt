@@ -337,7 +337,7 @@ class Boot:
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
                     if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                         if entfernung < 20 or steigung > 0:
-                            print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
+                            #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             self.ufererkennung_aktiv = False
                         else:
@@ -411,7 +411,7 @@ class Boot:
         self.Punkt_anfahren(punkt)
         while True:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
-                print("in Stern abfahren: self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer, "tracking", self.tracking_mode, "self.punt anfahren", self.punkt_anfahren)
+                #print("in Stern abfahren: self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer, "tracking", self.tracking_mode, "self.punt anfahren", self.punkt_anfahren)
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
@@ -419,8 +419,8 @@ class Boot:
                 self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
+                #print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                #print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break

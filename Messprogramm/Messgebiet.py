@@ -328,6 +328,7 @@ class Stern:
         self.heading = heading # nur für initiales Profil
         self.profil_grzw_dichte_topo_pkt = profil_grzw_dichte_topo_pkt
         self.profil_grzw_neigungen = profil_grzw_neigungen
+        self.initialstern = self
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self):
@@ -341,11 +342,29 @@ class Stern:
         mitte = stern.mittelpunkt
         start_winkel = stern.profile[0].heading + stern.winkelinkrement
         winkel = start_winkel
+
+        exisitierndeProfile = []
+        def sterne_durchlaufen(stern, exisitierndeProfile):
+            for profil in stern.profile:
+                exisitierndeProfile.append(profil)
+            for stern in self.weitere_sterne:
+                sterne_durchlaufen(stern, exisitierndeProfile)
+
+        sterne_durchlaufen(self.initialstern, exisitierndeProfile)
+
         #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
         while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
             #richtung = numpy.dot(rot_matrix, richtung)
-            profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
-            stern.profile.append(profil)
+
+            existiert = False
+            for profil in exisitierndeProfile:
+                richtung = numpy.array([numpy.sin(winkel * numpy.pi / 200), numpy.cos(winkel * numpy.pi / 200)])
+                if profil.PruefProfilExistiert(richtung,mitte, 20, 0.1):
+                    existiert = True
+
+            if not existiert:
+                profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
+                stern.profile.append(profil)
             winkel += stern.winkelinkrement
 
     # test der Überschreitung des Grenzwerts der Länge eines Profils
@@ -354,6 +373,7 @@ class Stern:
         def berechne_mitte(stern, profil, entfernung_vom_startpunkt):
             neue_mitte = profil.BerechneNeuenKurspunkt(entfernung_vom_startpunkt, punkt_objekt=True)
             neuer_stern = Stern(profil.stuetzpunkt, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen)
+            neuer_stern.initialstern = stern.initialstern
             # nicht stern.init, da dieses Profil bereits vom übergeordneten Stern gemessen wurde; stattdessen soll dieses Profil als bereits gemessen übernommen werden
             neuer_stern.profile.append(profil)
             neuer_stern.mittelpunkt = neue_mitte
@@ -461,6 +481,8 @@ class Stern:
         elif mode == TrackingMode.BLINDFAHRT: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
             #print(stern, stern.profile[stern.aktuelles_profil].heading, stern.mittelpunkt)
             if Zelle(stern.mittelpunkt.x,stern.mittelpunkt.y,5,5).enthaelt_punkt(punkt):
+
+
                 punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
                 mode = TrackingMode.UFERERKENNUNG
                 print("Ufererkundung auf Profil starten")
@@ -630,6 +652,8 @@ class Profil:
     # bei return True sollte das Profil also nicht gemessen werden
     # lambda_intervall: bei None, soll das neue Profil unendlich lang sein, bei Angabe eben zwischen den beiden Lambdas liegen (als Liste, zB [-20,20] bei lamb 0 ist der Geradenpunkt gleich dem Stützpunkt)
     def PruefProfilExistiert(self, richtung, stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=None):
+        if type(stuetzpunkt).__name__ == "Punkt":
+            stuetzpunkt = stuetzpunkt.ZuNumpyPunkt(zwei_dim=True)
         if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             quer_lambda_intervall = [0, 2*profilbreite]
             test_profil_unendlich = not lambda_intervall # bestimmt, ob das neu zu rechnende Profil unendlich lang ist oder von Vornherein beschränkt ist

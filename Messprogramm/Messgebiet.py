@@ -359,6 +359,7 @@ class Stern:
             neuer_stern.mittelpunkt = neue_mitte
             neuer_stern.aktuelles_profil = 1
             neuer_stern.SternFuellen()
+            print("sternmitte des neuen sterns", neue_mitte)
             return neuer_stern
 
         def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
@@ -377,6 +378,7 @@ class Stern:
             for i, profil in enumerate(stern.profile):
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             median = statistics.median(laengen)
+            print("die längen der einzelnen seiten des sterns", laengen, "median", median)
             for i, laenge in enumerate(laengen):
                 if laenge >= self.grzw_seitenlaenge or laenge >= 2*median:
                     neue_messung = True

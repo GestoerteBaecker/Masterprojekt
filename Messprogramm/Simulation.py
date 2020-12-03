@@ -9,7 +9,6 @@ import shapely.geometry as shp
 import shapely
 shapely.speedups.disable()
 import statistics
-import sympy
 import threading
 import time
 import matplotlib.pyplot as plt
@@ -235,7 +234,7 @@ class Boot_Simulation(Boot.Boot):
 
 
     #TODO: nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=5):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
         with Messgebiet.schloss:
@@ -284,6 +283,7 @@ def PolaresAnhaengen(position, heading, dist):
 
 if __name__ == "__main__":
     # EINLESEN DES TEST POLYGONS
+    """
     testdaten_path = open("Testdaten_Polygon.txt", "r")
     lines = csv.reader(testdaten_path, delimiter=";")
     testdaten_poly = []
@@ -350,4 +350,4 @@ if __name__ == "__main__":
 
 
 
-    i=0
+    i=0"""

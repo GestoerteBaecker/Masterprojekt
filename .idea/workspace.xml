@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="588480e7-d6fd-42bf-a994-3b4619972226" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Messprogramm/Simulation.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Simulation.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,14 +15,14 @@
     <favorites_list name="Masterprojekt" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.20996217">
+    <splitter split-orientation="horizontal" split-proportion="0.5013791">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="false">
+          <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="17">
-                  <caret line="5" column="20" selection-start-line="5" selection-start-column="20" selection-end-line="5" selection-end-column="20" />
+                <state relative-caret-position="463">
+                  <caret line="359" column="62" selection-start-line="359" selection-start-column="62" selection-end-line="359" selection-end-column="62" />
                 </state>
               </provider>
             </entry>
@@ -42,8 +42,11 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Messprogramm/Monitor.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="153">
-                  <caret line="9" column="17" selection-start-line="9" selection-start-column="17" selection-end-line="9" selection-end-column="17" />
+                <state relative-caret-position="187">
+                  <caret line="11" lean-forward="true" selection-start-line="11" selection-end-line="11" />
+                  <folding>
+                    <element signature="e#0#21#0" expanded="true" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -57,7 +60,7 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Messprogramm/Boot.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="17">
@@ -72,8 +75,8 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Messprogramm/Simulation.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="3825">
-                  <caret line="233" selection-start-line="233" selection-end-line="233" />
+                <state relative-caret-position="371">
+                  <caret line="255" column="42" selection-start-line="255" selection-start-column="42" selection-end-line="255" selection-end-column="42" />
                   <folding>
                     <element signature="e#0#11#0" expanded="true" />
                   </folding>
@@ -88,8 +91,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="10166">
-                  <caret line="655" column="64" selection-start-line="655" selection-start-column="64" selection-end-line="655" selection-end-column="64" />
+                <state relative-caret-position="67">
+                  <caret line="652" column="64" selection-start-line="652" selection-start-column="64" selection-end-line="652" selection-end-column="64" />
                 </state>
               </provider>
             </entry>
@@ -116,7 +119,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>delaunay_2d</find>
       <find>_get</find>
       <find>_get_output</find>
       <find>triangulate</find>
@@ -146,6 +148,7 @@
       <find>extrapolation</find>
       <find>Aktueller Stern:</find>
       <find>AktuellerStern(</find>
+      <find>schneide_geraden</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -161,16 +164,15 @@
         <option value="$PROJECT_DIR$/Alte Testdateien/Test_Pyramide.txt" />
         <option value="$PROJECT_DIR$/Alte Testdateien/TIN_test.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Monitor.py" />
-        <option value="$PROJECT_DIR$/Messprogramm/Simulation.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
+        <option value="$PROJECT_DIR$/Messprogramm/Simulation.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Messgebiet.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
-    <option name="y" value="-8" />
-    <option name="width" value="1696" />
+    <option name="width" value="3373" />
     <option name="height" value="1026" />
   </component>
   <component name="ProjectView">
@@ -360,14 +362,15 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1696" height="1026" extended-state="6" />
+    <frame x="-8" y="0" width="3373" height="1026" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.7782755" visible="true" weight="0.043425813" />
-      <window_info id="Structure" order="1" sideWeight="0.22172453" side_tool="true" visible="true" weight="0.043425813" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.2344371" visible="true" weight="0.057271365" />
+      <window_info id="Structure" order="1" sideWeight="0.7655629" side_tool="true" visible="true" weight="0.057271365" />
       <window_info id="Favorites" order="2" sideWeight="0.45363766" side_tool="true" weight="0.11640531" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.6160028" weight="0.2530795" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.6160028" visible="true" weight="0.15453528" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49396864" weight="0.45016798" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -431,7 +434,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Messprogramm/Messgebiet.py</url>
-          <line>1215</line>
+          <line>1214</line>
           <option name="timeStamp" value="40" />
         </line-breakpoint>
       </breakpoints>
@@ -645,27 +648,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/Monitor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="9" column="17" selection-start-line="9" selection-start-column="17" selection-end-line="9" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Messprogramm/OSM Tile Downloader.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="238">
           <caret line="14" column="30" selection-start-line="14" selection-start-column="30" selection-end-line="14" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/Simulation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3825">
-          <caret line="233" selection-start-line="233" selection-end-line="233" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -679,17 +665,37 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10166">
-          <caret line="655" column="64" selection-start-line="655" selection-start-column="64" selection-end-line="655" selection-end-column="64" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Messprogramm/boot_init.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="408">
           <caret line="24" column="17" selection-start-line="24" selection-start-column="17" selection-end-line="24" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/Monitor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="187">
+          <caret line="11" lean-forward="true" selection-start-line="11" selection-end-line="11" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/Simulation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="371">
+          <caret line="255" column="42" selection-start-line="255" selection-start-column="42" selection-end-line="255" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="463">
+          <caret line="359" column="62" selection-start-line="359" selection-start-column="62" selection-end-line="359" selection-end-column="62" />
         </state>
       </provider>
     </entry>

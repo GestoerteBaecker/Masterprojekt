@@ -355,13 +355,10 @@ class Stern:
         #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
         while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
             #richtung = numpy.dot(rot_matrix, richtung)
-
             existiert = False
             for profil in exisitierndeProfile:
-                richtung = numpy.array([numpy.sin(winkel * numpy.pi / 200), numpy.cos(winkel * numpy.pi / 200)])
-                if profil.PruefProfilExistiert(richtung,mitte, 20, 0.1):
+                if profil.PruefProfilExistiert(winkel,mitte, 10, 0.1):
                     existiert = True
-
             if not existiert:
                 profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
                 stern.profile.append(profil)
@@ -682,6 +679,7 @@ class Profil:
             pruef_richtung = numpy.array([numpy.sin(richtung * numpy.pi / 200), numpy.cos(richtung * numpy.pi / 200)])
             pruef_richtung_fix = pruef_richtung
             pruef_stuetz = [] # Stützpunkte der beiden parallelen zunächst unendlich langen Geraden der Begrenzung des neu zu prüfenden Profils ODER die Eckpunkte des neuen Profils
+            richtung = numpy.array([numpy.sin(richtung * numpy.pi / 200), numpy.cos(richtung * numpy.pi / 200)])
             if test_profil_unendlich: # hier nur 2 "Eckpunkte" einführen
                 temp_pruef_quer_richtung = numpy.array([richtung[1], -richtung[0]])
                 pruef_stuetz.append(stuetzpunkt - profilbreite * temp_pruef_quer_richtung)
@@ -826,6 +824,7 @@ def abstand_punkt_gerade(richtung, stuetz, punkt):
 
 # Gerade 1 sollte bei Verwendung innerhalb der Klasse Profil die Kante des self Profils sein
 def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, lamb_intervall_1=None, lamb_intervall_2=None):
+    print("in geradenschnutt", richtung1, richtung2, stuetz1, stuetz2)
     det = -1 * (richtung1[0]*richtung2[1]-richtung2[0]*richtung1[1])
     if abs(det) < 0.0000001: # falls kein oder sehr schleifender Schnitt existiert
         return None

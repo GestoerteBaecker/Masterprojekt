@@ -368,7 +368,25 @@ class Boot:
             #print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
             self.fortlaufende_aktualisierung = False
             self.boot_lebt = False
-            tin = Messgebiet.TIN(topographische_punkte)
+
+            self.Messgebiet.profile = self.stern.Profile()
+
+            while True:
+                tin = Messgebiet.TIN(topographische_punkte)
+                kanten = tin.Anzufahrende_Kanten(10, self.position)
+                # Nächstes Profil suchen
+                for kante in kanten:
+                    profil = Messgebiet.Profil.VerdichtendesProfil(kante)
+                    for existierendesProfil in self.Messgebiet.profile:
+                        if not existierendesProfil.PruefProfilExistiert(profil):
+                            naechstesProfil = profil
+                            break
+
+                # nächstes Profil abfahren
+                
+
+                # Tin neuberechnen
+
             tin.plot()
             #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()

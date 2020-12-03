@@ -115,6 +115,9 @@ class TIN_Kante:
         self.Dreiecke = Dreiecke
         self.gewicht = 0
 
+    def __str__(self):
+        return "Mittelpunkt " + str(self.mitte())
+
     def laenge(self):
         return numpy.sqrt((self.Endpunkt.x-self.Anfangspunkt.x)**2+(self.Endpunkt.y-self.Anfangspunkt.y)**2+(self.Endpunkt.z-self.Anfangspunkt.z)**2)
 
@@ -235,7 +238,7 @@ class TIN:
             self.Dreieckliste.append(dreieckobjekt)
 
 
-    def Anzufahrende_Kanten(self,Anz):
+    def Anzufahrende_Kanten(self,Anz,bootsposition):
         # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
 
         anzufahrende_Kanten = []
@@ -245,7 +248,7 @@ class TIN:
             if kante.gewicht == 0:
                 #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
-                kante.gewicht = laenge_norm*kante.winkel()
+                kante.gewicht = laenge_norm*kante.winkel()*(kante.mitte().Abstand(bootsposition)/500) # TODO: Gewichtung anpassen
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht:
@@ -343,6 +346,21 @@ class Stern:
         start_winkel = stern.profile[0].heading + stern.winkelinkrement
         winkel = start_winkel
 
+        existierendeProfile = self.Profile()
+
+        #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
+        while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
+            #richtung = numpy.dot(rot_matrix, richtung)
+            existiert = False
+            for profil in existierendeProfile:
+                if profil.PruefProfilExistiert(winkel,mitte, 10, 0.1):
+                    existiert = True
+            if not existiert:
+                profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
+                stern.profile.append(profil)
+            winkel += stern.winkelinkrement
+
+    def Profile(self):
         exisitierndeProfile = []
         def sterne_durchlaufen(stern, exisitierndeProfile):
             for profil in stern.profile:
@@ -351,18 +369,7 @@ class Stern:
                 sterne_durchlaufen(stern, exisitierndeProfile)
 
         sterne_durchlaufen(self.initialstern, exisitierndeProfile)
-
-        #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
-        while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
-            #richtung = numpy.dot(rot_matrix, richtung)
-            existiert = False
-            for profil in exisitierndeProfile:
-                if profil.PruefProfilExistiert(winkel,mitte, 10, 0.1):
-                    existiert = True
-            if not existiert:
-                profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
-                stern.profile.append(profil)
-            winkel += stern.winkelinkrement
+        return exisitierndeProfile
 
     # test der Überschreitung des Grenzwerts der Länge eines Profils
     def TestVerdichten(self):
@@ -1016,6 +1023,7 @@ class Messgebiet:
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
         self.topographische_punkte = []
         self.TIN = None
+        self.profile = []
 
     def TIN_berechnen(self):
         pass

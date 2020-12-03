@@ -253,7 +253,7 @@ class Boot_Simulation(Boot.Boot):
                     self.position = profilpunkte[index]
                     index += 1
                     #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
-                time.sleep(self.akt_takt/10)
+                time.sleep(self.akt_takt/20)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)

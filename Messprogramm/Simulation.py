@@ -34,6 +34,8 @@ class Boot_Simulation(Boot.Boot):
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
         self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
 
+        self.PixHawk.verbindungsversuch = False
+
         # EINLESEN DES MODELLS ALS QUADTREE
         testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")
@@ -189,8 +191,8 @@ class Boot_Simulation(Boot.Boot):
                     #print("bootsmitte", [gnss1.daten[0], gnss1.daten[1]])
                     position = Messgebiet.Punkt(gnss1.daten[0], gnss1.daten[1])
                     uferpunkt = self.Uferpunktberechnung()
-                    if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(uferpunkt)
+                    if self.messgebiet != None:
+                        self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if gnss1 and echolot:

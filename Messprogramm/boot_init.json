@@ -3,7 +3,7 @@
     {
 	"simulation_start_x": 451880,
 	"simulation_start_y": 5884978,
-	"simulation_start_heading": 50,
+	"simulation_start_heading": 75,
 	"simulation_suchbereich": 2,
 	"simulation_aktualisierungstakt": 0.1,
 	"stern_winkelinkrement": 50,

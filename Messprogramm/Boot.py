@@ -10,8 +10,6 @@ import time
 import numpy
 import enum
 
-schloss = threading.RLock()
-
 # Definition von Enums zur besseren Lesbarkeit
 class UferPosition(enum.Enum):
     IM_WASSER = 0
@@ -58,7 +56,7 @@ class Boot:
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
-        self.Messgebiet = None
+        self.messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.stern_beendet = False
@@ -219,8 +217,8 @@ class Boot:
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     uferpunkt = self.Uferpunktberechnung()
-                    if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(uferpunkt)
+                    if self.messgebiet != None:
+                        self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -254,7 +252,7 @@ class Boot:
 
     def Uferpunktberechnung(self, dist=False):
 
-        with schloss:
+        with Messgebiet.schloss:
             if not dist:  # Falls keine Distanz manuell angegeben wird (siehe self.DarstellungGUI) wird auf die Sensordaten zurückgegriffen
                 dist = self.AktuelleSensordaten[3].daten
             x = self.AktuelleSensordaten[0].daten[0]
@@ -313,7 +311,7 @@ class Boot:
             return Bodenpunkt
 
     def Headingberechnung(self, sollpunkt=None):
-        return Headingberechnung(self, sollpunkt, None)
+        return Messgebiet.Headingberechnung(self, sollpunkt, None)
 
     # prüft durchgehend, ob das Boot nah am Ufer kommt (über Dimetix und Echolot)
     # Entfernungswerte tracken und mit vorherigen Messungen abgleichen
@@ -339,7 +337,7 @@ class Boot:
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
                     if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                         if entfernung < 20 or steigung > 0:
-                            print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
+                            #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             self.ufererkennung_aktiv = False
                         else:
@@ -367,9 +365,32 @@ class Boot:
 
             self.SternAbfahren(self.position, self.heading, initial=True)
             topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
-            print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
+            #print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
             self.fortlaufende_aktualisierung = False
             self.boot_lebt = False
+
+            self.messgebiet.profile = self.stern.Profile()
+            print(self.messgebiet.profile)
+
+            while True:
+                tin = Messgebiet.TIN(topographische_punkte)
+                kanten = tin.Anzufahrende_Kanten(10, self.position)
+                # Nächstes Profil suchen
+                naechstesProfil = None
+                for kante in kanten:
+                    profil = Messgebiet.Profil.VerdichtendesProfil(kante)
+                    for existierendesProfil in self.messgebiet.profile:
+                        if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]):
+                            naechstesProfil = profil
+                            break
+
+                # nächstes Profil abfahren
+                print(naechstesProfil.startpunkt, naechstesProfil.endpunkt)
+                tin.plot()
+                break
+
+                # Tin neuberechnen
+
             #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
@@ -416,16 +437,18 @@ class Boot:
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 #if len(self.median_punkte) > 1:
-                self.stern.MedianPunkteEinlesen(self.median_punkte)
+                if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+                    self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
+                #print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                #print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_kurspunkt)
+                #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True
@@ -601,49 +624,6 @@ class Boot:
             y.append(pkt[1])
             tiefe.append(pkt[2])
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
-
-
-def Headingberechnung(boot=None, richtungspunkt=None, position=None):
-    if boot is not None:
-        with schloss:
-            if not boot.AktuelleSensordaten[0]:
-                print("self.heading ist None")
-                return None
-
-            gnss1 = boot.AktuelleSensordaten[0]
-            gnss2 = boot.AktuelleSensordaten[1]
-            x_richtung = gnss2.daten[0]
-            y_richtung = gnss2.daten[1]
-            x_position = gnss1.daten[0]
-            y_position = gnss1.daten[1]
-    else:
-        x_position = position.x
-        y_position = position.y
-
-    if richtungspunkt is not None:
-        x_richtung = richtungspunkt.x
-        y_richtung = richtungspunkt.y
-
-    # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-    heading_rad = numpy.arctan((x_richtung - x_position) / (y_richtung - y_position))
-
-    # Quadrantenabfrage
-
-    if x_richtung > x_position:
-        if y_richtung > y_position:
-            q_zuschl = 0  # Quadrant 1
-        else:
-            q_zuschl = numpy.pi  # Quadrant 2
-    else:
-        if y_richtung > y_position:
-            q_zuschl = 2 * numpy.pi  # Quadrant 4
-        else:
-            q_zuschl = numpy.pi  # Quadrant 3
-
-    heading_rad += q_zuschl
-    heading_gon = heading_rad * (200 / numpy.pi)
-
-    return heading_gon
 
 
 # Zum Testen

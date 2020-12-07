@@ -363,35 +363,39 @@ class Boot:
             self.erkundung_gestartet = True
             self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
 
+            # Anlegen eines Sterns mit zeitgleicher Messung (Funktion "Erkunden" ist für die Dauer der Messung gefroren)
             self.SternAbfahren(self.position, self.heading, initial=True)
-            topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
-            #print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
+
+            # Definition der Profile und topographisch bedeutsamer Punkte
+            self.messgebiet.ProfileEinlesen(self.stern.Profile())
+
+            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+            self.messgebiet.Verdichtungsmode(Messgebiet.Verdichtungsmode.KANTEN)
+            self.punkt_anfahren = False
+            while True:
+                abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
+                if abbruch_durch_ufer or not self.punkt_anfahren:
+                    # Aktualisieren des TINs
+                    self.messgebiet.TIN_berechnen(self.stern.TopographischBedeutsamePunkteAbfragen())
+
+                    self.punkt_anfahren = False  # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
+                    self.ufererkennung_aktiv = False
+                    time.sleep(self.akt_takt * 2)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+
+                    # Abfragen des neuen Punkts
+                    neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer)
+
+                    if neuer_punkt is None:
+                        break
+                    self.punkt_anfahren = True
+                    self.Punkt_anfahren(neuer_punkt)
+
+                time.sleep(self.akt_takt*2)
+
             self.fortlaufende_aktualisierung = False
             self.boot_lebt = False
+            self.messgebiet.tin.plot()
 
-            self.messgebiet.profile = self.stern.Profile()
-            print(self.messgebiet.profile)
-
-            while True:
-                tin = Messgebiet.TIN(topographische_punkte)
-                kanten = tin.Anzufahrende_Kanten(10, self.position)
-                # Nächstes Profil suchen
-                naechstesProfil = None
-                for kante in kanten:
-                    profil = Messgebiet.Profil.VerdichtendesProfil(kante)
-                    for existierendesProfil in self.messgebiet.profile:
-                        if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]):
-                            naechstesProfil = profil
-                            break
-
-                # nächstes Profil abfahren
-                print(naechstesProfil.startpunkt, naechstesProfil.endpunkt)
-                tin.plot()
-                break
-
-                # Tin neuberechnen
-
-            #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
     def GeschwindigkeitSetzen(self, geschw):

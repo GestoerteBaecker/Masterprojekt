@@ -24,6 +24,16 @@ class TrackingMode(enum.Enum):
     # ab hier weder Ufererkennung noch Tracking
     BLINDFAHRT = 20
 
+# Definition von Enums zur besseren Lesbarkeit
+# dient dem Differenzieren des Anfahrens von Punkten bei den verdichtenden Kanten
+class Verdichtungsmode(enum.Enum):
+    # das Boot ist zurzeit noch mit dem Stern beschäftigt
+    AUS = -1
+    # Abfahren zwischen den Punkten einer verdichtenden Kante
+    KANTEN = 0
+    # Abfahren zwischen den Endpunkt eines Profils und dem Startpunkt des folgenden Profils
+    VERBINDUNG = 1
+
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
 # https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
@@ -237,7 +247,6 @@ class TIN:
                                     if dreieckobjekt.kanten == 3: dreieckalt.offen = False
 
             self.Dreieckliste.append(dreieckobjekt)
-
 
 
     def Anzufahrende_Kanten(self,Anz,bootsposition):
@@ -604,12 +613,6 @@ class Profil:
         abstand = p1.Abstand(p2)
         profil = cls(heading, p1, stuetz_ist_start=True, start_lambda=0, end_lambda=abstand, grzw_dichte_topo_pkt=grzw_dichte_topo_pkt, grzw_neigungen=grzw_neigungen)
         return profil
-
-    # überprüfen, ob der zumindest der Startpunkt des Profils innerhalb der bereits gefundenen Grenzen des Sees liegt; falls nicht, Test ob der Endpunkt drinnen liegt und ggf. beide Punkte vertauschen
-    # liegt keiner von beiden drinnen, muss das Profil so eingekürzt werden, bis mind. einer der beiden Punkte ansteuerbar ist
-    def TestPunkteAnfahrbar(self, quadtree):
-        #TODO: switch Start- und Endpunkt als Methode einführen, da einer der Punkte evtl außerhalb des Gebiets liegen kann und der jeweils andere angefahren werden sollte
-        pass
 
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
     def ProfilBeginnen(self, punkt):
@@ -990,14 +993,18 @@ class Uferpunktquadtree:
     def linienabfrage(self, profil):
 
         max_ebene = self.max_ebenen - 1
-        Pruefpunkte = profil.BerechneZwischenpunkte()
+        Pruefpunkte = profil.BerechneZwischenpunkte() #TODO: Anpassung der Auflösung nach kleinster Zelle
 
         for punkt in Pruefpunkte:
             ebene = self.ebene_von_punkt(punkt)
             if ebene >= max_ebene:
-                return True                         # Bei True liegt das Profil auf einem Quadtree in einer Ebene, wo ein Ufer sehr wahrscheinlich ist
+                return punkt                        # Bei True liegt das Profil auf einem Quadtree in einer Ebene, wo ein Ufer sehr wahrscheinlich ist
 
-        return False
+        return None # == False
+
+    # Testet, ob beide Punkte anfahrbar sind und tauscht die Punkte ggf.
+    def TestPunkteAnfahrbar(self, profil):
+        pass
 
     def abfrage(self, suchgebiet, gefundene_punkte=[]):
         if not suchgebiet.gebiet_in_zelle(suchgebiet):
@@ -1045,18 +1052,69 @@ class Messgebiet:
         :param initiale_ausdehnung: grobe Ausdehnung in Meter
         :param auflösung:
         """
-
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
         self.topographische_punkte = []
-        self.TIN = None
+        self.tin = None
         self.profile = []
+        self.aktuelles_profil = 0
+        self.verdichtungsmethode = Verdichtungsmode.AUS
 
-    def TIN_berechnen(self):
-        pass
+    # Punkte in das TIN einfügen
+    def TIN_berechnen(self, punkte=None):
+        if punkte is not None:
+            self.PunkteEinlesen(punkte) #TODO: ist es möglich in dem Package pyvista das TIN nur in der Region, wo neue Punkte eingefügt werden, neu zu rechnen und den Rest ohne Neuberechnung zu übernehmen? (Rechenzeit einsparen)
+        self.tin = TIN(self.topographische_punkte)
+        return self.tin
 
-    def daten_einspeisen(self, punkt, datenpaket):
-        pass
+    def Verdichtungsmode(self, mode=None):
+        if mode is not None:
+            self.verdichtungsmethode = mode
+        return self.verdichtungsmethode
+
+    # sucht die nächste anzufahrende Kante und testet, ob die Punkte anfahrbar sind und ob der Weg dahin schiffbar ist
+    def NaechsterPunkt(self, position, ufer):
+        if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
+            if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
+                pass
+            else:
+                punkt = self.profile[self.aktuelles_profil].endpunkt
+                methode = Verdichtungsmode.KANTEN
+        else: # Verdichtungsmethode == Kanten; Boot ist gerade auf einem verdichtenden Profil gefahren
+            if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
+                self.profile[self.aktuelles_profil].
+            kanten = self.tin.Anzufahrende_Kanten(10, position)
+            naechstesProfil = None
+            for kante in kanten:
+                profil = Profil.VerdichtendesProfil(kante)
+                for existierendesProfil in self.profile:
+                    if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,
+                                                                    toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
+                        uferpunkt = self.Uferquadtree.linienabfrage(naechstesProfil)
+                        # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
+                        if uferpunkt is None:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
+                            naechstesProfil = profil
+                            break
+            punkt = naechstesProfil.startpunkt
+            self.profile.append(naechstesProfil)
+            self.aktuelles_profil += 1
+            methode = Verdichtungsmode.VERBINDUNG
+        self.verdichtungsmethode = methode
+        return punkt
+
+    # Einfügen von Profilen
+    def ProfileEinlesen(self, profile):
+        if type(profile).__name__ != "list":
+            profile = [profile]
+        for profil in profile:
+            self.profile.append(profil)
+
+    # liest die angegebenen Punkte in die Liste der topographisch bedeutsamen Punkte ein
+    def PunkteEinlesen(self, punkte):
+        if type(punkte).__name__ != "list":
+            punkte = [punkte]
+        for punkt in punkte:
+            self.topographische_punkte.append(punkt)
 
     def Uferpunkt_abspeichern(self, punkt):
         self.Uferquadtree.punkt_einfuegen(punkt)

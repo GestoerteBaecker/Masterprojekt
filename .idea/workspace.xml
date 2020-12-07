@@ -5,7 +5,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/Masterprojekt.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Masterprojekt.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Messprogramm/Boot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Boot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Messprogramm/Simulation.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Simulation.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -18,6 +20,7 @@
   </component>
   <component name="FileEditorManager">
     <splitter split-orientation="horizontal" split-proportion="0.4031339">
+
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="true">
@@ -112,19 +115,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>heading</find>
-      <find>gnss_east</find>
-      <find>karte_updaten</find>
-      <find>gnss_heading</find>
-      <find>name</find>
-      <find>id</find>
-      <find>Sensorlist</find>
-      <find>Datenaktu</find>
-      <find>PointCloud</find>
-      <find>self.face</find>
-      <find>faces</find>
-      <find>face</find>
-      <find>delaunay_2d</find>
       <find>_get</find>
       <find>_get_output</find>
       <find>triangulate</find>
@@ -151,13 +141,13 @@
         <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Monitor.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Messgebiet.py" />
+        <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1672" />
-    <option name="y" value="-8" />
-    <option name="width" value="1696" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="-8" />
+    <option name="width" value="3373" />
     <option name="height" value="1026" />
   </component>
   <component name="ProjectView">
@@ -316,6 +306,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Monitor" />
         <item itemvalue="Python.Messgebiet" />
         <item itemvalue="Python.Monitor" />
         <item itemvalue="Python.OSM Tile Downloader" />
@@ -350,8 +341,8 @@
     <frame x="1672" y="-8" width="1696" height="1026" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.124300115" visible="true" weight="0.15319662" />
-      <window_info id="Structure" order="1" sideWeight="0.8756999" side_tool="true" weight="0.11640531" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.23346303" visible="true" weight="0.057271365" />
+      <window_info id="Structure" order="1" sideWeight="0.76653695" side_tool="true" visible="true" weight="0.057271365" />
       <window_info id="Favorites" order="2" sideWeight="0.45363766" side_tool="true" weight="0.11640531" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
@@ -360,7 +351,7 @@
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32922733" />
-      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32922733" />
+      <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49939686" weight="0.6606943" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.2530795" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.3835947" side_tool="true" visible="true" weight="0.25979844" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.1769317" />
@@ -387,6 +378,17 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
     </layout-to-restore>
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="SHOW_OTHER_BRANCHES" value="true" />
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

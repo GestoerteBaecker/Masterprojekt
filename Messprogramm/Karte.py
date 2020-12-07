@@ -77,7 +77,7 @@ class Anwendung_Karte():
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
         # Setzen einer leeren Variable für die Boot-Position
-        update_interval = 10
+        update_interval = 1
         self.gnss_north=gnss_north#-32000000
         self.gnss_east=gnss_east
         self.gnss_heading=gnss_heading
@@ -99,7 +99,7 @@ class Anwendung_Karte():
 
             # Setzen der Punkte im Plot auf neue Werte
             self.current_boat_heading.set_xdata([self.gnss_north, self.gnss_north + math.sin(self.gnss_heading*math.pi/200) * 100])
-            self.current_boat_heading.set_ydata([self.gnss_east, self.gnss_east + math.cos(self.gnss_heading*math.pi/200 - math.pi) * 100])
+            self.current_boat_heading.set_ydata([self.gnss_east, self.gnss_east + math.cos(self.gnss_heading*math.pi/200) * 100])
             self.boat_position.set_xdata(self.gnss_north)
             self.boat_position.set_ydata(self.gnss_east)
             self.boat_position.set_marker(marker=(3,0,-self.gnss_heading*180/200))
@@ -115,8 +115,8 @@ class Anwendung_Karte():
         x=1
 
     def plot_boatroute(self):
-        self.route_x.append(self.current_boat_position_x)
-        self.route_y.append(-self.current_boat_position_y)
+        self.route_x.append(self.gnss_north)
+        self.route_y.append(self.gnss_east)
         # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
         if len(self.route_y)>1:
             self.boat_route.set_xdata(self.route_x)

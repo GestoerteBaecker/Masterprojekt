@@ -75,7 +75,6 @@ class Boot_Simulation(Boot.Boot):
             p = Messgebiet.Bodenpunkt(x, y, tiefe)
 
             self.Testdaten_quadtree.punkt_einfuegen(p)
-
         # EINLESEN DES TEST POLYGONS
         testdaten_path = open("Testdaten_Polygon.txt", "r")
         lines = csv.reader(testdaten_path, delimiter=";")
@@ -104,7 +103,6 @@ class Boot_Simulation(Boot.Boot):
         def simulation(self):
             while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
-
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
                     position = self.position
@@ -114,7 +112,6 @@ class Boot_Simulation(Boot.Boot):
                 #print("erstes print", time.time()-t)
                 #t_test = time.time()
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
-
                 gnss2 = PolaresAnhaengen(position, heading, dist=1)
                 kurs = PolaresAnhaengen(position, heading, dist=1000)
 
@@ -222,7 +219,7 @@ class Boot_Simulation(Boot.Boot):
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
 
-                schlafen = max(0, self.akt_takt - (time.time() - t))
+                schlafen = max(0, (self.akt_takt - (time.time() - t))/5)
                 time.sleep(schlafen)
 
         threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True).start()

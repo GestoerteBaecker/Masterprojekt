@@ -269,34 +269,38 @@ class Boot:
     def Bodenpunktberechnung(self, Bodendaten = False):
 
         if Bodendaten:
-            summex = 0
-            summey = 0
-            z_werte = []                    #Liste, da nicht mittelwert, sondern Median berechnet wird
+            z_werte = []   #Liste, da nicht mittelwert, sondern Median berechnet wird
+            Punkte = []
             summe_sedimentdicken = 0
             for messung in Bodendaten:
                 gnss_datenobjekt, echo_datenobjekt = messung
-                summex += gnss_datenobjekt.daten[0]
-                summey += gnss_datenobjekt.daten[1]
 
                 z_boden = gnss_datenobjekt.daten[3] - self.Offset_GNSS_Echo - echo_datenobjekt.daten[0]
                 z_werte.append(z_boden)
 
-                summe_sedimentdicken += abs(echo_datenobjekt.daten[0]-echo_datenobjekt.daten[1])
+                punkt = Messgebiet.Bodenpunkt(gnss_datenobjekt.daten[0], gnss_datenobjekt.daten[1], z_boden)
+                Punkte.append(punkt)
 
-            x_mittel = summex / len(Bodendaten)
-            y_mittel = summey / len(Bodendaten)
+                summe_sedimentdicken += abs(echo_datenobjekt.daten[0]-echo_datenobjekt.daten[1])
 
             mitte = (len(Bodendaten)//2)  # TODO: Prüfen
             z_werte.sort()
 
             if mitte != len(Bodendaten)/2:      # Die Liste hat eine ungerade länge
                 z_median = z_werte[mitte]
+                z_median_geradeliste = False
             else:
-                z_median = (z_werte[mitte-1]+z_werte[mitte])/2 # -1, da mitte immer der obere Wert vom Median ist, z.B. 6//2 = 3 => 2. und 3. Index einer 6 einträge langen Liste müssen benutzt werden
+                z_median_geradeliste = (z_werte[mitte-1]+z_werte[mitte])/2 # -1, da mitte immer der obere Wert vom Median ist, z.B. 6//2 = 3 => 2. und 3. Index einer 6 einträge langen Liste müssen benutzt werden
+                z_median = z_werte[mitte] # Auf variable zum suchen des zugehörigen Punktes
 
             sedimentdicke_mittel = summe_sedimentdicken / len(Bodendaten)
 
-            return Messgebiet.Bodenpunkt(x_mittel, y_mittel, z_median, sedimentdicke_mittel)
+            for punkt in Punkte:
+                if punkt.z == z_median:
+                    if z_median_geradeliste:
+                        return Messgebiet.Bodenpunkt(punkt.x,punkt.y,z_median_geradeliste)
+                    else:
+                        return punkt
 
         else:
 

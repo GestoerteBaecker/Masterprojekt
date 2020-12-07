@@ -1074,7 +1074,7 @@ if __name__=="__main__":
     punkt3 = Bodenpunkt(15, 10, 0)
     punkt4 = Bodenpunkt(15, 0, 0)
     punkt5 = Bodenpunkt(7.5, 5, 5)
-   """
+   
     x_koordinaten = []
     y_koordinaten = []
     Testdaten_txt = open("Test_DHM.txt", "r")
@@ -1082,8 +1082,8 @@ if __name__=="__main__":
     Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
     laenge = 0
     anfangszeit = time.time()
-    #while laenge < 200:
-    while Datenzeile != ['']:
+    while laenge < 200:
+    #while Datenzeile != ['']:
         tin_punkt = Bodenpunkt(float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3]))
         punkt_in_liste = [float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3])]
 
@@ -1153,3 +1153,4 @@ if __name__=="__main__":
     #print(time.time()-endzeit)
 
     print("Break")
+    """

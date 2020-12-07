@@ -56,7 +56,7 @@ class Boot:
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
         self.db_id = 0
         self.todoliste = []                 # TODO: Aufgaben die sich das Boot merken muss
-        self.Messgebiet = None
+        self.messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.stern_beendet = False
@@ -217,8 +217,8 @@ class Boot:
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
                     uferpunkt = self.Uferpunktberechnung()
-                    if self.Messgebiet != None:
-                        Messgebiet.Uferpunkt_abspeichern(uferpunkt)
+                    if self.messgebiet != None:
+                        self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -337,7 +337,7 @@ class Boot:
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
                     if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
                         if entfernung < 20 or steigung > 0:
-                            print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
+                            #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             self.ufererkennung_aktiv = False
                         else:
@@ -368,8 +368,29 @@ class Boot:
             #print("Topographische Punkte", [str(pkt) for pkt in topographische_punkte])
             self.fortlaufende_aktualisierung = False
             self.boot_lebt = False
-            tin = Messgebiet.TIN(topographische_punkte)
-            tin.plot()
+
+            self.messgebiet.profile = self.stern.Profile()
+            print(self.messgebiet.profile)
+
+            while True:
+                tin = Messgebiet.TIN(topographische_punkte)
+                kanten = tin.Anzufahrende_Kanten(10, self.position)
+                # Nächstes Profil suchen
+                naechstesProfil = None
+                for kante in kanten:
+                    profil = Messgebiet.Profil.VerdichtendesProfil(kante)
+                    for existierendesProfil in self.messgebiet.profile:
+                        if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]):
+                            naechstesProfil = profil
+                            break
+
+                # nächstes Profil abfahren
+                print(naechstesProfil.startpunkt, naechstesProfil.endpunkt)
+                tin.plot()
+                break
+
+                # Tin neuberechnen
+
             #... weiter mit TIN
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
@@ -416,16 +437,18 @@ class Boot:
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt*2) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
                 #if len(self.median_punkte) > 1:
-                self.stern.MedianPunkteEinlesen(self.median_punkte)
+                if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
+                    self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
+                #print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
+                #print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_kurspunkt)
+                #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True

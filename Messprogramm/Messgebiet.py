@@ -125,7 +125,7 @@ class TIN_Kante:
 
         return (mitte)
 
-    def winkel(self):
+    def winkel(self): # TODO: Winkelberechnung überprüfen
 
         n1_list = self.Dreiecke[0].Normalenvector.tolist()
         n2_list = self.Dreiecke[1].Normalenvector.tolist()

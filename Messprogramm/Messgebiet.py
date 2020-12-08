@@ -10,6 +10,11 @@ import numpy as np
 import pyvista as pv
 import statistics
 import threading
+import shapely.geometry as shp
+import shapely
+shapely.speedups.disable()
+
+import Simulation
 
 schloss = threading.RLock()
 
@@ -1062,7 +1067,573 @@ class Messgebiet:
         self.Uferquadtree.punkt_einfuegen(punkt)
 
 if __name__=="__main__":
-    """
+    grenzpoly_x=[451913.3030789013, 451902.51359814394, 451856.6583049252, 451938.25375315273, 451891.7241173866,451976.01693580346, 451980.7373336348, 452065.0301520517,451913.3030789013]
+    grenzpoly_y=[5885058.634187477, 5885024.242717562, 5884988.502562554, 5884917.022252536, 5884861.051821107, 5884806.430074773, 5884850.26234035, 5884971.64399887,5885058.634187477]
+    richtungslinie_x=[451903.8622832386, 452006.36235043354, 451934.88204041607]
+    richtungslinie_y=[5885022.219689921, 5884962.877545754, 5884840.821544687]
+    streifenabstand=20
+    sicherheitsabstand=10
+    max_dist = 100000
+
+    testdaten = []
+    # Lesen der Datei
+    for i in range(len(grenzpoly_x)):
+        testdaten.append((grenzpoly_x[i],grenzpoly_y[i]))
+    grenzpoly_shape = shp.LinearRing(testdaten)
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    plt.gca().set_aspect('equal', adjustable='box')
+
+    ax.plot(grenzpoly_x,grenzpoly_y,color='red',lw=1)
+    ax.plot(richtungslinie_x,richtungslinie_y,color='grey',lw=1)
+    profilpunkte_plot,=ax.plot([],[],marker='o',markersize=3,color='green', lw=0)
+
+
+    mittlerer_abstand = (len(richtungslinie_x)-1)*[0]
+
+    # Ermitteln der mittleren Streifenbreite je Richtungslinie
+    for i in range(len(richtungslinie_x)-1):
+        p1=Punkt(richtungslinie_x[i],richtungslinie_y[i])
+        p2=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
+        heading = Headingberechnung(None, p2, p1)
+        dist=p1.Abstand(p2)
+
+        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
+        hilfsprofil = Profil(heading,p1,True,0,dist)
+        hilfsprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
+        hilfsprofilpunkte=hilfsprofil.BerechneZwischenpunkte(streifenabstand)
+
+        abstand_summe_r1=0
+        abstand_summe_r2=0
+
+        # Liste über alle Zwischenpunkte des temporären Profils
+        # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
+        for punkt in hilfsprofilpunkte:
+
+            # Berechnung von Endpunkt und Strahl zur 1. Richtung
+            endpunkt=Simulation.PolaresAnhaengen(punkt, heading+100, dist=max_dist)
+            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+
+            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
+            schnittpunkte = grenzpoly_shape.intersection(strahl)
+            if type(schnittpunkte).__name__ == "MultiPoint":
+                abstand=numpy.Inf
+                # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
+                for schnitt in schnittpunkte:
+                    abstand_r1=punkt.Abstand(schnitt)
+                    if abstand_r1 < abstand:
+                        schnitt_r1=schnitt
+            else:
+                abstand_r1=punkt.Abstand(schnittpunkte)
+
+            # Berechnung von Endpunkt und Strahl zur 1. Richtung
+            endpunkt=Simulation.PolaresAnhaengen(punkt, heading-100, dist=max_dist)
+            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+            schnittpunkte = grenzpoly_shape.intersection(strahl)
+
+            # TODO: Sicherheitsabstand zum Ufer implentieren?
+            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
+            if type(schnittpunkte).__name__ == "MultiPoint":
+                abstand=numpy.Inf
+                for schnitt in schnittpunkte:
+                    abstand_r2=punkt.Abstand(schnitt)
+                    if abstand_r2 < abstand:
+                        schnitt_r2=schnitt
+            else:
+                abstand_r2 = punkt.Abstand(schnittpunkte)
+
+            mittlerer_abstand[i]+=abstand_r1+abstand_r2
+
+        mittlerer_abstand[i]=mittlerer_abstand[i]/len(hilfsprofilpunkte)
+
+
+    richtungslinien=[]
+    # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
+    for i in range(len(richtungslinie_x)-1):
+        p1=Punkt(richtungslinie_x[i],richtungslinie_y[i])
+        p2=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
+        heading = Headingberechnung(None, p1, p2)
+
+        endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=max_dist)
+        endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading+200, dist=max_dist)
+
+        strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
+        strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
+
+        schnittpunkte_r1 = grenzpoly_shape.intersection(strahl_r1)
+        schnittpunkte_r2 = grenzpoly_shape.intersection(strahl_r2)
+
+        # Schnittpunkte mit Polygon in 1. Richtung
+        if type(schnittpunkte_r1).__name__ == "MultiPoint":
+            abstand = numpy.Inf
+            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen, falls mehrere vorliegen
+            for schnitt in schnittpunkte_r1:
+                abstand_r1 = p1.Abstand(schnitt)
+                if abstand_r1 < abstand:
+                    schnitt_r1 = schnitt
+        elif type(schnittpunkte_r1).__name__ == "Point":
+            schnitt_r1 = schnittpunkte_r1
+            abstand_r1 = p1.Abstand(schnitt_r1)
+
+        # Schnittpunkte mit Polygon in 2. Richtung
+        if type(schnittpunkte_r2).__name__ == "MultiPoint":
+            abstand = numpy.Inf
+            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen, falls mehrere vorliegen
+            for schnitt in schnittpunkte_r2:
+                abstand_r2 = p2.Abstand(schnitt)
+                if abstand_r2 < abstand:
+                    schnitt_r2 = schnitt
+        elif type(schnittpunkte_r2).__name__ == "Point":
+            schnitt_r2 = schnittpunkte_r2
+            abstand_r2 = p2.Abstand(schnitt_r2)
+
+        startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading+200, dist=sicherheitsabstand)
+        endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=sicherheitsabstand)
+
+        richtungslinien.append([startpunkt,endpunkt])
+
+        ax.plot(startpunkt.x, startpunkt.y, marker='o', markersize=5, color='green', lw=0)
+        ax.plot(endpunkt.x, endpunkt.y, marker='o', markersize=5, color='green', lw=0)
+        ax.plot([startpunkt.x,endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
+        plt.pause(0.1)
+
+    gespeicherte_streifen_r1 = [[] for i in range(len(richtungslinien))]
+    gespeicherte_streifen_r2 = [[] for i in range(len(richtungslinien))]
+
+
+    for i in range(len(richtungslinien)):
+        linienstart=richtungslinien[i][0]
+        linienende=richtungslinien[i][1]
+        distanz=linienstart.Abstand(linienende)
+        heading = Headingberechnung(None, linienende, linienstart)
+
+        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
+        linienprofil = Profil(heading,linienstart,True,0,distanz)
+        linienprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
+        linienprofilpunkte=linienprofil.BerechneZwischenpunkte(streifenabstand)
+
+        # Liste über alle Zwischenpunkte des temporären Profils
+        #if i == 0:
+        for linienpunkt in linienprofilpunkte:
+
+            endpunkt_r1 = Simulation.PolaresAnhaengen(linienpunkt, heading+100, dist=max_dist)
+            endpunkt_r2 = Simulation.PolaresAnhaengen(linienpunkt, heading-100, dist=max_dist)
+
+            strahl_r1 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r1.x, endpunkt_r1.y)])
+            strahl_r2 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r2.x, endpunkt_r2.y)])
+
+            schnittpunkte_r1 = grenzpoly_shape.intersection(strahl_r1)
+            schnittpunkte_r2 = grenzpoly_shape.intersection(strahl_r2)
+
+
+            # Schnittpunkte mit Polygon in 1. Richtung
+            if type(schnittpunkte_r1).__name__ == "MultiPoint":
+                abstand = numpy.Inf
+                # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen, falls mehrere vorliegen
+                for schnitt in schnittpunkte_r1:
+                    abstand_r1 = p1.Abstand(schnitt)
+                    if abstand_r1 < abstand:
+                        schnitt_r1 = schnitt
+            elif type(schnittpunkte_r1).__name__ == "Point":
+                schnitt_r1 = schnittpunkte_r1
+
+            # Schnittpunkte mit Polygon in 2. Richtung
+            if type(schnittpunkte_r2).__name__ == "MultiPoint":
+                abstand = numpy.Inf
+                # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen, falls mehrere vorliegen
+                for schnitt in schnittpunkte_r2:
+                    abstand_r2 = p2.Abstand(schnitt)
+                    if abstand_r2 < abstand:
+                        schnitt_r2 = schnitt
+            elif type(schnittpunkte_r2).__name__ == "Point":
+                schnitt_r2 = schnittpunkte_r2
+
+            streifen_r1=shp.LineString([(linienpunkt.x, linienpunkt.y), (schnitt_r1.x, schnitt_r1.y)])
+            streifen_r2=shp.LineString([(linienpunkt.x, linienpunkt.y), (schnitt_r2.x, schnitt_r2.y)])
+
+            if i < len(richtungslinien)-1:
+                naechster_linienpunkt=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
+                if linienpunkt.Abstand(naechster_linienpunkt) > mittlerer_abstand[i+1]/2:
+                    ax.plot(linienpunkt.x, linienpunkt.y, marker='o', markersize=2, color="blue")
+                    ax.plot([schnitt_r1.x,schnitt_r2.x],[schnitt_r1.y,schnitt_r2.y], color='blue', lw=1)
+                    plt.pause(0.2)
+
+                    gespeicherte_streifen_r1[i].append(streifen_r1)
+                    gespeicherte_streifen_r2[i].append(streifen_r2)
+
+                # Abbruch, sobald ein anderer Punkt in der Nähe ist
+                else: break
+
+            # Prüfung, ob andere Streifen bereits im Gebiet sind
+            if i != 0:
+                for j in range(len(gespeicherte_streifen_r1[i-1])):
+                    gespeicherter_streifen_r1 = gespeicherte_streifen_r1[i-1][j]
+                    gespeicherter_streifen_r2 = gespeicherte_streifen_r2[i-1][j]
+
+                    min_abstand_r1 = numpy.Inf
+                    min_abstand_r2 = numpy.Inf
+
+                    schnittpunkt_r1_r1 = streifen_r1.intersection(gespeicherter_streifen_r1)
+                    schnittpunkt_r1_r2 = streifen_r1.intersection(gespeicherter_streifen_r2)
+
+                    schnittpunkt_r2_r1 = streifen_r2.intersection(gespeicherter_streifen_r1)
+                    schnittpunkt_r2_r2 = streifen_r2.intersection(gespeicherter_streifen_r2)
+
+                    if type(schnittpunkt_r1_r1).__name__ == "Point":
+                        abstand = linienpunkt.Abstand(schnittpunkt_r1_r1)
+                        if abstand < min_abstand_r1:
+                            min_abstand_r1 = abstand
+                            min_schnittpunkt_r1 = schnittpunkt_r1_r1
+                    elif type(schnittpunkt_r1_r2).__name__ == "Point":
+                        abstand = linienpunkt.Abstand(schnittpunkt_r1_r2)
+                        if abstand < min_abstand_r2:
+                            min_abstand_r1 = abstand
+                            min_schnittpunkt_r1 = schnittpunkt_r1_r2
+                    else:
+                        min_schnittpunkt_r1 = schnitt_r1
+
+                    if type(schnittpunkt_r2_r1).__name__ == "Point":
+                        abstand = linienpunkt.Abstand(schnittpunkt_r2_r1)
+                        if abstand < min_abstand_r1:
+                            min_abstand_r2 = abstand
+                            min_schnittpunkt_r2 = schnittpunkt_r2_r1
+                    elif type(schnittpunkt_r2_r2).__name__ == "Point":
+                        abstand = linienpunkt.Abstand(schnittpunkt_r2_r2)
+                        if abstand < min_abstand_r2:
+                            min_abstand_r2 = abstand
+                            min_schnittpunkt_r2 = schnittpunkt_r2_r2
+                    else:
+                        min_schnittpunkt_r2 = schnitt_r2
+
+                ax.plot([min_schnittpunkt_r1.x,min_schnittpunkt_r2.x],[min_schnittpunkt_r1.y,min_schnittpunkt_r2.y], color='blue', lw=1)
+                plt.pause(0.2)
+
+
+
+    # Verringern der Streifenanzahl, wenn andere Teillinien in der Nähe sind
+    if i < len(richtungslinien)-1:
+        for j in range(len(alle_streifen_r1[i])):
+            streifen_r1 = alle_streifen_r1[i][j]
+            streifen_r2 = alle_streifen_r2[i][j]
+
+            x,y=streifen_r1.coords[0]
+            x1,y1=streifen_r1.coords[1]
+            x2,y2=streifen_r2.coords[1]
+
+            linienpunkt=Punkt(x,y)
+
+
+            if linienpunkt.Abstand(p2) >mittlerer_abstand[i+1]/2:
+                sparse_streifen_r1[i].append(streifen_r1)
+                sparse_streifen_r2[i].append(streifen_r2)
+
+                ax.plot([x1,x2],[y1,y2],marker='o',markersize=10)
+
+    # Profile der ersten Teil-Linie bleiben unberührt
+    if i == 0:
+        pass
+    # Ab der zweiten Teillinie Prüfung, ob Routen geschnitten werden
+    else:
+        # Schleife über alle Punkte bzw. Streifen der Teil-Linie
+        for j in range(len(alle_streifen_r1[i])):
+            streifen_r1 = alle_streifen_r1[i][j]
+            streifen_r2 = alle_streifen_r2[i][j]
+
+            min_abstand_r1=numpy.Inf
+            min_abstand_r2=numpy.Inf
+
+            x,y=streifen_r1.coords[0]
+            x1,y1=streifen_r1.coords[1]
+            x2,y2=streifen_r2.coords[1]
+
+            linienpunkt=Punkt(x,y)
+            endpunkt_r1=Punkt(x1,y1)
+            endpunkt_r2=Punkt(x2,y2)
+
+            # Schleife über alle Streifen aller anderen(!) Teil-Linien
+
+            for n in range(len(sparse_streifen_r1)):
+                if n==i:
+                    pass
+                else:
+                    for m in range(len(sparse_streifen_r1[n])):
+                        schnittpunkt_r1 = streifen_r1.intersection(sparse_streifen_r1[n-1][m])
+                        schnittpunkt_r2 = streifen_r2.intersection(sparse_streifen_r2[n-1][m])
+
+                        if type(schnittpunkt_r1).__name__ == "Point":
+                            abstand = linienpunkt.Abstand(schnittpunkt_r1)
+                            if abstand < min_abstand_r1:
+                                min_abstand_r1=abstand
+                                min_schnittpunkt_r1=schnittpunkt_r1
+                        else:
+                            min_schnittpunkt_r1=Punkt(x1,y1)
+
+                        if type(schnittpunkt_r2).__name__ == "Point":
+                            abstand = linienpunkt.Abstand(schnittpunkt_r2)
+                            if abstand < min_abstand_r2:
+                                min_abstand_r2=abstand
+                                min_schnittpunkt_r2=schnittpunkt_r2
+                        else:
+                            min_schnittpunkt_r2=Punkt(x2,y2)
+
+                    #ax.plot(min_schnittpunkt_r2.x, min_schnittpunkt_r2.y, marker='o', markersize=8)
+
+                    ax.plot(min_schnittpunkt_r1.x,min_schnittpunkt_r1.y,marker='o',markersize=5)
+                    ax.plot(min_schnittpunkt_r2.x,min_schnittpunkt_r2.y,marker='o',markersize=5)
+                    plt.pause(0.3)
+
+
+
+            #
+            #abstand=abstand1 + abstand2
+            #abstand_summe+=abstand
+
+            #if abstand < 1.5 * abstand_summe/j:#
+
+      #          alle_streifen.append(aktueller_streifen)
+       #         abstand_intersec = numpy.Inf
+        #        for streifen in alle_streifen:
+         #           schnittpunkt = streifen.intersection(aktueller_streifen)
+          #          if type(schnittpunkt).__name__ == "Point":
+           #             abstand = punkt.Abstand(schnittpunkt)
+            #            if abstand < abstand_intersec:
+             #               abstand_intersec=abstand
+              ##              schnitt=schnittpunkt
+            #j+=1
+"""
+    # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
+    for i in range(len(richtungslinie_x) - 1):
+        p1 = Punkt(richtungslinie_x[i], richtungslinie_y[i])
+        p2 = Punkt(richtungslinie_x[i + 1], richtungslinie_y[i + 1])
+        heading = Headingberechnung(None, p1, p2)
+
+        endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=max_dist)
+        endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading + 200, dist=max_dist)
+
+        strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
+        strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
+
+        schnittpunkte_r1 = grenzpoly_shape.intersection(strahl_r1)
+        schnittpunkte_r2 = grenzpoly_shape.intersection(strahl_r2)
+
+        if type(schnittpunkte_r1).__name__ == "MultiPoint":
+            abstand = numpy.Inf
+            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
+            for schnitt in schnittpunkte_r1:
+                abstand_r1 = p1.Abstand(schnitt)
+                if abstand_r1 < abstand:
+                    schnitt_r1 = schnitt
+        # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
+        # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
+        elif type(schnittpunkte_r1).__name__ == "Point":
+            schnitt_r1 = schnittpunkte_r1
+            abstand_r1 = p1.Abstand(schnitt_r1)
+
+        if type(schnittpunkte_r2).__name__ == "MultiPoint":
+            abstand = numpy.Inf
+            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
+            for schnitt in schnittpunkte_r2:
+                abstand_r2 = p2.Abstand(schnitt)
+                if abstand_r2 < abstand:
+                    schnitt_r2 = schnitt
+        # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
+        # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
+        elif type(schnittpunkte_r2).__name__ == "Point":
+            schnitt_r2 = schnittpunkte_r2
+            abstand_r2 = p2.Abstand(schnitt_r2)
+
+        startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=sicherheitsabstand)
+        endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=sicherheitsabstand)
+
+        richtungslinien.append([startpunkt, endpunkt])
+
+        # startpunkt=Punkt(schnitt_r1.x,schnitt_r1.y)
+
+        # endpunkt=Punkt(schnitt_r2.x,schnitt_r2.y)
+
+        ax.plot(startpunkt.x, startpunkt.y, marker='o', markersize=5, color='green', lw=0)
+        ax.plot(endpunkt.x, endpunkt.y, marker='o', markersize=5, color='green', lw=0)
+        ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
+
+    alle_streifen_r1 = [[] for i in range(len(richtungslinien))]
+    alle_streifen_r2 = [[] for i in range(len(richtungslinien))]
+
+    mittlerer_abstand = len(richtungslinien) * [0]
+
+    # Liste über alle angebenen Punkte der (quer) zu befahrenen Linie
+    for i in range(len(richtungslinien)):
+
+        # P1 und P2 ergeben sich aus den betrachteten Punkten der Linie
+        p1 = richtungslinien[i][0]
+        p2 = richtungslinien[i][1]
+        heading = Headingberechnung(None, p2, p1)
+        dist = p1.Abstand(p2)
+
+        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
+        hilfsprofil = Profil(heading, p1, True, 0, dist)
+        hilfsprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
+        hilfsprofilpunkte = hilfsprofil.BerechneZwischenpunkte(streifenabstand)
+
+        abstand_summe_r1 = 0
+        abstand_summe_r2 = 0
+
+        # Liste über alle Zwischenpunkte des temporären Profils
+        # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
+        for punkt in hilfsprofilpunkte:
+            ax.plot(punkt.x, punkt.y, marker='o', markersize=4, color='blue')
+            plt.pause(0.1)
+
+            # Berechnung von Endpunkt und Strahl zur 1. Richtung
+            endpunkt = Simulation.PolaresAnhaengen(punkt, heading + 100, dist=max_dist)
+            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+
+            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
+            schnittpunkte = grenzpoly_shape.intersection(strahl)
+            if type(schnittpunkte).__name__ == "MultiPoint":
+                abstand = numpy.Inf
+                # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
+                for schnitt in schnittpunkte:
+                    abstand_r1 = punkt.Abstand(schnitt)
+                    if abstand_r1 < abstand:
+                        schnitt_r1 = schnitt
+            # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
+            # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
+            elif type(schnittpunkte).__name__ == "LineString":
+                schnitt_r1 = endpunkt
+                abstand_r1 = max_dist
+            else:
+                schnitt_r1 = schnittpunkte
+                abstand_r1 = punkt.Abstand(schnitt_r1)
+
+            aktueller_streifen_r1 = shp.LineString([(punkt.x, punkt.y), (schnitt_r1.x, schnitt_r1.y)])
+            alle_streifen_r1[i].append(aktueller_streifen_r1)
+
+            # Berechnung von Endpunkt und Strahl zur 1. Richtung
+            endpunkt = Simulation.PolaresAnhaengen(punkt, heading - 100, dist=max_dist)
+            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+            schnittpunkte = grenzpoly_shape.intersection(strahl)
+
+            # TODO: Sicherheitsabstand zum Ufer implentieren?
+            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
+            if type(schnittpunkte).__name__ == "MultiPoint":
+                abstand = numpy.Inf
+                for schnitt in schnittpunkte:
+                    abstand_r2 = punkt.Abstand(schnitt)
+                    if abstand_r2 < abstand:
+                        schnitt_r2 = schnitt
+            elif type(schnittpunkte).__name__ == "LineString":
+                schnitt_r1 = endpunkt
+                abstand_r2 = max_dist
+            else:
+                schnitt_r2 = schnittpunkte
+                abstand_r2 = punkt.Abstand(schnitt_r2)
+
+            mittlerer_abstand[i] += abstand_r1 + abstand_r2
+
+            aktueller_streifen_r2 = shp.LineString([(punkt.x, punkt.y), (schnitt_r2.x, schnitt_r2.y)])
+            alle_streifen_r2[i].append(aktueller_streifen_r2)
+
+        mittlerer_abstand[i] = mittlerer_abstand[i] / len(hilfsprofilpunkte)
+        print(mittlerer_abstand[i])
+
+    sparse_streifen_r1 = [[] for i in range(len(richtungslinien) - 1)]
+    sparse_streifen_r2 = [[] for i in range(len(richtungslinien) - 1)]
+
+    for i in range(len(richtungslinien)):
+        print(i)
+        p1 = richtungslinien[i][0]
+        p2 = richtungslinien[i][1]
+
+        # Verringern der Streifenanzahl, wenn andere Teillinien in der Nähe sind
+        if i < len(richtungslinien) - 1:
+            for j in range(len(alle_streifen_r1[i])):
+                streifen_r1 = alle_streifen_r1[i][j]
+                streifen_r2 = alle_streifen_r2[i][j]
+
+                x, y = streifen_r1.coords[0]
+                x1, y1 = streifen_r1.coords[1]
+                x2, y2 = streifen_r2.coords[1]
+
+                linienpunkt = Punkt(x, y)
+
+                if linienpunkt.Abstand(p2) > mittlerer_abstand[i + 1] / 2:
+                    sparse_streifen_r1[i].append(streifen_r1)
+                    sparse_streifen_r2[i].append(streifen_r2)
+
+                    ax.plot([x1, x2], [y1, y2], marker='o', markersize=10)
+
+        # Profile der ersten Teil-Linie bleiben unberührt
+        if i == 0:
+            pass
+        # Ab der zweiten Teillinie Prüfung, ob Routen geschnitten werden
+        else:
+            # Schleife über alle Punkte bzw. Streifen der Teil-Linie
+            for j in range(len(alle_streifen_r1[i])):
+                streifen_r1 = alle_streifen_r1[i][j]
+                streifen_r2 = alle_streifen_r2[i][j]
+
+                min_abstand_r1 = numpy.Inf
+                min_abstand_r2 = numpy.Inf
+
+                x, y = streifen_r1.coords[0]
+                x1, y1 = streifen_r1.coords[1]
+                x2, y2 = streifen_r2.coords[1]
+
+                linienpunkt = Punkt(x, y)
+                endpunkt_r1 = Punkt(x1, y1)
+                endpunkt_r2 = Punkt(x2, y2)
+
+                # Schleife über alle Streifen aller anderen(!) Teil-Linien
+
+                for n in range(len(sparse_streifen_r1)):
+                    if n == i:
+                        pass
+                    else:
+                        for m in range(len(sparse_streifen_r1[n])):
+                            schnittpunkt_r1 = streifen_r1.intersection(sparse_streifen_r1[n - 1][m])
+                            schnittpunkt_r2 = streifen_r2.intersection(sparse_streifen_r2[n - 1][m])
+
+                            if type(schnittpunkt_r1).__name__ == "Point":
+                                abstand = linienpunkt.Abstand(schnittpunkt_r1)
+                                if abstand < min_abstand_r1:
+                                    min_abstand_r1 = abstand
+                                    min_schnittpunkt_r1 = schnittpunkt_r1
+                            else:
+                                min_schnittpunkt_r1 = Punkt(x1, y1)
+
+                            if type(schnittpunkt_r2).__name__ == "Point":
+                                abstand = linienpunkt.Abstand(schnittpunkt_r2)
+                                if abstand < min_abstand_r2:
+                                    min_abstand_r2 = abstand
+                                    min_schnittpunkt_r2 = schnittpunkt_r2
+                            else:
+                                min_schnittpunkt_r2 = Punkt(x2, y2)
+
+                        # ax.plot(min_schnittpunkt_r2.x, min_schnittpunkt_r2.y, marker='o', markersize=8)
+
+                        ax.plot(min_schnittpunkt_r1.x, min_schnittpunkt_r1.y, marker='o', markersize=5)
+                        ax.plot(min_schnittpunkt_r2.x, min_schnittpunkt_r2.y, marker='o', markersize=5)
+                        plt.pause(0.3)
+
+
+
+
+            #if type(schnitt).__name__ == "MultiPoint":
+            #    schnitt = [numpy.array([pkt.x, pkt.y]) for pkt in schnitt]
+            #else:
+            #    schnitt = [numpy.array([schnitt.x, schnitt.y])]
+            #print(schnitt)
+            #querprofil = Profil(heading+numpy.pi,)
+
+    plt.show()
+
+
+    time.sleep(1)
+
+
+"""
+"""
     richtung = 50
     stuetz = numpy.array([0,0])
 

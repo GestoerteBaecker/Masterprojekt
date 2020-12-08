@@ -139,6 +139,7 @@ class Anwendung_Karte():
                     for x in self.grenzpolygon_x:
                         x_utm32=x+32000000
                         self.grenzpolygon_x_utm32.append(x_utm32)
+                    print(self.grenzpolygon_x,self.grenzpolygon_y)
                 # Einfacher Klick ergänzt Polygon
                 else:
                     self.grenzpolygon_x.append(ix)

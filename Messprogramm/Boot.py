@@ -365,6 +365,7 @@ class Boot:
 
             # Anlegen eines Sterns mit zeitgleicher Messung (Funktion "Erkunden" ist für die Dauer der Messung gefroren)
             self.SternAbfahren(self.position, self.heading, initial=True)
+            self.messgebiet.stern = self.stern
 
             # Definition der Profile und topographisch bedeutsamer Punkte
             self.messgebiet.ProfileEinlesen(self.stern.Profile())

@@ -37,19 +37,6 @@ def test(menge, anzahl):
 
 #print(test(b, 3))
 
-liste = []
-for i in range(3):
-    liste.append(b)
-
-liste_neu = []
-for produkt in itertools.product(*liste):
-    einzig = True
-    for ele in produkt:
-        einzig = einzig and produkt.count(ele) == 1
-    if einzig:
-        liste_neu.append(produkt)
-
-print(liste_neu)
 
 
 """
@@ -88,7 +75,23 @@ while not boot.stern_beendet:
     time.sleep(0.1)
 print("Fertig gemessen")
 """
+a = ["a", "b", "c", "d"]
 
+def kartesisch(menge, anzahl):
+    menge = [[komp] for komp in menge]
+    ausgabe = copy.deepcopy(menge)
+
+    for _ in range(anzahl-1):
+        temp = copy.deepcopy(ausgabe)
+        ausgabe = []
+        for el in menge:
+            for i in range(len(temp)):
+                if not el[0] in temp[i]:
+                    ausgabe.append(el + temp[i])
+    return ausgabe
+
+for komp in kartesisch(a, 3):
+    print(komp)
 
 
 

@@ -373,15 +373,16 @@ class Boot:
             self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
             self.messgebiet.Verdichtungsmode(Messgebiet.Verdichtungsmode.KANTEN)
             self.punkt_anfahren = False
+            print("///////////////////////////////////////////////")
             while True:
                 abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
                 if abbruch_durch_ufer or not self.punkt_anfahren:
-                    # Aktualisieren des TINs
-                    self.messgebiet.TIN_berechnen(self.stern.TopographischBedeutsamePunkteAbfragen())
-
                     self.punkt_anfahren = False  # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                     self.ufererkennung_aktiv = False
                     time.sleep(self.akt_takt * 2)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+
+                    # Aktualisieren des TINs
+                    self.messgebiet.TIN_berechnen(self.stern.TopographischBedeutsamePunkteAbfragen())
 
                     # Abfragen des neuen Punkts
                     neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer)

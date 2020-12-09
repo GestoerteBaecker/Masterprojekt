@@ -483,8 +483,8 @@ class Stern:
                 profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt)
                 weitere_profile.append(profil)
 
-        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0])
-        ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1], soll_endpunkt)
+        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
+        ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1].mittelpunkt, soll_endpunkt)
         profile = [anfang, *weitere_profile, ende]
         return profile
 
@@ -530,7 +530,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 3*median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 5*median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -689,6 +689,12 @@ class Profil:
                 self.endpunkt = self.BerechneNeuenKurspunkt(self.Profillaenge(akt_laenge=False), punkt_objekt=True)
         else:
             self.ist_definiert = Profil.Definition.NUR_RICHTUNG
+
+    def __str__(self):
+        if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
+            return "Richtung: " + str(self.heading) + ", Start- und Endpunkt: " + str(self.startpunkt) + "; " + str(self.endpunkt)
+        else:
+            return "Richtung: " + str(self.heading) + ", Stützpunkt: " + str(self.stuetzpunkt)
 
     @classmethod
     def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
@@ -1233,6 +1239,7 @@ class Messgebiet:
                         anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil) # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
                         if anfahrbar is None and startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
+                            print("dieses profil messen", profil)
                             naechstesProfil = profil
                             break
                 else:

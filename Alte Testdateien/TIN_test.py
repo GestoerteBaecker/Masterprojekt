@@ -1,10 +1,5 @@
 import Messprogramm.Messgebiet as Messgebiet
-#import tinned_python
-import trimesh
-import open3d as o3d
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
 import pyvista as pv
 
 

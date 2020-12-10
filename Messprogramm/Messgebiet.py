@@ -169,6 +169,7 @@ class TIN:
 
         # Punkte in Numpy-Array überführen
         for i, punkt in enumerate(Punktliste):
+
             punkt_in_liste = [punkt.x, punkt.y, punkt.z]
             self.Punktliste_array[i] = punkt_in_liste
 
@@ -809,6 +810,7 @@ class Profil:
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
+                print(len(self.median_punkte))
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
                 steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
                 for i in range(1, len(self.median_punkte) - 1):
@@ -819,7 +821,7 @@ class Profil:
                     if abs(winkel) >= grzw_winkel_rad:
                         index_zugefügter_medianpunkte.append(i)
                     steigung_zurück = steigung_vor
-
+                #print(index_zugefügter_medianpunkte)
                 # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
                     größter_abstand = 0

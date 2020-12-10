@@ -349,7 +349,7 @@ class Boot:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                     else:
                         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # weit entfernt
-                schlafen = max(0, self.akt_takt/2 - (time.time() - t))
+                schlafen = max(0, self.akt_takt/20 - (time.time() - t))
                 time.sleep(schlafen)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
@@ -399,6 +399,13 @@ class Boot:
             self.messgebiet.tin.plot()
 
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
+
+    # gibt alle weiteren anzufahrenden Kanten aus
+    def KantenPlotten(self):
+        if self.messgebiet is None:
+            return []
+        else:
+            return self.messgebiet.anzufahrende_kanten
 
     def GeschwindigkeitSetzen(self, geschw):
         self.PixHawk.Geschwindigkeit_setzen(geschw)
@@ -456,7 +463,7 @@ class Boot:
                 self.Punkt_anfahren(neuer_kurspunkt)
                 #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
-            time.sleep(self.akt_takt/2)
+            time.sleep(self.akt_takt/20)
         self.stern_beendet = True
 
     def Gewaesseraufnahme(self):

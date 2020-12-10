@@ -1193,6 +1193,7 @@ class Messgebiet:
         self.aktuelles_profil = 0
         self.verdichtungsmethode = Verdichtungsmode.AUS
         self.punkt_ausserhalb = Punkt(initale_position_x, initale_position_y + hoehe) # dieser Punkt soll sicher außerhalb des Sees liegen
+        self.anzufahrende_kanten = [] # nur zum Plotten auf der Karte
 
     # Punkte in das TIN einfügen
     def TIN_berechnen(self, punkte=None):
@@ -1227,6 +1228,7 @@ class Messgebiet:
                 profil = self.profile[self.aktuelles_profil]
                 profil.NeuerEndpunkt(position)
             kanten = self.tin.Anzufahrende_Kanten(10, position)
+            self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
             for kante in kanten:

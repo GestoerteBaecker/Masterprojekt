@@ -7,6 +7,7 @@ import numpy
 import pyvista as pv
 import statistics
 import threading
+from scipy.spatial import KDTree
 
 schloss = threading.RLock()
 
@@ -194,7 +195,7 @@ class TIN_Dreieck:
 
 class TIN:
 
-    def __init__(self, Punktliste, Max_len = 0.0):
+    def __init__(self, Punktliste, Max_len = 0.0, nurTIN=False):
 
         self.Punktliste_array = numpy.zeros(shape=(len(Punktliste), 3))
         self.TIN_punkte = []
@@ -205,6 +206,7 @@ class TIN:
 
         # Punkte in Numpy-Array überführen
         for i, punkt in enumerate(Punktliste):
+
             punkt_in_liste = [punkt.x, punkt.y, punkt.z]
             self.Punktliste_array[i] = punkt_in_liste
 
@@ -216,63 +218,65 @@ class TIN:
         else:
             self.mesh = cloud.delaunay_2d(alpha=Max_len)
 
-        # Punkt ID's belegen
+        # Punkt ID's belegen (nur, wenn dies gemacht werden soll, da die berechnung bei vielen Punkten sehr lange dauern kann)
 
-        for i, koords in enumerate(self.mesh.points.tolist()):
+        if not nurTIN:
 
-            tin_punkt = TIN_Punkt(koords[0],koords[1],koords[2],i)
-            self.TIN_punkte.append(tin_punkt)
+            for i, koords in enumerate(self.mesh.points.tolist()):
 
-        #Dreiecke aus mesh Extrhieren
-        for i in range(0,self.mesh.faces.shape[0],4):
-            dreieck_mesh = self.mesh.faces[i:i+4]
-            dreieckpunkte = dreieck_mesh.tolist()
-            dreieckpunkte.pop(0)
+                tin_punkt = TIN_Punkt(koords[0],koords[1],koords[2],i)
+                self.TIN_punkte.append(tin_punkt)
 
-            Dreieckpunkte = []
+            #Dreiecke aus mesh Extrhieren
+            for i in range(0,self.mesh.faces.shape[0],4):
+                dreieck_mesh = self.mesh.faces[i:i+4]
+                dreieckpunkte = dreieck_mesh.tolist()
+                dreieckpunkte.pop(0)
 
-            # Punkte in Punktliste suchen und Dreieckobjekt bilden
-            for Punktindex in dreieckpunkte:
-                for punkt in self.TIN_punkte:
-                    if punkt.TIN_id == Punktindex:
+                Dreieckpunkte = []
 
-                        Dreieckpunkte.append(punkt)
-                        if len(Dreieckpunkte)== 3: break
+                # Punkte in Punktliste suchen und Dreieckobjekt bilden
+                for Punktindex in dreieckpunkte:
+                    for punkt in self.TIN_punkte:
+                        if punkt.TIN_id == Punktindex:
 
-            DreieckId = int(i/4)
-            normalenvektor = self.mesh.face_normals[DreieckId]
+                            Dreieckpunkte.append(punkt)
+                            if len(Dreieckpunkte)== 3: break
 
-            dreieckobjekt = TIN_Dreieck(Dreieckpunkte[0],Dreieckpunkte[1],Dreieckpunkte[2],normalenvektor, int(DreieckId))
+                DreieckId = int(i/4)
+                normalenvektor = self.mesh.face_normals[DreieckId]
 
-            # Nach Nachbardreiecken suchen
+                dreieckobjekt = TIN_Dreieck(Dreieckpunkte[0],Dreieckpunkte[1],Dreieckpunkte[2],normalenvektor, int(DreieckId))
 
-            for dreieckalt in self.Dreieckliste:
-                for punkt1 in dreieckalt.Dreieckspunkte:
-                    if punkt1 in Dreieckpunkte:
-                        for punkt2 in dreieckalt.Dreieckspunkte:
-                            if punkt2 != punkt1 and punkt2 in Dreieckpunkte:
+                # Nach Nachbardreiecken suchen
 
-                                # Abfrage, ob Kante in umgekehrter Form bereits existiert
-                                vorhanden = False
-                                for Kantealt in self.Kantenliste:
-                                    if Kantealt.Anfangspunkt == punkt2 and Kantealt.Endpunkt == punkt1:
-                                        vorhanden = True
+                for dreieckalt in self.Dreieckliste:
+                    for punkt1 in dreieckalt.Dreieckspunkte:
+                        if punkt1 in Dreieckpunkte:
+                            for punkt2 in dreieckalt.Dreieckspunkte:
+                                if punkt2 != punkt1 and punkt2 in Dreieckpunkte:
 
-                                # Kante Bilden und abspeichern
-                                if not vorhanden:
-                                    kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
-                                    self.Kantenliste.append(kante)
+                                    # Abfrage, ob Kante in umgekehrter Form bereits existiert
+                                    vorhanden = False
+                                    for Kantealt in self.Kantenliste:
+                                        if Kantealt.Anfangspunkt == punkt2 and Kantealt.Endpunkt == punkt1:
+                                            vorhanden = True
 
-                                    # Maximale Kantenlänge wird zum Normieren bei der Methode "Anzufahrende_Kanten" gebraucht
+                                    # Kante Bilden und abspeichern
+                                    if not vorhanden:
+                                        kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
+                                        self.Kantenliste.append(kante)
 
-                                    if kante.laenge() > self.max_Kantenlaenge:
-                                        self.max_Kantenlaenge = kante.laenge()
-                                    dreieckobjekt.kanten += 1
-                                    dreieckalt.kanten += 1
-                                    if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
-                                    if dreieckobjekt.kanten == 3: dreieckalt.offen = False
+                                        # Maximale Kantenlänge wird zum Normieren bei der Methode "Anzufahrende_Kanten" gebraucht
 
-            self.Dreieckliste.append(dreieckobjekt)
+                                        if kante.laenge() > self.max_Kantenlaenge:
+                                            self.max_Kantenlaenge = kante.laenge()
+                                        dreieckobjekt.kanten += 1
+                                        dreieckalt.kanten += 1
+                                        if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
+                                        if dreieckobjekt.kanten == 3: dreieckalt.offen = False
+
+                self.Dreieckliste.append(dreieckobjekt)
 
 
     def Anzufahrende_Kanten(self,Anz,bootsposition):
@@ -306,6 +310,17 @@ class TIN:
 
     def plot(self):
         self.mesh.plot()
+
+    def Vergleich_mit_Original(self,originalmesh):
+        tree = KDTree(originalmesh.mesh.points)
+        d, idx = tree.query(self.mesh.points)
+        self.mesh["distances"] = d
+
+        p = pv.Plotter()
+        p.add_mesh(originalmesh.mesh, color=True, opacity=0.5, smooth_shading=True)
+        p.add_mesh(self.mesh, scalars="distances", smooth_shading=True)
+
+        p.show()
 
 
 class Zelle:
@@ -932,6 +947,7 @@ class Profil:
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
+                print(len(self.median_punkte))
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
                 steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
                 for i in range(1, len(self.median_punkte) - 1):
@@ -942,7 +958,7 @@ class Profil:
                     if abs(winkel) >= grzw_winkel_rad:
                         index_zugefügter_medianpunkte.append(i)
                     steigung_zurück = steigung_vor
-
+                #print(index_zugefügter_medianpunkte)
                 # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
                     größter_abstand = 0
@@ -1139,8 +1155,9 @@ class Uferpunktquadtree:
             return True
 
 
-    def abfrage(self, suchgebiet, gefundene_punkte=None):
-        if gefundene_punkte is None:
+    def abfrage(self, suchgebiet,gefundene_punkte = None):
+
+        if gefundene_punkte == None:
             gefundene_punkte = []
         if not suchgebiet.gebiet_in_zelle(suchgebiet):
             return False

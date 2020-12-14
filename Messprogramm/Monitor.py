@@ -205,7 +205,7 @@ class Anwendung(Frame):
         pass
 
     def boot_stopp(self):
-        pass
+        self.boot.boot_lebt = False
 
     def boot_trennen(self):
         self.boot.Trennen() #TODO: das hier muss beim Verlassen unbedingt aufgerufen werden!!!

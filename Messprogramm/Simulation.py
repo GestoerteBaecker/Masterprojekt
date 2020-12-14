@@ -149,7 +149,7 @@ class Boot_Simulation(Boot.Boot):
                     #print("schnittpunkte", schnitt)
                     #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
-                    distanz = random.gauss(distanz, 0.1)
+                    #distanz = random.gauss(distanz, 0)
                 #print("viertes print", time.time()-t_test)
                 with Messgebiet.schloss:
                     self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
@@ -250,7 +250,7 @@ class Boot_Simulation(Boot.Boot):
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
-            while self.punkt_anfahren:
+            while self.punkt_anfahren and self.boot_lebt:
                 with Messgebiet.schloss:
                     self.position = profilpunkte[index]
                     index += 1
@@ -264,7 +264,7 @@ class Boot_Simulation(Boot.Boot):
             if self.tracking_mode.value <= 10:
                 self.Ufererkennung(self.heading)
             self.punkt_anfahren = True
-            while self.punkt_anfahren:
+            while self.punkt_anfahren and self.boot_lebt:
                 test = punkt_box.enthaelt_punkt(self.position)
                 #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:

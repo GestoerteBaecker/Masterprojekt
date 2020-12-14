@@ -317,7 +317,7 @@ class TIN:
         self.mesh["distances"] = d
 
         p = pv.Plotter()
-        p.add_mesh(originalmesh.mesh, color=True, opacity=0.5, smooth_shading=True)
+        p.add_mesh(originalmesh.mesh, color=True, opacity=1, smooth_shading=True)
         p.add_mesh(self.mesh, scalars="distances", smooth_shading=True)
 
         p.show()
@@ -545,7 +545,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 5*median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 3*median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -1251,26 +1251,29 @@ class Messgebiet:
                 #profil.NeuerEndpunkt(position)
             self.TIN_berechnen()
             kanten = self.tin.Anzufahrende_Kanten(10, position)
+            print(kanten, "in nächster Punkt")
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
             for kante in kanten:
+                existiert = False
                 profil = Profil.VerdichtendesProfil(kante)
                 for existierendesProfil in self.profile:
-                    if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,
-                                                                    toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
-                        startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
-                        verbindungsprofil = Profil.ProfilAusZweiPunkten(position, profil.startpunkt) # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                        anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil) # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=2, toleranz=0.7, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
+                        existiert = True
+                        break
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
-                        if anfahrbar is None and startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
-                            print("=========")
-                            print("dieses verbinsungsprofilprofil messen", verbindungsprofil, "dieses profil messen", profil)
-                            naechstesProfil = profil
-                            break
-                else:
-                    continue # wenn die Schleife ordnungsgemäß durchläuft, soll die äußere Schleife ab hier die Iterationsschritt abbrechen und zur nächsten Iteration übergehen und nicht das nachfolgende break machen; das nachfolgende wird nur ausgeführt, wenn das innere ausgeführt wird
-                break
+
+                if not existiert:
+                    verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
+                    anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
+                    startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
+                    if anfahrbar is None and startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
+                        print("=========")
+                        print("dieses verbinsungsprofilprofil messen", verbindungsprofil, "dieses profil messen", profil)
+                        naechstesProfil = profil
+                        break
+
             if naechstesProfil is None: # keine zu messenden Profile mehr gefunden bzw. alle Profile fallen außerhalb des Sees
                 punkt = None
             else:

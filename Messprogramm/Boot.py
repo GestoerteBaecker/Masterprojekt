@@ -351,8 +351,8 @@ class Boot:
                     tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
                     #TODO: Gewichten wann welche Kategorie gewählt werden soll
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
-                    if tiefe < 2 or entfernung < 5 or extrapolation < 1.5:
-                        if entfernung < 5 or steigung > 0:
+                    if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
+                        if entfernung < 20 or steigung > 0:
                             #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             print(entfernung, tiefe, steigung, extrapolation)
@@ -433,7 +433,7 @@ class Boot:
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_punkt)
                 time.sleep(self.akt_takt * 10)  # beide Sleeps sind identisch mit denen in SternAbfahren()
-            time.sleep(self.akt_takt / 20)
+            time.sleep(self.akt_takt/2)
 
     # gibt alle weiteren anzufahrenden Kanten aus
     def KantenPlotten(self):
@@ -499,7 +499,7 @@ class Boot:
                 self.Punkt_anfahren(neuer_kurspunkt)
                 #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
-            time.sleep(self.akt_takt/20)
+            time.sleep(self.akt_takt/2)
         self.stern_beendet = True
         self.median_punkte = []
 

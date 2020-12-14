@@ -255,7 +255,7 @@ class Boot_Simulation(Boot.Boot):
 
 
     #TODO: nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=5):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=3):  # Utm-Koordinaten und Gechwindigkeit setzen
 
         self.punkt_anfahren = True
         with Messgebiet.schloss:
@@ -265,7 +265,7 @@ class Boot_Simulation(Boot.Boot):
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(1)    #(geschw*(self.akt_takt*self.Faktor))
+        profilpunkte = testprofil.BerechneZwischenpunkte(0.5)    #(geschw*(self.akt_takt*self.Faktor))
 
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 

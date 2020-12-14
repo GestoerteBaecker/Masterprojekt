@@ -351,8 +351,8 @@ class Boot:
                     tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
                     #TODO: Gewichten wann welche Kategorie gewählt werden soll
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
-                    if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
-                        if entfernung < 20 or steigung > 0:
+                    if tiefe < 2 or entfernung < 5 or extrapolation < 1.5:
+                        if entfernung < 5 or steigung > 0:
                             #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             print(entfernung, tiefe, steigung, extrapolation)
@@ -392,7 +392,7 @@ class Boot:
             #(self.messgebiet.profile)
 
             while True:
-                tin = Messgebiet.TIN(topographische_punkte)
+                tin = Messgebiet.TIN(topographische_punkte,200)
                 kanten = tin.Anzufahrende_Kanten(10, self.position)
                 # Nächstes Profil suchen
                 naechstesProfil = None
@@ -406,7 +406,10 @@ class Boot:
                 # nächstes Profil abfahren
                 #print(naechstesProfil.startpunkt, naechstesProfil.endpunkt)
                 print(self.gefahreneStrecke)
-                tin.plot()
+                #self.originalmesh.plot()
+                #tin.plot()
+                tin.Vergleich_mit_Original(self.originalmesh) # Nur im Simualtor möglich
+                tin.mesh.save("gemessenePunktwolke.ply")
                 break
 
                 # Tin neuberechnen

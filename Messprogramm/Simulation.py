@@ -66,6 +66,7 @@ class Boot_Simulation(Boot.Boot):
         initialrechteck = Messgebiet.Zelle(xzentrum, yzentrum, xdiff, ydiff)
         self.Testdaten_quadtree = Messgebiet.Uferpunktquadtree(initialrechteck)
 
+        Punktliste = []
         # Generieren des Quadtree
         for i in range(len(x_testdaten)):
             x = x_testdaten[i]
@@ -73,8 +74,15 @@ class Boot_Simulation(Boot.Boot):
             tiefe = tiefe_testdaten[i]
 
             p = Messgebiet.Bodenpunkt(x, y, tiefe)
+            Punktliste.append(p)
 
             self.Testdaten_quadtree.punkt_einfuegen(p)
+        # Anlegen der Referenzoberfläche
+
+        self.originalmesh = Messgebiet.TIN(Punktliste, 10, nurTIN=True)
+        print(self.originalmesh.mesh.points)
+        self.originalmesh.mesh.save("Originalmesh.ply")
+
         # EINLESEN DES TEST POLYGONS
         testdaten_path = open("Testdaten_Polygon.txt", "r")
         lines = csv.reader(testdaten_path, delimiter=";")
@@ -212,7 +220,7 @@ class Boot_Simulation(Boot.Boot):
                     Bodendaten = (gnss1, echolot)
                     Letzte_Bodenpunkte.append(Bodendaten)
 
-                    if len(Letzte_Bodenpunkte) > 5:
+                    if len(Letzte_Bodenpunkte) > 0:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         Letzte_Bodenpunkte = []
 
@@ -258,7 +266,7 @@ class Boot_Simulation(Boot.Boot):
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(0.5)    #(geschw*(self.akt_takt*self.Faktor))
+        profilpunkte = testprofil.BerechneZwischenpunkte(1)    #(geschw*(self.akt_takt*self.Faktor))
 
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 

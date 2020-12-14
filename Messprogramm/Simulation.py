@@ -32,7 +32,7 @@ class Boot_Simulation(Boot.Boot):
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
-        self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
+        #self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
 
         self.PixHawk.verbindungsversuch = False
 
@@ -102,7 +102,7 @@ class Boot_Simulation(Boot.Boot):
 
         def simulation(self):
             while self.fortlaufende_aktualisierung and self.boot_lebt:
-                ti = time.time()
+                t = time.time()
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
                     position = self.position
@@ -157,7 +157,8 @@ class Boot_Simulation(Boot.Boot):
                     #print("schnittpunkte", schnitt)
                     #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
-                    distanz = random.gauss(distanz, 0.1)
+                    distanz = random.gauss(distanz, 0)
+                    #print(distanz)
                 #print("viertes print", time.time()-t_test)
                 with Messgebiet.schloss:
                     #print(distanz, (self.ist_am_ufer[0] == Boot.UferPosition.AM_UFER),self.ist_am_ufer[1], self.tracking_mode.value <= 10)
@@ -165,10 +166,12 @@ class Boot_Simulation(Boot.Boot):
                     self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
                     self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
-                #schlafen = max(0, (self.akt_takt) - (time.time() - t))
+                schlafen = max(0, (self.akt_takt/2) - (time.time() - t))
+                #print(self.akt_takt,schlafen)
                 #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
-                #time.sleep(schlafen)
-                time.sleep(self.akt_takt/2)
+                print(schlafen)
+                time.sleep(schlafen)
+                #time.sleep(self.akt_takt/2)
                 ###########################################################################################
 
         threading.Thread(target=simulation, args=(self,), daemon=True).start()
@@ -232,7 +235,7 @@ class Boot_Simulation(Boot.Boot):
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
 
-                schlafen = max(0, (self.akt_takt/2 - (time.time() - t)))
+                schlafen = max(0, (self.akt_takt - (time.time() - t)))
                 time.sleep(schlafen)
 
         threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True).start()
@@ -255,7 +258,7 @@ class Boot_Simulation(Boot.Boot):
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(geschw*(self.akt_takt))
+        profilpunkte = testprofil.BerechneZwischenpunkte(0.5)    #(geschw*(self.akt_takt*self.Faktor))
 
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 
@@ -264,11 +267,12 @@ class Boot_Simulation(Boot.Boot):
                 alte_position = self.position
                 with Messgebiet.schloss:
                     self.position = profilpunkte[index]
+                    #print(self.position)
                     index += 1
                     entfernung = self.position.Abstand(alte_position)
                     self.gefahreneStrecke += entfernung
                     #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
-                time.sleep(self.akt_takt)
+                time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
@@ -282,7 +286,7 @@ class Boot_Simulation(Boot.Boot):
                 #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:
                     self.punkt_anfahren = False
-                time.sleep(self.akt_takt)
+                time.sleep(self.akt_takt/2)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 

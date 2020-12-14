@@ -51,7 +51,7 @@ class Boot:
         self.heading = None
         self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
-        Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
+        self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
@@ -87,8 +87,8 @@ class Boot:
                 self.Sensorliste.append(sensor)
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [False]
-        self.db_takt = min(*takt)
-        self.akt_takt = (self.db_takt/4) / Faktor #Faktor zum Beschleunigen oder verlangsamen der Simulation ... Bei echter messung auf 1 setzten
+        self.db_takt = 0.2 #min(*takt)
+        self.akt_takt = (self.db_takt)/ self.Faktor #Faktor zum Beschleunigen oder verlangsamen der Simulation ... Bei echter messung auf 1 setzten
 
 
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
@@ -367,9 +367,9 @@ class Boot:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
                     else:
                         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # weit entfernt
-                #schlafen = max(0, (self.akt_takt) - (time.time() - t))
-                #time.sleep(schlafen)
-                time.sleep(self.akt_takt)
+                schlafen = max(0, (self.akt_takt) - (time.time() - t))
+                time.sleep(schlafen)
+                #time.sleep(self.akt_takt)
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
 
@@ -471,7 +471,7 @@ class Boot:
                 self.Punkt_anfahren(neuer_kurspunkt)
                 #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
-            time.sleep(self.akt_takt*2)
+            time.sleep(self.akt_takt/2)
         self.stern_beendet = True
 
     def Gewaesseraufnahme(self):

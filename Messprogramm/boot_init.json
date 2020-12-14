@@ -6,7 +6,7 @@
 	"simulation_start_heading": 70,
 	"simulation_suchbereich": 3,
 	"simulation_aktualisierungstakt": 1,
-	"Simulationsgeschwindigkeit": 1,
+	"Simulationsgeschwindigkeit": 3,
 	"stern_winkelinkrement": 50,
 	"stern_grzw_seitenlaenge": 500,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,

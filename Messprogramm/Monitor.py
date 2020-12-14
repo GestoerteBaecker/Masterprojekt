@@ -358,7 +358,7 @@ class Anwendung(Frame):
                 else:
                     self.con_qual_dimetix.config(bg="red")
 
-        schlafen = int(max(0, 500 - (time.time() - t)))
+        schlafen = int(max(0, 100 - (time.time() - t)))
         #print(time.time())
         self.after(schlafen, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 

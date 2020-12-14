@@ -2,14 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="588480e7-d6fd-42bf-a994-3b4619972226" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Alte Testdateien/Testdaten_Polygon.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Alte Testdateien/messgebiet_plotten.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Alte Testdateien/TIN_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/Alte Testdateien/TIN_test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messprogramm/Boot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Boot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Messgebiet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Messprogramm/Monitor.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Monitor.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messprogramm/Simulation.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Simulation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Messprogramm/Testdaten_Polygon.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/Testdaten_Polygon.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messprogramm/boot_init.json" beforeDir="false" afterPath="$PROJECT_DIR$/Messprogramm/boot_init.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -26,8 +22,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Messprogramm/boot_init.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="119">
-              <caret line="7" column="39" selection-start-line="7" selection-start-column="39" selection-end-line="7" selection-end-column="39" />
+            <state relative-caret-position="289">
+              <caret line="17" column="12" lean-forward="true" selection-start-line="17" selection-start-column="12" selection-end-line="17" selection-end-column="12" />
             </state>
           </provider>
         </entry>
@@ -35,8 +31,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Messprogramm/Simulation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="319">
-              <caret line="170" column="43" lean-forward="true" selection-start-line="170" selection-start-column="43" selection-end-line="170" selection-end-column="43" />
+            <state relative-caret-position="255">
+              <caret line="270" column="30" lean-forward="true" selection-start-line="270" selection-start-column="30" selection-end-line="270" selection-end-column="30" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -45,10 +41,25 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Alte Testdateien/Test_DHM.txt">
+        <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="18" column="68" selection-start-line="18" selection-start-column="68" selection-end-line="18" selection-end-column="68" />
+            <state relative-caret-position="172">
+              <caret line="843" selection-start-line="843" selection-end-line="843" />
+              <folding>
+                <element signature="e#0#12#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Messprogramm/Boot.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="367">
+              <caret line="92" lean-forward="true" selection-start-line="92" selection-end-line="92" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -107,8 +118,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Messprogramm/Monitor.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5899">
-              <caret line="357" column="21" lean-forward="true" selection-start-line="357" selection-start-column="21" selection-end-line="357" selection-end-column="21" />
+            <state relative-caret-position="695">
+              <caret line="361" column="27" lean-forward="true" selection-start-line="361" selection-start-column="27" selection-end-line="361" selection-end-column="27" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -127,7 +138,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>triangulate</find>
       <find>c_contiguous</find>
       <find>Normalenvector</find>
       <find>line</find>
@@ -150,13 +160,14 @@
       <find>sleep(</find>
       <find>self.akt_takt</find>
       <find>Ufer</find>
-      <find>sleep</find>
       <find>akt_takt</find>
       <find>ime</find>
       <find>ufererke</find>
       <find>abs(</find>
       <find>time</find>
       <find>time.sleep</find>
+      <find>Faktor</find>
+      <find>sleep</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -175,10 +186,10 @@
         <option value="$PROJECT_DIR$/Alte Testdateien/.idea/messgebiet_plotten.py" />
         <option value="$PROJECT_DIR$/Alte Testdateien/Testdaten_Polygon.txt" />
         <option value="$PROJECT_DIR$/Alte Testdateien/messgebiet_plotten.py" />
-        <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
-        <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
-        <option value="$PROJECT_DIR$/Messprogramm/Monitor.py" />
         <option value="$PROJECT_DIR$/Messprogramm/Messgebiet.py" />
+        <option value="$PROJECT_DIR$/Messprogramm/Monitor.py" />
+        <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
+        <option value="$PROJECT_DIR$/Messprogramm/Boot.py" />
         <option value="$PROJECT_DIR$/Messprogramm/boot_init.json" />
         <option value="$PROJECT_DIR$/Messprogramm/Simulation.py" />
       </list>
@@ -390,13 +401,14 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="1672" y="-8" width="1696" height="1026" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.568869" visible="true" weight="0.11519904" />
-      <window_info id="Structure" order="1" sideWeight="0.431131" side_tool="true" visible="true" weight="0.11519904" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8017917" visible="true" weight="0.11519904" />
+      <window_info id="Structure" order="1" sideWeight="0.19820829" side_tool="true" weight="0.11519904" />
       <window_info id="Favorites" order="2" sideWeight="0.45363766" side_tool="true" weight="0.11640531" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.61580217" weight="0.39417693" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.61580217" visible="true" weight="0.39417693" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4933655" weight="0.45016798" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -410,19 +422,19 @@
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
     </layout>
     <layout-to-restore>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.7170953" visible="true" weight="0.11519904" />
-      <window_info id="Structure" order="1" sideWeight="0.28290468" side_tool="true" visible="true" weight="0.11519904" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.8017917" visible="true" weight="0.11519904" />
+      <window_info id="Structure" order="1" sideWeight="0.19820829" side_tool="true" visible="true" weight="0.11519904" />
       <window_info id="Favorites" order="2" sideWeight="0.45363766" side_tool="true" weight="0.11640531" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.61580217" visible="true" weight="0.25979844" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.61580217" weight="0.39417693" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4933655" weight="0.45016798" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32922733" />
       <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49939686" weight="0.6606943" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.2530795" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.38419783" side_tool="true" visible="true" weight="0.25979844" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.38419783" side_tool="true" weight="0.25979844" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.1769317" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -702,33 +714,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2924">
-          <caret line="172" column="56" selection-start-line="172" selection-start-column="56" selection-end-line="172" selection-end-column="56" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/Boot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1152">
-          <caret line="497" column="34" lean-forward="true" selection-start-line="497" selection-start-column="34" selection-end-line="497" selection-end-column="34" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Messprogramm/boot_init.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="39" selection-start-line="7" selection-start-column="39" selection-end-line="7" selection-end-column="39" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Alte Testdateien/Test_DHM.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="306">
@@ -779,18 +764,45 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Messprogramm/Monitor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5899">
-          <caret line="357" column="21" lean-forward="true" selection-start-line="357" selection-start-column="21" selection-end-line="357" selection-end-column="21" />
+        <state relative-caret-position="695">
+          <caret line="361" column="27" lean-forward="true" selection-start-line="361" selection-start-column="27" selection-end-line="361" selection-end-column="27" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/Messgebiet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="172">
+          <caret line="843" selection-start-line="843" selection-end-line="843" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/Boot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="367">
+          <caret line="92" lean-forward="true" selection-start-line="92" selection-end-line="92" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Messprogramm/boot_init.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="17" column="12" lean-forward="true" selection-start-line="17" selection-start-column="12" selection-end-line="17" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Messprogramm/Simulation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="319">
-          <caret line="170" column="43" lean-forward="true" selection-start-line="170" selection-start-column="43" selection-end-line="170" selection-end-column="43" />
+        <state relative-caret-position="255">
+          <caret line="270" column="30" lean-forward="true" selection-start-line="270" selection-start-column="30" selection-end-line="270" selection-end-column="30" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

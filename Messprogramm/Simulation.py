@@ -169,7 +169,7 @@ class Boot_Simulation(Boot.Boot):
                 schlafen = max(0, (self.akt_takt/2) - (time.time() - t))
                 #print(self.akt_takt,schlafen)
                 #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
-                print(schlafen)
+                #print(schlafen)
                 time.sleep(schlafen)
                 #time.sleep(self.akt_takt/2)
                 ###########################################################################################

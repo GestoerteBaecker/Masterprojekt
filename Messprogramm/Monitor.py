@@ -205,7 +205,7 @@ class Anwendung(Frame):
         pass
 
     def boot_stopp(self):
-        pass
+        self.boot.boot_lebt = False
 
     def boot_trennen(self):
         self.boot.Trennen() #TODO: das hier muss beim Verlassen unbedingt aufgerufen werden!!!
@@ -237,8 +237,8 @@ class Anwendung(Frame):
                 gnss = self.boot.Sensorliste[index]
                 if gnss.verbindung_hergestellt:
                     try:
-                        gnss_qual_indikator=self.boot.AktuelleSensordaten[0].daten[4]
-                        gnss_north,gnss_east=self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1] #TODO
+                        gnss_qual_indikator = self.boot.AktuelleSensordaten[0].daten[4]
+                        gnss_north,gnss_east = self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1] #TODO
                         gnss_heading = self.boot.heading
 
                         if gnss_qual_indikator==4:
@@ -262,7 +262,9 @@ class Anwendung(Frame):
                         if self.karte_window!= None:
                             #try:
                                 #(gnss_north)
-                                self.karte_window.karte_updaten(gnss_north,gnss_east,gnss_heading,self.t)
+                            kanten = self.boot.KantenPlotten()
+                            self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten)
+
                             #except:
                                 #print("Karte kann nicht aktualisiert werden.")
                     except:
@@ -358,7 +360,7 @@ class Anwendung(Frame):
                 else:
                     self.con_qual_dimetix.config(bg="red")
 
-        schlafen = int(max(0, 500 - (time.time() - t)))
+        schlafen = int(max(0, 100 - (time.time() - t)))
         #print(time.time())
         self.after(schlafen, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
 

@@ -65,6 +65,10 @@ class Anwendung_Karte():
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
         self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=5, color="red")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
+        self.boot_allekanten=[\
+           self.ax.plot([],[],'-',lw=1, color="black")[0],\
+            self.ax.plot([],[],'-',lw=1, color="grey")[0],\
+            self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
         self.route_x,self.route_y=[],[]
         self.grenzpolygon_x,self.grenzpolygon_y=[],[]
 
@@ -75,48 +79,61 @@ class Anwendung_Karte():
         #TODO: Positionierung nachgucken
         #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t):
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten):
         # Setzen einer leeren Variable für die Boot-Position
         update_interval = 1
-        self.gnss_north=gnss_north#-32000000
-        self.gnss_east=gnss_east
-        self.gnss_heading=gnss_heading
 
         # Plotten der aktuellen Boot-Position inklusive Heading
-        self.plot_boat()
+        self.plot_boat(gnss_north,gnss_east,gnss_heading)
+
+        # Alle 10 Durchläufe soll die Route ergänzt werden
+        if t and t % update_interval == 0:
+            self.plot_boatroute(gnss_north,gnss_east)
+
+        self.plot_kanten(kanten)
 
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 
-        # Alle 10 Durchläufe soll die Route ergänzt werden
-        if t and t % update_interval == 0:
-            self.plot_boatroute()
 
 
-    def plot_boat(self):
+
+    def plot_boat(self,gnss_north,gnss_east,gnss_heading):
         try:
             # Einlesen der aktuellen Boot-Daten
 
             # Setzen der Punkte im Plot auf neue Werte
-            self.current_boat_heading.set_xdata([self.gnss_north, self.gnss_north + math.sin(self.gnss_heading*math.pi/200) * 100])
-            self.current_boat_heading.set_ydata([self.gnss_east, self.gnss_east + math.cos(self.gnss_heading*math.pi/200) * 100])
-            self.boat_position.set_xdata(self.gnss_north)
-            self.boat_position.set_ydata(self.gnss_east)
-            self.boat_position.set_marker(marker=(3,0,-self.gnss_heading*180/200))
+            self.current_boat_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 100])
+            self.current_boat_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 100])
+            self.boat_position.set_xdata(gnss_north)
+            self.boat_position.set_ydata(gnss_east)
+            self.boat_position.set_marker(marker=(3,0,-gnss_heading*180/200))
 
         # Wenn keine GPS-Daten vorhanden, Fehlermeldung ausgeben
         except:
             self.ax.text(.5, .5,'NO GPS DATA', horizontalalignment='center',
                             verticalalignment='center', size=15, color="red",transform=self.ax.transAxes)
 
+    def plot_kanten(self, kanten):
+        for i, kante in enumerate(kanten):
+            kante = kanten[i]
+            kanfang_x = kante.Anfangspunkt.x
+            kanfang_y = kante.Anfangspunkt.y
+            kende_x = kante.Endpunkt.x
+            kende_y = kante.Endpunkt.y
+            self.boot_allekanten[i].set_xdata([kanfang_x,kende_x])
+            self.boot_allekanten[i].set_ydata([kanfang_y,kende_y])
+            #self.ax.plot([kanfang_x,kende_x],[kanfang_y,kende_y],lw=1,color='black')
+            #kante.gewicht
+
 
     # TODO: Funktion definieren
     def plot_waypoint(self):
         x=1
 
-    def plot_boatroute(self):
-        self.route_x.append(self.gnss_north)
-        self.route_y.append(self.gnss_east)
+    def plot_boatroute(self,gnss_north,gnss_east):
+        self.route_x.append(gnss_north)
+        self.route_y.append(gnss_east)
         # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
         if len(self.route_y)>1:
             self.boat_route.set_xdata(self.route_x)

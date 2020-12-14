@@ -269,7 +269,7 @@ class Boot_Simulation(Boot.Boot):
                 #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:
                     self.punkt_anfahren = False
-                time.sleep(self.akt_takt/2)
+                time.sleep(self.akt_takt/20)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 

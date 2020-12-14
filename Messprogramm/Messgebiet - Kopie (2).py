@@ -879,47 +879,6 @@ def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, lamb_intervall_1=No
     punkt = stuetz1 + lambdas[0] * richtung1
     return punkt
 
-def naechster_schnittpunkt(schnittpunkte,min_abstand=numpy.Inf):
-
-    if type(schnittpunkte).__name__ == "MultiPoint":
-        # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen, falls mehrere vorliegen
-        for schnitt in schnittpunkte_r1:
-            abstand = linienpunkt.Abstand(schnitt)
-            if abstand < min_abstand:
-                min_abstand = abstand
-                naechster_schnitt = schnitt
-
-    elif type(schnittpunkte).__name__ == "MultiLineString":
-        for linestring in schnittpunkte:
-            linestring_schnitt1 = shp.Point(linestring.coords[0])
-            linestring_schnitt2 = shp.Point(linestring.coords[1])
-            linestring_abstand1 = linienpunkt.Abstand(linestring_schnitt1)
-            linestring_abstand2 = linienpunkt.Abstand(linestring_schnitt2)
-
-            if linestring_abstand1 < abstand_r1:
-                abstand_r1 = linestring_abstand1
-                schnitt_r1 = linestring_schnitt1
-
-            if linestring_abstand2 < abstand_r1:
-                abstand_r1 = linestring_abstand2
-                schnitt_r1 = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "LineString":
-        linestring_schnitt1 = shp.Point(schnittpunkte_r1.coords[0])
-        linestring_schnitt2 = shp.Point(schnittpunkte_r1.coords[1])
-        linestring_abstand1 = linienpunkt.Abstand(linestring_schnitt1)
-        linestring_abstand2 = linienpunkt.Abstand(linestring_schnitt2)
-        if linestring_abstand1 < abstand_r1:
-            abstand_r1 = linestring_abstand1
-            schnitt_r1 = linestring_schnitt1
-
-        if linestring_abstand2 < abstand_r1:
-            abstand_r1 = linestring_abstand2
-            schnitt_r1 = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "Point":
-        schnitt_r1 = schnittpunkte_r1
-
 def Headingberechnung(boot=None, richtungspunkt=None, position=None):
     if boot is not None:
         with schloss:
@@ -1269,7 +1228,6 @@ if __name__=="__main__":
         plt.pause(0.1)
 
     gespeicherte_streifen = [[] for i in range(len(richtungslinien))]
-    gespeicherte_profile = []
 
 
     for i in range(len(richtungslinien)):
@@ -1400,7 +1358,6 @@ if __name__=="__main__":
                         plt.pause(0.2)
 
                         gespeicherte_streifen[i].append(streifen)
-                        gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt,endpunkt))
 
                     # weiter mit Test, ob andere Streifen existieren, die sich schneiden könnten
                     else: pass
@@ -1416,7 +1373,6 @@ if __name__=="__main__":
                         plt.pause(0.2)
 
                         gespeicherte_streifen[i].append(streifen)
-                        gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt,endpunkt))
 
                         abbruch = True
 
@@ -1441,7 +1397,6 @@ if __name__=="__main__":
                             if abstand < min_abstand_r1:
                                 min_abstand_r1 = abstand
                                 min_schnittpunkt_r1 = schnittpunkt_r1
-                                print("Schleim")
                                 startpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r1, heading - 100, dist=streifenabstand)
 
                         else:
@@ -1460,17 +1415,16 @@ if __name__=="__main__":
                                 pass
 
                 streifen = shp.LineString([(startpunkt.x, startpunkt.y), (endpunkt.x, endpunkt.y)])
-                try:
-                    gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
-                    gespeicherte_streifen[i].append(streifen)
-                    ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
-                except:pass
 
                 #ax.plot([startpunkt.x], [startpunkt.y], marker='o', markersize=6)
-
+                print("Start",startpunkt.x,startpunkt.y)
+                print("End",endpunkt.x,endpunkt.y)
+                gespeicherte_streifen[i].append(streifen)
+                ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
                 #ax.plot([min_schnittpunkt_r1.x,min_schnittpunkt_r2.x],[min_schnittpunkt_r1.y,min_schnittpunkt_r2.y], color='blue', lw=1)
                 plt.pause(0.2)
-    print(gespeicherte_profile)
+
+    i=5
 
 
             #

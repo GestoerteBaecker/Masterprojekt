@@ -961,23 +961,28 @@ class Profil:
                 #print(index_zugefügter_medianpunkte)
                 # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
-                    größter_abstand = 0
+                    größter_abstand = -1
                     index = None
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
                     test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
+                        print(test_indizes,i)
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
-                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt()
-                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt() - stuetz
+                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
+                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=True) - stuetz
                         richtung = richtung / numpy.linalg.norm(richtung)
+
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
-                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt()))
-                            if größter_abstand < abstand:
+                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=True)))
+
+                            if größter_abstand <= abstand:
                                 größter_abstand = abstand
                                 index = median_index
-                    index_zugefügter_medianpunkte.append(index)
+                    if index != None:
+                        index_zugefügter_medianpunkte.append(index)
+                        break
                     index_zugefügter_medianpunkte.sort()
 
                 # hinzufügen aller so gefundenen Punkte als topographisch bedeutsame Punkte
@@ -1255,25 +1260,29 @@ class Messgebiet:
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
+            print("Anzahl Kanten", len(kanten))
+
             for kante in kanten:
+                zaehler = 0
                 existiert = False
                 profil = Profil.VerdichtendesProfil(kante)
                 for existierendesProfil in self.profile:
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=2, toleranz=0.7, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
-                        existiert = True
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
+                        zaehler +=1
                         break
+                else:
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
-
-                if not existiert:
+                    print("Profil zum Anfahren gefunden")
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
                     anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                     startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
-                    if anfahrbar is None and startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
+                    print("anfahrbar",anfahrbar,"  Startpunkt im See",startpunkt_in_see)
+                    if startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
                         print("=========")
                         print("dieses verbinsungsprofilprofil messen", verbindungsprofil, "dieses profil messen", profil)
                         naechstesProfil = profil
                         break
-
+                print("zaehler",zaehler)
             if naechstesProfil is None: # keine zu messenden Profile mehr gefunden bzw. alle Profile fallen außerhalb des Sees
                 punkt = None
             else:

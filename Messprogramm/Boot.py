@@ -9,6 +9,8 @@ import threading
 import time
 import numpy
 import enum
+import matplotlib.pyplot as plt
+plt.ion()
 
 # Definition von Enums zur besseren Lesbarkeit
 class UferPosition(enum.Enum):
@@ -390,6 +392,21 @@ class Boot:
             # Definition der Profile und topographisch bedeutsamer Punkte
             self.messgebiet.ProfileEinlesen(self.stern.Profile())
 
+            """
+            fig = plt.figure()
+            ax = plt.subplot()
+            suchgebiet = Messgebiet.Zelle(self.messgebiet.Uferquadtree.zelle.mittelpunkt.x, self.messgebiet.Uferquadtree.zelle.mittelpunkt.y, 1000, 1000)
+            plt_suchgebiet, = ax.plot([], [], c='r', lw=1)
+
+            suchgebiet.zeichnen(plt_suchgebiet)
+            gefundene_punkte=[]
+            self.messgebiet.Uferquadtree.abfrage(suchgebiet,gefundene_punkte)
+            plt_gefundene_punkte, = ax.plot([], [], marker='o', markersize=5, color='red', lw=0)
+            plt_gefundene_punkte.set_xdata([p.x for p in gefundene_punkte])
+            plt_gefundene_punkte.set_ydata([p.y for p in gefundene_punkte])
+            plt.show()
+            #self.messgebiet.Uferquadtree.zeichnen(ax)
+            """
             # der Name sagts
             self.VerdichtendeFahrten()
 
@@ -422,7 +439,8 @@ class Boot:
 
                 # Medianpunkte ins aktuelle Profil einlesen, um daraus (auch in diesem Schritt) die topographisch bedeutsamen Punkte zu ermitteln
                 if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
-                    self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte)
+                    print("self medianpunkte", [str(pkt) for pkt in self.median_punkte], self.tracking_mode.value)
+                    self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
                     self.median_punkte = []
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)

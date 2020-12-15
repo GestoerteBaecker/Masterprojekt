@@ -289,7 +289,7 @@ class TIN:
             if kante.gewicht == 0:
                 #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
-                kante.gewicht = laenge_norm*kante.winkel()*(kante.mitte().Abstand(bootsposition)/500) # TODO: Gewichtung anpassen
+                kante.gewicht = laenge_norm*kante.winkel()/(kante.mitte().Abstand(bootsposition)/200) # TODO: Gewichtung anpassen
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht:
@@ -501,6 +501,7 @@ class Stern:
         anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
         ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1].mittelpunkt, soll_endpunkt)
         profile = [anfang, *weitere_profile, ende]
+        print([str(profil) for profil in profile])
         return profile
 
 
@@ -545,7 +546,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 3*median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 5*median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -574,7 +575,7 @@ class Stern:
         else:
             self.aktueller_stern = None # alle Sterne sind gemessen
 
-        print("Aktueller Stern:", self.aktueller_stern)
+        #print("Aktueller Stern:", self.aktueller_stern)
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile des aktuellen Sterns und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
@@ -626,7 +627,7 @@ class Stern:
             if Zelle(stern.mittelpunkt.x, stern.mittelpunkt.y, 5, 5).enthaelt_punkt(punkt):
                 punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
                 mode = TrackingMode.UFERERKENNUNG
-                print(self.aktueller_stern.mittelpunkt, "Profilerkundung starten")
+                #print(self.aktueller_stern.mittelpunkt, "Profilerkundung starten")
                 #return [punkt, mode]
             else:
                 # wenn das Boot in der Mitte ankommt, aber einen anderen Stern anfangen soll, soll es zunächst zu dessen Mitte fahren
@@ -638,7 +639,7 @@ class Stern:
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-            print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
+            #print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):
@@ -807,12 +808,16 @@ class Profil:
 
     # Punkt muss mind. Toleranz Meter auf dem Profil liegen für return True
     def PruefPunktAufProfil(self, punkt, toleranz=2):
+        if type(punkt).__name__ != "ndarray":
+            punkt = punkt.ZuNumpyPunkt()
         abstand = abstand_punkt_gerade(self.richtung, self.stuetzpunkt, punkt)
         return abs(abstand) < toleranz
 
     # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
     def PruefPunktInProfil(self, punkt, profilbreite=20):
         if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
+            if type(punkt).__name__ != "ndarray":
+                punkt = punkt.ZuNumpyPunkt()
             if self.PruefPunktAufProfil(punkt, profilbreite):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
                 return self.start_lambda <= lamb <= self.end_lambda
@@ -947,7 +952,7 @@ class Profil:
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
-                print(len(self.median_punkte))
+                #print(len(self.median_punkte))
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
                 steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
                 for i in range(1, len(self.median_punkte) - 1):
@@ -966,7 +971,7 @@ class Profil:
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
                     test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
-                        print(test_indizes,i)
+                        #print(test_indizes,i)
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
                         stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
@@ -1224,7 +1229,7 @@ class Messgebiet:
     def TIN_berechnen(self, punkte=None):
         if punkte is not None:
             self.PunkteEinlesen(punkte) #TODO: ist es möglich in dem Package pyvista das TIN nur in der Region, wo neue Punkte eingefügt werden, neu zu rechnen und den Rest ohne Neuberechnung zu übernehmen? (Rechenzeit einsparen)
-        self.tin = TIN(self.topographische_punkte)
+        self.tin = TIN(self.topographische_punkte) # Zum Vermeiden der Bildung von Dreiecken, die außerhalb des Sees liegen (bei Knickpunkten) #TODO ggf. variabel gestalten
         return self.tin
 
     def Verdichtungsmode(self, mode=None):
@@ -1247,7 +1252,7 @@ class Messgebiet:
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt
-                print("jetzt soll (natürlich dasselbe wie eben) profil angefahren werden", self.profile[self.aktuelles_profil])
+                #print("jetzt soll (natürlich dasselbe wie eben) profil angefahren werden", self.profile[self.aktuelles_profil])
                 methode = Verdichtungsmode.KANTEN
         elif self.verdichtungsmethode == Verdichtungsmode.KANTEN: # Boot ist gerade auf einem verdichtenden Profil gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
@@ -1264,10 +1269,9 @@ class Messgebiet:
 
             for kante in kanten:
                 zaehler = 0
-                existiert = False
                 profil = Profil.VerdichtendesProfil(kante)
                 for existierendesProfil in self.profile:
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
                         zaehler +=1
                         break
                 else:
@@ -1286,7 +1290,12 @@ class Messgebiet:
             if naechstesProfil is None: # keine zu messenden Profile mehr gefunden bzw. alle Profile fallen außerhalb des Sees
                 punkt = None
             else:
+                e_start = position.Abstand(naechstesProfil.startpunkt)
+                e_end = position.Abstand(naechstesProfil.endpunkt)
+                if e_start > e_end:
+                    naechstesProfil.Flip()
                 punkt = naechstesProfil.startpunkt
+
                 self.profile.append(verbindungsprofil)
                 self.profile.append(naechstesProfil)
                 self.aktuelles_profil += 1 # Index liegt zunächst auf dem Verbindungsprofil

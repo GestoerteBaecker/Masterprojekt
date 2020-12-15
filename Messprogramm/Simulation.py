@@ -80,7 +80,7 @@ class Boot_Simulation(Boot.Boot):
         # Anlegen der Referenzoberfläche
 
         self.originalmesh = Messgebiet.TIN(Punktliste, 10, nurTIN=True)
-        print(self.originalmesh.mesh.points)
+        #print(self.originalmesh.mesh.points)
         self.originalmesh.mesh.save("Originalmesh.ply")
 
         # EINLESEN DES TEST POLYGONS
@@ -238,6 +238,7 @@ class Boot_Simulation(Boot.Boot):
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
+                            print(str(Bodenpunkt))
                             self.median_punkte.append(Bodenpunkt)
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
@@ -273,6 +274,7 @@ class Boot_Simulation(Boot.Boot):
             while self.punkt_anfahren and self.boot_lebt:
                 alte_position = self.position
                 with Messgebiet.schloss:
+                    #print(len(profilpunkte),index)
                     self.position = profilpunkte[index]
                     #print(self.position)
                     index += 1
@@ -292,6 +294,7 @@ class Boot_Simulation(Boot.Boot):
                 test = punkt_box.enthaelt_punkt(self.position)
                 #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:
+                    print('Punkt erreicht!')
                     self.punkt_anfahren = False
                 time.sleep(self.akt_takt/20)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)

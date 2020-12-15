@@ -391,6 +391,7 @@ class Boot:
 
             # Definition der Profile und topographisch bedeutsamer Punkte
             self.messgebiet.ProfileEinlesen(self.stern.Profile())
+            self.messgebiet.TIN_berechnen()
 
             """
             fig = plt.figure()
@@ -433,21 +434,25 @@ class Boot:
         while self.boot_lebt:
             abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
             if abbruch_durch_ufer or not self.punkt_anfahren:
+                mode_alt = self.tracking_mode
                 self.punkt_anfahren = False  # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
-                time.sleep(self.akt_takt * 2)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+                time.sleep(self.akt_takt)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
 
                 # Medianpunkte ins aktuelle Profil einlesen, um daraus (auch in diesem Schritt) die topographisch bedeutsamen Punkte zu ermitteln
-                if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
-                    print("self medianpunkte", [str(pkt) for pkt in self.median_punkte], self.tracking_mode.value)
+                if mode_alt == Messgebiet.TrackingMode.PROFIL or mode_alt == Messgebiet.TrackingMode.VERBINDUNG:
+                    #print("self medianpunkte", [str(pkt) for pkt in self.median_punkte], self.tracking_mode.value)
                     self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
                     self.median_punkte = []
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)
                 neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer)
 
+                #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
+
                 if neuer_punkt is None:
                     break
+                #self.messgebiet.aktuellesprofil anlegen
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_punkt)
                 time.sleep(self.akt_takt * 10)  # beide Sleeps sind identisch mit denen in SternAbfahren()

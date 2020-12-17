@@ -574,7 +574,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 2*stern.median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 5*stern.median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -1005,6 +1005,7 @@ class Profil:
                         median_index_ende = test_indizes[i+1]
                         stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
                         richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=True) - stuetz
+                        print(richtung)
                         richtung = richtung / numpy.linalg.norm(richtung)
                         print("BerechneRichtung zur Runtimewarning")
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
@@ -1305,10 +1306,11 @@ class Messgebiet:
                 profil = Profil.VerdichtendesProfil(kante)
                 print("folgendes Profil berechnet:", profil)
                 bestehendeProfile = self.profile+self.nichtbefahrbareProfile
+                print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.4, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
-                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.8, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
+                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
                             break
                 else:
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden

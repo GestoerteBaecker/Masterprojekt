@@ -117,10 +117,17 @@ class Anwendung_Karte():
     def plot_kanten(self, kanten):
         for i, kante in enumerate(kanten):
             kante = kanten[i]
+            """
             kanfang_x = kante.Anfangspunkt.x
             kanfang_y = kante.Anfangspunkt.y
             kende_x = kante.Endpunkt.x
             kende_y = kante.Endpunkt.y
+            """
+            kanfang_x = kante.startpunkt.x
+            kanfang_y = kante.startpunkt.y
+            kende_x = kante.endpunkt.x
+            kende_y = kante.endpunkt.y
+
             self.boot_allekanten[i].set_xdata([kanfang_x,kende_x])
             self.boot_allekanten[i].set_ydata([kanfang_y,kende_y])
             #self.ax.plot([kanfang_x,kende_x],[kanfang_y,kende_y],lw=1,color='black')

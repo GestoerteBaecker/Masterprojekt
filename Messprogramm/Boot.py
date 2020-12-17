@@ -446,6 +446,7 @@ class Boot:
                     if abbruch_durch_ufer and self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil])  #Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1])
+                        print("Nicht befahrbare Profile:",len(self.messgebiet.nichtbefahrbareProfile),self.messgebiet.nichtbefahrbareProfile[-2],self.messgebiet.nichtbefahrbareProfile[-1])
                     self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
                     self.median_punkte = []
 
@@ -467,7 +468,8 @@ class Boot:
         if self.messgebiet is None:
             return []
         else:
-            rueckgabe = self.messgebiet.anzufahrende_kanten
+            rueckgabe = self.messgebiet.nichtbefahrbareProfile
+            #rueckgabe = self.messgebiet.anzufahrende_kanten
             return rueckgabe
 
     def GeschwindigkeitSetzen(self, geschw):

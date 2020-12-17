@@ -500,7 +500,7 @@ class Stern:
 
         anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
         ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1].mittelpunkt, soll_endpunkt)
-        profile = [anfang, *weitere_profile, ende]
+        profile = [anfang, *weitere_profile]#[anfang, *weitere_profile, ende]
         print([str(profil) for profil in profile])
         return profile
 
@@ -1246,6 +1246,7 @@ class Messgebiet:
                 self.aktuelles_profil += 1
                 #profil.NeuerEndpunkt(position)
                 profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
+                print("Finde Verbindung",[str(profil) for profil in profile])
                 self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
                 punkt = profile[0].endpunkt
                 methode = Verdichtungsmode.WEGFÜHRUNG

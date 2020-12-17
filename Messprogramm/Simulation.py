@@ -238,7 +238,7 @@ class Boot_Simulation(Boot.Boot):
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
-                            print(str(Bodenpunkt))
+                            #print(str(Bodenpunkt))
                             self.median_punkte.append(Bodenpunkt)
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
@@ -257,7 +257,7 @@ class Boot_Simulation(Boot.Boot):
 
     #TODO: nicht mehr anpacken, läuft
     def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=3):  # Utm-Koordinaten und Gechwindigkeit setzen
-
+        print("Aktueller Zielpunkt ",punkt)
         self.punkt_anfahren = True
         with Messgebiet.schloss:
             self.heading = self.Headingberechnung(punkt)

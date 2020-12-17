@@ -13,7 +13,8 @@
 	"profil_grzw_neigungen_topographischer_punkte": 10,
 	"messgebiet_ausdehnung": [2000, 2000],
 	"offset_gnss_echolot": 0.5,
-	"offset_achsen_distometer_gnss": 0
+	"offset_achsen_distometer_gnss": 0,
+	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.3
 	},
   "Pixhawk":
     {

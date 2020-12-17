@@ -54,6 +54,7 @@ class Boot:
         self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
+        self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
@@ -442,11 +443,14 @@ class Boot:
                 # Medianpunkte ins aktuelle Profil einlesen, um daraus (auch in diesem Schritt) die topographisch bedeutsamen Punkte zu ermitteln
                 if mode_alt == Messgebiet.TrackingMode.PROFIL or mode_alt == Messgebiet.TrackingMode.VERBINDUNG:
                     #print("self medianpunkte", [str(pkt) for pkt in self.median_punkte], self.tracking_mode.value)
+                    if abbruch_durch_ufer and self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
+                        self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil])  #Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
+                        self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1])
                     self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
                     self.median_punkte = []
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)
-                neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer)
+                neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer, self.Entfernungsfaktor_fuer_Verdichtung)
 
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
 
@@ -463,7 +467,8 @@ class Boot:
         if self.messgebiet is None:
             return []
         else:
-            return self.messgebiet.anzufahrende_kanten
+            rueckgabe = self.messgebiet.anzufahrende_kanten
+            return rueckgabe
 
     def GeschwindigkeitSetzen(self, geschw):
         self.PixHawk.Geschwindigkeit_setzen(geschw)

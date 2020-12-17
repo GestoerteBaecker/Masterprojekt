@@ -574,7 +574,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 5*stern.median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 2*stern.median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2

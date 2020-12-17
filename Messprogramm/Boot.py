@@ -376,6 +376,8 @@ class Boot:
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
 
+    def Erkunden_Streifenweise(self):
+        pass
 
     def Erkunden(self):   # Art des Gewässers (optional)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
@@ -468,8 +470,8 @@ class Boot:
         if self.messgebiet is None:
             return []
         else:
-            rueckgabe = self.messgebiet.nichtbefahrbareProfile
-            #rueckgabe = self.messgebiet.anzufahrende_kanten
+            #rueckgabe = self.messgebiet.nichtbefahrbareProfile
+            rueckgabe = self.messgebiet.anzufahrende_kanten
             return rueckgabe
 
     def GeschwindigkeitSetzen(self, geschw):

@@ -5,7 +5,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Karte.py" beforeDir="false" afterPath="$PROJECT_DIR$/Karte.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Messgebiet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Messgebiet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testdaten_Polygon.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Testdaten_Polygon.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Monitor.py" beforeDir="false" afterPath="$PROJECT_DIR$/Monitor.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -208,8 +208,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.Messgebiet" />
-        <item itemvalue="Python.Messgebiet - Kopie (2)" />
         <item itemvalue="Python.Monitor" />
+        <item itemvalue="Python.Messgebiet - Kopie (2)" />
         <item itemvalue="Python.Boot" />
         <item itemvalue="Python._TEST" />
       </list>
@@ -291,10 +291,17 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Messgebiet.py</url>
-          <line>1471</line>
-          <option name="timeStamp" value="13" />
+          <line>1741</line>
+          <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
 </project>

@@ -32,22 +32,25 @@ class Anwendung(Frame):
         Label(self,text="EchoBoat Autopilot-Monitor",font='Helvetica 12 bold').grid(row=0,column=0,columnspan=8,pady=10)
 
 
-        # OptionMenu mit den Messmethoden
-        # Anlegen der Labels; die zwei unteren Label werden je nach Eingabe geändert und werden daher mit einer Variablen verknüpft
-        Label(self, text="Simulation:").grid(row=1,column=0)
-        # Einführen einer Variablen für ein OptionMenu; hier wird die Auswahl über die Einheit des einzugebenen Winkels getroffen
-        self.__om_variable = StringVar(self)
-        self.__om_variable.set("Ja")
-        # Liste von Einheiten, in die der Winkel umgerechnet werden soll; muss je nach Eingabe des OptionMenu geändert werden
-        self.__methoden = ["Nein"]
-        # OptionMenu zur Auswahl der Winkeleinheit und Platzierung innerhalb des Gitters
-        self.om = OptionMenu(self, self.__om_variable, *["Ja", "Nein"], command=self.aktuelle_methode)
-        self.om.grid(row=1, column=1,padx=(0,5),sticky="ew")
+        # OptionMenu, ob eine Simulation vorliegt
+        # Einführen einer Variablen für ein OptionMenu
+        self.__om_variable_sim = StringVar(self)
+        self.__om_variable_sim.set("Simulation")
 
+        # OptionMenu, ob Vorwissen existiert
+        # Einführen einer Variablen für ein OptionMenu
+        self.__om_variable_mode = StringVar(self)
+        self.__om_variable_mode.set("Vollautomatisch")
+
+        # OptionMenu zur Auswahl der Simulation und Erkundungsmethode
+        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautomatisch", "Teilautomatisch"], command=self.modusabfrage)
+        self.om.grid(row=1, column=2,padx=10,sticky="ew")
+        self.om = OptionMenu(self, self.__om_variable_sim, *["Simulation", "Reale Daten"], command=self.simulationsabfrage)
+        self.om.grid(row=1, column=3,padx=10,sticky="ew")
 
         # Button zum Öffnen der Karte
         button_open_map=Button(self, text="Karte öffnen...", command=lambda: self.karte_laden())
-        button_open_map.grid(row=1, column=2, sticky="we", padx=10, pady=10)
+        button_open_map.grid(row=1, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
 
         # Verbindung, Erkundung und Vermessung
         button_verbinden=Button(self, text="Verbinden", command=lambda: self.boot_verbinden(),width=14,font='Helvetica 9 bold')
@@ -58,95 +61,93 @@ class Anwendung(Frame):
         button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=(20,10))
         button_erkunden=Button(self, text="Erkunden", command=lambda: self.boot_erkunden(),width=14,font='Helvetica 9 bold')
         button_erkunden.grid(row=3, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
-        button_aufnehmen=Button(self, text="Aufnehmen", command=lambda: self.boot_aufnehmen(), width=14,font='Helvetica 9 bold')
-        button_aufnehmen.grid(row=4, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
 
         # Label der Verbindungsqualität
-        Label(self,text="Status").grid(row=5,column=0,pady=(10,0))
+        Label(self,text="Status").grid(row=4,column=0,pady=(10,0))
         self.con_qual_gnss1=Label(self, bg="red",width=3,height=2,relief="groove")
-        self.con_qual_gnss1.grid(row=6, column=0, pady=10, padx=5)
+        self.con_qual_gnss1.grid(row=5, column=0, pady=10, padx=5)
         self.con_qual_gnss2=Label(self, bg="red",width=3,height=2,relief="groove")
-        self.con_qual_gnss2.grid(row=7, column=0, pady=10, padx=5)
+        self.con_qual_gnss2.grid(row=6, column=0, pady=10, padx=5)
         self.con_qual_echolot=Label(self, bg="red",width=3,height=2,relief="groove")
-        self.con_qual_echolot.grid(row=8, column=0, pady=10, padx=5)
+        self.con_qual_echolot.grid(row=7, column=0, pady=10, padx=5)
         self.con_qual_dimetix=Label(self, bg="red",width=3,height=2,relief="groove")
-        self.con_qual_dimetix.grid(row=9, column=0, pady=10, padx=5)
+        self.con_qual_dimetix.grid(row=8, column=0, pady=10, padx=5)
         self.con_qual_pixhawk4=Label(self, bg="red",width=3,height=2,relief="groove")
-        self.con_qual_pixhawk4.grid(row=10, column=0, pady=10, padx=5)
+        self.con_qual_pixhawk4.grid(row=9, column=0, pady=10, padx=5)
         #self.con_qual_imu=Label(self, bg="red",width=3,height=2,relief="groove")
         #self.con_qual_imu.grid(row=11, column=0, pady=10, padx=5)
 
         # Label der Instrumentnamen
-        Label(self,text="Instrument",width=14).grid(row=5,column=1,pady=(10,0))
+        Label(self,text="Instrument",width=14).grid(row=4,column=1,pady=(10,0))
         label_gnss1=Label(self, text="GNSS1",bg="lightgrey",height=2,relief="groove")
-        label_gnss1.grid(row=6, column=1, pady=5, sticky=W+E)
+        label_gnss1.grid(row=5, column=1, pady=5, sticky=W+E)
         label_gnss2=Label(self, text="GNSS2",bg="lightgrey",height=2,relief="groove")
-        label_gnss2.grid(row=7, column=1, sticky=W+E)
+        label_gnss2.grid(row=6, column=1, sticky=W+E)
         label_echolot=Label(self, text="Echolot",bg="lightgrey",height=2,relief="groove")
-        label_echolot.grid(row=8,column=1, sticky=W+E)
+        label_echolot.grid(row=7,column=1, sticky=W+E)
         label_dimetix=Label(self, text="Dimetix",bg="lightgrey",height=2,relief="groove")
-        label_dimetix.grid(row=9, column=1, sticky=W+E)
+        label_dimetix.grid(row=8, column=1, sticky=W+E)
         label_pixhawk4=Label(self, text="Pixhawk4",bg="lightgrey",height=2,relief="groove")
-        label_pixhawk4.grid(row=10, column=1, sticky=W+E)
+        label_pixhawk4.grid(row=9, column=1, sticky=W+E)
         #label_imu=Label(self, text="IMU",bg="lightgrey",height=2,relief="groove")
         #label_imu.grid(row=11, column=1, sticky=W+E)
 
         # Label der empfangenen Messwerte
-        Label(self,text="aktuelle Daten",width=14).grid(row=5,column=2,pady=(20,0))
+        Label(self,text="aktuelle Daten",width=14).grid(row=4,column=2,pady=(20,0))
         #Label(self,text="-/-").grid(row=11,column=2)
 
         self.var_current_state1=StringVar()
         self.var_current_state1.set("No Data")
         self.current_state1=Entry(self,state="readonly",textvariable=self.var_current_state1,justify="center")
-        self.current_state1.grid(row=6, column=2, padx=(0,10), ipady=8)
+        self.current_state1.grid(row=5, column=2, padx=(0,10), ipady=8)
 
         self.var_current_state2=StringVar()
         self.var_current_state2.set("No Data")
         self.current_state2=Entry(self,state="readonly",textvariable=self.var_current_state2,justify="center")
-        self.current_state2.grid(row=7, column=2, padx=(0,10), ipady=8)
+        self.current_state2.grid(row=6, column=2, padx=(0,10), ipady=8)
 
         self.var_current_depth=StringVar()
         self.var_current_depth.set("No Data")
         self.current_depth=Entry(self,state="readonly",textvariable=self.var_current_depth,justify="center")
-        self.current_depth.grid(row=8, column=2, padx=(0,10), ipady=8)
+        self.current_depth.grid(row=7, column=2, padx=(0,10), ipady=8)
 
         self.var_current_distance=StringVar()
         self.var_current_distance.set("No Data")
         self.current_distance=Entry(self, state="readonly",textvariable=self.var_current_distance,justify="center")
-        self.current_distance.grid(row=9, column=2, padx=(0,10), ipady=8)
+        self.current_distance.grid(row=8, column=2, padx=(0,10), ipady=8)
 
         self.var_current_px4=StringVar()
         self.var_current_px4.set("No Data")
         self.current_px4=Entry(self, state="readonly", textvariable = self.var_current_px4, justify = "center")
-        self.current_px4.grid(row=10, column=2, padx=(0,10), ipady=8)
+        self.current_px4.grid(row=9, column=2, padx=(0,10), ipady=8)
 
         # Verbindung, Erkundung und Vermessung
         button_latestDB=Button(self, text="Letzter DB-Eintrag", command=lambda: self.boot_letzter_Eintrag(),width=14)
-        button_latestDB.grid(row=12, column=0, columnspan=2, sticky="we", padx=(30,10), pady=20)
+        button_latestDB.grid(row=11, column=0, columnspan=2, sticky="we", padx=(30,10), pady=20)
         button_rtl=Button(self, text="RTL", command=lambda: self.Boot_RTL(),width=14)
-        button_rtl.grid(row=12, column=2, sticky="we", padx=10, pady=20)
+        button_rtl.grid(row=11, column=2, sticky="we", padx=10, pady=20)
         button_stopp=Button(self, text="NOT-STOPP", command=lambda: self.boot_stopp(), width=14,bg="darkred",fg="white",font="Helvetica 10 bold")
-        button_stopp.grid(row=12, column=3, sticky="we", padx=10, pady=20)
+        button_stopp.grid(row=11, column=3, sticky="we", padx=10, pady=20)
 
 
         # Button zum Schließen des Programms
-        Button(self, text="Beenden", command=lambda: self.alles_schliessen(), bg="light grey").grid(row=13, column=2,pady=5, padx=10, sticky=W + E)
-        Button(self, text="Trennen", command=lambda: self.boot_trennen(),width=14).grid(row=13, column=0, columnspan=2,pady=5, padx=(30,10), sticky=W + E)
+        Button(self, text="Beenden", command=lambda: self.alles_schliessen(), bg="light grey").grid(row=12, column=2,pady=5, padx=10, sticky=W + E)
+        Button(self, text="Trennen", command=lambda: self.boot_trennen(),width=14).grid(row=12, column=0, columnspan=2,pady=5, padx=(30,10), sticky=W + E)
 
 
         # Einfügen von Separatoren zur besseren Lesbarkeit zwischen den Zeilen
         self.line_style = ttk.Style()
         self.line_style.configure("Line.TSeparator", background="#000000")
-        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=1, columnspan=2, sticky='ns',pady=5,padx=(0,25))
-        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=2, columnspan=2, sticky='ns',pady=5)
+        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=1, columnspan=2, sticky='ns',pady=5,padx=(0,40))
+        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=2, columnspan=2, sticky='ns',pady=5, padx=(10,0))
         ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=1, column=0, columnspan=4, rowspan=2, sticky='ew')
-        ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=4, column=0, columnspan=4, rowspan=2, sticky='ew',pady=(15,0))
+        ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=3, column=0, columnspan=4, rowspan=2, sticky='ew',pady=(15,0))
+        ttk.Separator(self, orient=HORIZONTAL).grid(row=5, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL).grid(row=6, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL).grid(row=7, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL).grid(row=8, column=0, columnspan=3, rowspan=2, sticky='ew')
-        ttk.Separator(self, orient=HORIZONTAL).grid(row=9, column=0, columnspan=3, rowspan=2, sticky='ew')
         #ttk.Separator(self, orient=HORIZONTAL).grid(row=10, column=0, columnspan=3, rowspan=2, sticky='ew')
-        ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=10, column=0, columnspan=4, rowspan=3, sticky='ew')
+        ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=9, column=0, columnspan=4, rowspan=3, sticky='ew')
 
 
         # Abrufen der neuesten Daten und Stati
@@ -160,20 +161,23 @@ class Anwendung(Frame):
         geotiff_path = filedialog.askopenfilename(filetypes=[("GeoTiff","*.tiff"),("OSM-Tile", "*.png")])
         try:
             self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
-            self.karte_window=Karte.Anwendung_Karte(self,self.position,geotiff_path)
+            self.karte_window=Karte.Anwendung_Karte(self,self.position,geotiff_path,self.__om_variable_mode.get())
         except:
             print("Dateien ungültig")
 
 
-    def aktuelle_methode(self, x):
+    def simulationsabfrage(self, x):
+        print(x)
+
+    def modusabfrage(self, x):
         print(x)
 
     def boot_verbinden(self):
         try:
             self.verbindung_initialisiert = True
-            if self.__om_variable.get() == "Nein":
+            if self.__om_variable_sim.get() == "Reale Daten":
                 self.boot = Boot.Boot()
-            elif self.__om_variable.get() == "Ja":
+            elif self.__om_variable_sim.get() == "Simulation":
                 self.boot = Simulation.Boot_Simulation()
 
         except Exception as e:
@@ -198,13 +202,10 @@ class Anwendung(Frame):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
-        self.boot.Erkunden()
-
-    def boot_aufnehmen(self):
-        print("Aufnahme wird gestartet")
-        pass
+        self.boot.Erkunden(self.__om_variable_mode.get())
 
     def boot_stopp(self):
+        # TODO: Aktivieren des Loiter-Modus im Pixhawk. Veranlasst den aktuellen Punkt zu halten
         pass
 
     def boot_trennen(self):
@@ -238,7 +239,7 @@ class Anwendung(Frame):
                 if gnss.verbindung_hergestellt:
                     try:
                         gnss_qual_indikator = self.boot.AktuelleSensordaten[0].daten[4]
-                        gnss_north,gnss_east = self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1] #TODO
+                        gnss_north,gnss_east = self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1]
                         gnss_heading = self.boot.heading
 
                         if gnss_qual_indikator==4:
@@ -260,13 +261,12 @@ class Anwendung(Frame):
                             else:
                                 self.con_qual_gnss1.config(bg="yellow")
                         if self.karte_window!= None:
-                            #try:
-                                #(gnss_north)
-                            kanten = self.boot.KantenPlotten()
-                            self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten)
+                            try:
+                                kanten = self.boot.KantenPlotten()
+                                self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten)
 
-                            #except:
-                                #print("Karte kann nicht aktualisiert werden.")
+                            except:
+                                print("Karte kann nicht aktualisiert werden.")
                     except:
                         if not gnss.simulation:
                             self.con_qual_gnss1.config(bg="orange")
@@ -284,7 +284,7 @@ class Anwendung(Frame):
                 if gnss2.verbindung_hergestellt:  # TODO: Was, wenn nur eine GNSS??
                 #if self.datenlesen_initialisiert == True:
                     try:
-                        gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4] #TODO
+                        gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4]
                         if gnss_qual_indikator==4:
                             if not gnss2.simulation:
                                 self.con_qual_gnss2.config(bg="green")
@@ -321,8 +321,8 @@ class Anwendung(Frame):
                     else:
                         self.con_qual_echolot.config(bg="orange")
                     try:
-                        t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2) #TODO
-                        t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2) #TODO
+                        t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2)
+                        t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2)
                         if not echolot.simulation:
                             self.con_qual_echolot.config(bg="green")
                         else:
@@ -346,7 +346,7 @@ class Anwendung(Frame):
                     else:
                         self.con_qual_dimetix.config(bg="orange")
                     try:
-                        d = self.boot.AktuelleSensordaten[3].daten #TODO
+                        d = self.boot.AktuelleSensordaten[3].daten
                         if not dimetix.simulation:
                             self.con_qual_dimetix.config(bg="green")
                         else:

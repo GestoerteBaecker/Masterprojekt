@@ -70,7 +70,9 @@ class Boot:
         self.position = Messgebiet.Punkt(0,0,0) # Punkt des Bootes
         self.ufererkennung_aktiv = False
         self.Topographisch_bedeutsame_Bodenpunkte = [] # TODO: automatisch bedeutsame Bodenpunkte finden und einpflegen
+        self.alle_bodenpunkte = []
         self.gefahreneStrecke = 0
+        self.db_mode = json_daten["Boot"]["DB_mode"]
 
         self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
         takt = []
@@ -105,17 +107,17 @@ class Boot:
 
 
     # muss einmalig angestoßen werden
-    def Datenbank_beschreiben(self, mode=0):
+    def Datenbank_beschreiben(self):
         """
         :param mode: 0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
             1 für separate DB-Tabellen je Sensor (ursprüngliches Vorhaben)
         """
-        self.Verbinden_mit_DB(mode)
+        self.Verbinden_mit_DB()
 
         if not self.fortlaufende_aktualisierung:
             self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
 
-        if mode == 0:
+        if self.db_mode == 0:
 
             def Datenbank_Boot(self):
                 db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
@@ -147,18 +149,36 @@ class Boot:
                 self.datenbankbeschreiben_thread = threading.Thread(target=Datenbank_Boot, args=(self, ), daemon=True)
                 self.datenbankbeschreiben_thread.start()
 
-        elif mode == 1:
+        elif self.db_mode == 1:
             if not self.datenbankbeschreiben:
                 self.datenbankbeschreiben = True
                 for Sensor in self.Sensorliste:
                     Sensor.start_pushing_db()       # Daten permanent in Datenbank ablegen
 
-    def Verbinden_mit_DB(self, mode=0, server="localhost", uid="root", password="EchoBoat"):
+        elif self.db_mode == 2:
+
+            def Bodenpunkte_abspeichern(self):
+                while self.datenbankbeschreiben and self.boot_lebt:
+                    t = time.time()
+                    punkt = self.Bodenpunktberechnung()
+                    self.alle_bodenpunkte.append(punkt) #TODO: bei Berechnungspunkten (wo neue Profile berechnet werden etc.) geht mehrfach die aktuelle Bootsposition in die Liste ein (evtl. abfangen für echte Anwendung)
+                    schlafen = max(0, self.db_takt - (time.time() - t))
+                    time.sleep(schlafen)
+                else:
+                    with open("Alle_Bodenpunkte.txt", "w+") as datei:
+                        for punkt in self.alle_bodenpunkte:
+                            datei.write(";".join([str(punkt.x), str(punkt.y), str(punkt.z)]) + "\n")
+            if not self.datenbankbeschreiben:
+                self.datenbankbeschreiben = True
+                self.datenbankbeschreiben_thread = threading.Thread(target=Bodenpunkte_abspeichern, args=(self, ), daemon=True)
+                self.datenbankbeschreiben_thread.start()
+
+    def Verbinden_mit_DB(self, server="localhost", uid="root", password="EchoBoat"):
         """
         :param mode: 0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
             1 für separate DB-Tabellen je Sensor (ursprüngliches Vorhaben)
         """
-        if mode == 0:
+        if self.db_mode == 0:
             self.db_database = "`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"
             self.db_table = "Messkampagne"
             self.db_verbindung = pyodbc.connect("DRIVER={MySQL ODBC 8.0 ANSI Driver}; SERVER=" + server + "; UID=" + uid + ";PASSWORD=" + password + ";")
@@ -185,12 +205,15 @@ class Boot:
             temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");"
             self.db_zeiger.execute(temp)
 
-        elif mode == 1:
+        elif self.db_mode == 1:
             for i, sensor in enumerate(self.Sensorliste):
                 try:
                     sensor.connect_to_db(self.Sensornamen[i])
                 except:
                     print("Für " + self.Sensornamen[i] + " konnte keine Datenbanktabelle angelegt werden")
+
+        elif self.db_mode == 2:
+            pass
 
     # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
@@ -313,12 +336,12 @@ class Boot:
                         return punkt
 
         else:
+            with Messgebiet.schloss:
+                x, y = self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]
+                zgnss = self.AktuelleSensordaten[0].daten[3]
+                Sedimentdicke = abs(self.AktuelleSensordaten[2].daten[0] - self.AktuelleSensordaten[2].daten[1])
 
-            x, y = self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1]
-            zgnss = self.AktuelleSensordaten[0].daten[3]
-            Sedimentdicke = abs(self.AktuelleSensordaten[2].daten[0] - self.AktuelleSensordaten[2].daten[1])
-
-            z_boden = zgnss - self.Offset_GNSS_Echo- self.AktuelleSensordaten[2].daten[0]
+                z_boden = zgnss - self.Offset_GNSS_Echo + self.AktuelleSensordaten[2].daten[0]
 
             Bodenpunkt = Messgebiet.Bodenpunkt(x,y,z_boden,Sedimentdicke)
 
@@ -420,8 +443,12 @@ class Boot:
             print(self.gefahreneStrecke)
             #self.originalmesh.plot()
             #tin.plot()
-            self.messgebiet.tin.Vergleich_mit_Original(self.originalmesh) # Nur im Simualtor möglich
+            gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
+            gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
+
+            #self.messgebiet.tin.Vergleich_mit_Original(self.originalmesh) # Nur im Simualtor möglich
+            #self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
             
             #self.messgebiet.tin.plot()
 

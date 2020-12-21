@@ -37,19 +37,29 @@ class Boot_Simulation(Boot.Boot):
         self.PixHawk.verbindungsversuch = False
 
         # EINLESEN DES MODELLS ALS QUADTREE
-        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        #testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")
         id_testdaten = []
         x_testdaten = []
         y_testdaten = []
         tiefe_testdaten = []
 
-        # Lesen der Datei
+        """ 
+        # Lesen der Datei Für nicht manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[0]))
             x_testdaten.append(float(line[1]))
             y_testdaten.append(float(line[2]))
             tiefe_testdaten.append(float(line[3]))
+        testdaten.close()"""
+
+        # Lesen der Datei Für manipulierte Datei
+        for line in lines:
+            id_testdaten.append(int(line[1]))
+            x_testdaten.append(float(line[2]))
+            y_testdaten.append(float(line[3]))
+            tiefe_testdaten.append(float(line[4]))
         testdaten.close()
 
         testdaten_xmin = min(x_testdaten) - 10

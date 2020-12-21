@@ -283,29 +283,36 @@ class TIN:
         # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
 
         anzufahrende_Kanten = []
+        kanten_größtes_absolutes_gewicht = None
+        max_gewicht = 0
 
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
                 #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
+                if laenge_norm*kante.winkel() > max_gewicht:
+                    max_gewicht = laenge_norm*kante.winkel()
+                    kanten_größtes_absolutes_gewicht = kante
                 kante.gewicht = laenge_norm*kante.winkel()*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht))) # TODO: Gewichtung anpassen
 
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht:
                     anzufahrende_Kanten.insert(i,kante)
-                    if len(anzufahrende_Kanten) > Anz:
+                    if len(anzufahrende_Kanten) > Anz-1:
                         anzufahrende_Kanten.pop()
                     break
 
-            if len(anzufahrende_Kanten) < Anz and kante not in anzufahrende_Kanten:
+            if len(anzufahrende_Kanten) < Anz-1 and kante not in anzufahrende_Kanten:
                 anzufahrende_Kanten.append(kante)
 
 
 
             if anzufahrende_Kanten == []:              # nur für ersten Durchgang benötigt
                 anzufahrende_Kanten.append(kante)
+
+        anzufahrende_Kanten.append(kanten_größtes_absolutes_gewicht)
 
         return anzufahrende_Kanten
 
@@ -318,7 +325,7 @@ class TIN:
         self.mesh["distances"] = d
 
         p = pv.Plotter()
-        p.add_mesh(originalmesh.mesh, color=True, opacity=1, smooth_shading=True)
+        p.add_mesh(originalmesh.mesh, color=True, opacity=0.5, smooth_shading=True)
         p.add_mesh(self.mesh, scalars="distances", smooth_shading=True)
 
         p.show()
@@ -1309,7 +1316,7 @@ class Messgebiet:
                 print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
                         if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
                             break
                 else:

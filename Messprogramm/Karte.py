@@ -96,7 +96,8 @@ class Anwendung_Karte():
         if t and t % update_interval == 0:
             self.plot_boatroute(gnss_north,gnss_east)
 
-        self.plot_kanten(kanten)
+        if kanten[0].startpunkt:
+            self.plot_kanten(kanten)
         if streifen != []:
             self.plot_streifen(streifen)
 

@@ -1314,25 +1314,29 @@ def Headingberechnung(boot=None, richtungspunkt=None, position=None):
         y_richtung = richtungspunkt.y
 
     # Heading wird geodätisch (vom Norden aus im Uhrzeigersinn) berechnet und in GON angegeben
-    heading_rad = numpy.arctan((x_richtung - x_position) / (y_richtung - y_position))
-
-    # Quadrantenabfrage
-
-    if x_richtung > x_position:
-        if y_richtung > y_position:
-            q_zuschl = 0  # Quadrant 1
-        else:
-            q_zuschl = numpy.pi  # Quadrant 2
+    if y_richtung == y_position:
+        if x_richtung > x_position: return 100
+        else: return 300
     else:
-        if y_richtung > y_position:
-            q_zuschl = 2 * numpy.pi  # Quadrant 4
+        heading_rad = numpy.arctan((x_richtung - x_position) / (y_richtung - y_position))
+
+        # Quadrantenabfrage
+
+        if x_richtung > x_position:
+            if y_richtung > y_position:
+                q_zuschl = 0  # Quadrant 1
+            else:
+                q_zuschl = numpy.pi  # Quadrant 2
         else:
-            q_zuschl = numpy.pi  # Quadrant 3
+            if y_richtung > y_position:
+                q_zuschl = 2 * numpy.pi  # Quadrant 4
+            else:
+                q_zuschl = numpy.pi  # Quadrant 3
 
-    heading_rad += q_zuschl
-    heading_gon = heading_rad * (200 / numpy.pi)
+        heading_rad += q_zuschl
+        heading_gon = heading_rad * (200 / numpy.pi)
 
-    return heading_gon
+        return heading_gon
 
 class Uferpunktquadtree:
 
@@ -1545,13 +1549,13 @@ class Messgebiet:
                 print(zaehler)
                 profil = Profil.VerdichtendesProfil(kante)
                 print("folgendes Profil berechnet:", profil)
-                bestehendeProfile = self.profile+self.nichtbefahrbareProfile
+                bestehendeProfile = self.profile + self.nichtbefahrbareProfile
                 print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
-                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
-                            break
+                    #if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.9, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5)) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.9, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2)): #TODO: Parameter aus Attributen der Klasse einfügen
+                    if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,toleranz=0.5,lambda_intervall=[profil.start_lambda,profil.end_lambda])) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading,verbindungsprofil.stuetzpunkt, profilbreite=5,toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda,verbindungsprofil.end_lambda])):
+                        break
                 else:
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
                     print("Profil zum Anfahren gefunden")

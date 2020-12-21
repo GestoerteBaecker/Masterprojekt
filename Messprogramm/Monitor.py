@@ -276,8 +276,9 @@ class Anwendung(Frame):
                                 self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten,streifen)
 
                             except Exception as e:
-                                print(e)
-                                print("Karte kann nicht aktualisiert werden.")
+                                x = e
+                                #print(e)
+                                #print("Karte kann nicht aktualisiert werden.")
                     except:
                         if not gnss.simulation:
                             self.con_qual_gnss1.config(bg="orange")

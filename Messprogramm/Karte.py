@@ -169,6 +169,8 @@ class Anwendung_Karte():
                     self.grenzpolygon_x_utm32=[] # Für die Weitergabe an Pixhawk (GeoFence)
                     self.grenzpolygon_x.append(self.grenzpolygon.get_xdata()[0])
                     self.grenzpolygon_y.append(self.grenzpolygon.get_ydata()[0])
+                    self.grenzpolygon.set_xdata(self.grenzpolygon_x)
+                    self.grenzpolygon.set_ydata(self.grenzpolygon_y)
                     self.grenzpolygon.set_color('green')
                     self.grenzpolygon_vorhanden=True
                     for x in self.grenzpolygon_x:
@@ -202,8 +204,6 @@ class Anwendung_Karte():
             # Erneuter Doppelklick löscht bestehende Formen
             else:
                 if event.dblclick==True:
-                    print("Linie",self.richtungslinie_x,self.richtungslinie_y)
-                    print("Poly",self.grenzpolygon_x,self.grenzpolygon_y)
                     self.grenzpolygon.set_xdata([])
                     self.grenzpolygon.set_ydata([])
                     self.richtungslinie.set_xdata([])

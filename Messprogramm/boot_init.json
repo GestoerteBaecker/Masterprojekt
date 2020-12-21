@@ -15,7 +15,9 @@
 	"offset_gnss_echolot": 0.5,
 	"offset_achsen_distometer_gnss": 0,
 	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.2,
-	"DB_mode": 2
+	"DB_mode": 2,
+	"sicherheitsabstand": 20,
+	"streifenabstand": 20
 	},
   "Pixhawk":
     {

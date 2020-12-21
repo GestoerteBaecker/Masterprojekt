@@ -202,7 +202,16 @@ class Anwendung(Frame):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
-        self.boot.Erkunden(self.__om_variable_mode.get())
+        if self.__om_variable_mode.get() == "Vollautomatisch":
+            self.boot.Erkunden()
+        elif self.__om_variable_mode.get() == "Teilautomatisch":
+            if self.karte_window.richtungslinie_x is not None:
+                richtungslinie_x = self.karte_window.richtungslinie_x
+                richtungslinie_y = self.karte_window.richtungslinie_y
+                grenzpolygon_x = self.karte_window.grenzpolygon_x
+                grenzpolygon_y = self.karte_window.grenzpolygon_y
+
+                self.boot.Erkunden_Streifenweise(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y)
 
     def boot_stopp(self):
         # TODO: Aktivieren des Loiter-Modus im Pixhawk. Veranlasst den aktuellen Punkt zu halten

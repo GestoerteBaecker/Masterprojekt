@@ -73,6 +73,8 @@ class Boot:
         self.alle_bodenpunkte = []
         self.gefahreneStrecke = 0
         self.db_mode = json_daten["Boot"]["DB_mode"]
+        self.sicherheitsabstand = json_daten["Boot"]["sicherheitsabstand"]   # für teilautomatischen Ansatz
+        self.streifenabstand = json_daten["Boot"]["streifenabstand"]   # für teilautomatischen Ansatz
 
         self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
         takt = []
@@ -399,8 +401,27 @@ class Boot:
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
 
-    def Erkunden_Streifenweise(self):
-        pass
+    def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y):
+        profile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
+        profile = profile.gespeicherte_profile
+        abstand_anfang1 = self.position.Abstand(profile[0].startpunkt)
+        abstand_anfang2 = self.position.Abstand(profile[0].endpunkt)
+        abstand_ende1 = self.position.Abstand(profile[-1].startpunkt)
+        abstand_ende2 = self.position.Abstand(profile[-1].endpunkt)
+        test = [[abstand_anfang1, 0], [abstand_anfang2, 0], [abstand_ende1, len(profile) - 1],
+                [abstand_ende2, len(profile) - 1]]
+        min = numpy.inf
+        for i in range(4):
+            if test[i][0] < min:
+                min = test[i][0]
+                index = test[i][1]
+
+        if index == 0:
+            profile.reverse()
+
+        # Streifen abfahren
+        
+
 
     def Erkunden(self):   # Art des Gewässers (optional)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL

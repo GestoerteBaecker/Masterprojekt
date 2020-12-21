@@ -7,23 +7,26 @@ import math
 import rasterio
 from rasterio.plot import show
 import csv
+import Messgebiet
 import time
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
 class Anwendung_Karte():
     # Konstruktor  der GUI der Hauptanwendung zum Öffnen aller weiteren GUIs
-    def __init__(self,Monitor,position=0,geotiff_path=None):
+    def __init__(self,Monitor,position=0,geotiff_path=None,messmodus="Vollautomatisch"):
 
         # Übernehmen des Ordnerpfades und Fensterposition
         self.geotiff_path=geotiff_path
         self.position=position
         self.monitor=Monitor
+        self.messmodus=messmodus
 
         # Abschluss der Initialisierung durch erstmaliges Laden der Karte
         self.karte_laden()
 
     def karte_laden(self):
-        self.grenzpolygon_vorhanden=False
+        self.grenzpolygon_vorhanden = False
+        self.richtungslinie_vorhanden = False
 
         # Darstellen der Karte
         self.plt = plt
@@ -63,7 +66,8 @@ class Anwendung_Karte():
         # Variablen für das spätere Boot setzen
         self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
         self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
-        self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=5, color="red")
+        self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=2, color="red")
+        self.richtungslinie,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
         self.boot_allekanten=[\
            self.ax.plot([],[],'-',lw=1, color="black")[0],\
@@ -71,6 +75,7 @@ class Anwendung_Karte():
             self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
         self.route_x,self.route_y=[],[]
         self.grenzpolygon_x,self.grenzpolygon_y=[],[]
+        self.richtungslinie_x,self.richtungslinie_y=[],[]
 
 
         # Abfragen und Setzen der Fenster-Position
@@ -103,8 +108,8 @@ class Anwendung_Karte():
             # Einlesen der aktuellen Boot-Daten
 
             # Setzen der Punkte im Plot auf neue Werte
-            self.current_boat_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 100])
-            self.current_boat_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 100])
+            self.current_boat_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 10000])
+            self.current_boat_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 10000])
             self.boat_position.set_xdata(gnss_north)
             self.boat_position.set_ydata(gnss_east)
             self.boat_position.set_marker(marker=(3,0,-gnss_heading*180/200))
@@ -152,7 +157,13 @@ class Anwendung_Karte():
         if str(event.button)=='MouseButton.RIGHT':
             ix, iy = event.xdata, event.ydata
 
+            # Vollautomatischer Modus benötigt keine Richtungslinie, daher kann das Vorhandensein auf True gesetzt werden
+            if self.messmodus=="Vollautomatisch":
+                self.richtungslinie_vorhanden = True
+
+            # Punkte nur hinzufügen, wenn noch kein Polygon existiert
             if self.grenzpolygon_vorhanden==False:
+
                 # Rechter Doppelklick soll Polygon schließen
                 if event.dblclick==True:
                     self.grenzpolygon_x_utm32=[] # Für die Weitergabe an Pixhawk (GeoFence)
@@ -163,22 +174,46 @@ class Anwendung_Karte():
                     for x in self.grenzpolygon_x:
                         x_utm32=x+32000000
                         self.grenzpolygon_x_utm32.append(x_utm32)
+
                 # Einfacher Klick ergänzt Polygon
                 else:
                     self.grenzpolygon_x.append(ix)
                     self.grenzpolygon_y.append(iy)
+                    self.grenzpolygon.set_xdata(self.grenzpolygon_x)
+                    self.grenzpolygon.set_ydata(self.grenzpolygon_y)
 
-                self.grenzpolygon.set_xdata(self.grenzpolygon_x)
-                self.grenzpolygon.set_ydata(self.grenzpolygon_y)
+            # Wenn Polygon vorhanden, kann, falls noch nicht erfolgt, die Richtungslinie gezeichnet werden
+            elif self.richtungslinie_vorhanden == False:
+                # Beenden der Linie bei Doppelklick
+                if event.dblclick==True:
+                    self.richtungslinie.set_color('green')
+                    self.richtungslinie_vorhanden=True
 
-            # Erneuter Doppelklick löscht bestehende Form
+                # Ergänzen der Linie bei einfachem Rechtsklick
+                else:
+                    self.richtungslinie_x.append(ix)
+                    self.richtungslinie_y.append(iy)
+                    self.richtungslinie.set_xdata(self.richtungslinie_x)
+                    self.richtungslinie.set_ydata(self.richtungslinie_y)
+
+            #if self.messmodus == "Teilautomatisch" and self.grenzpolygon_vorhanden == True and self.richtungslinie_vorhanden == True:
+
+
+            # Erneuter Doppelklick löscht bestehende Formen
             else:
                 if event.dblclick==True:
+                    print("Linie",self.richtungslinie_x,self.richtungslinie_y)
+                    print("Poly",self.grenzpolygon_x,self.grenzpolygon_y)
                     self.grenzpolygon.set_xdata([])
                     self.grenzpolygon.set_ydata([])
+                    self.richtungslinie.set_xdata([])
+                    self.richtungslinie.set_ydata([])
+                    self.richtungslinie_x, self.richtungslinie_y = [], []
                     self.grenzpolygon_x, self.grenzpolygon_y = [], []
                     self.grenzpolygon.set_color('red')
+                    self.richtungslinie.set_color('red')
                     self.grenzpolygon_vorhanden=False
+                    self.richtungslinie_vorhanden=False
 
     def karte_geschlossen(self,evt):
         self.monitor.karte_window = None

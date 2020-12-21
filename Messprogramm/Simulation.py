@@ -32,24 +32,34 @@ class Boot_Simulation(Boot.Boot):
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
-        self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
+        #self.akt_takt = json_daten["Boot"]["simulation_aktualisierungstakt"]
 
         self.PixHawk.verbindungsversuch = False
 
         # EINLESEN DES MODELLS ALS QUADTREE
-        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        #testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")
         id_testdaten = []
         x_testdaten = []
         y_testdaten = []
         tiefe_testdaten = []
 
-        # Lesen der Datei
+        """ 
+        # Lesen der Datei Für nicht manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[0]))
             x_testdaten.append(float(line[1]))
             y_testdaten.append(float(line[2]))
             tiefe_testdaten.append(float(line[3]))
+        testdaten.close()"""
+
+        # Lesen der Datei Für manipulierte Datei
+        for line in lines:
+            id_testdaten.append(int(line[1]))
+            x_testdaten.append(float(line[2]))
+            y_testdaten.append(float(line[3]))
+            tiefe_testdaten.append(float(line[4]))
         testdaten.close()
 
         testdaten_xmin = min(x_testdaten) - 10
@@ -66,6 +76,7 @@ class Boot_Simulation(Boot.Boot):
         initialrechteck = Messgebiet.Zelle(xzentrum, yzentrum, xdiff, ydiff)
         self.Testdaten_quadtree = Messgebiet.Uferpunktquadtree(initialrechteck)
 
+        Punktliste = []
         # Generieren des Quadtree
         for i in range(len(x_testdaten)):
             x = x_testdaten[i]
@@ -73,8 +84,14 @@ class Boot_Simulation(Boot.Boot):
             tiefe = tiefe_testdaten[i]
 
             p = Messgebiet.Bodenpunkt(x, y, tiefe)
+            Punktliste.append(p)
 
             self.Testdaten_quadtree.punkt_einfuegen(p)
+        # Anlegen der Referenzoberfläche
+
+        self.originalmesh = Messgebiet.TIN(Punktliste, 10, nurTIN=True)
+        #print(self.originalmesh.mesh.points)
+        self.originalmesh.mesh.save("Originalmesh.ply")
 
         # EINLESEN DES TEST POLYGONS
         testdaten_path = open("Testdaten_Polygon.txt", "r")
@@ -86,7 +103,7 @@ class Boot_Simulation(Boot.Boot):
             testdaten.append(tuple([float(komp) for komp in line]))
         testdaten_path.close()
         self.ufer_polygon = shp.LinearRing(testdaten)
-
+        self.umrandung = shp.Polygon(testdaten)
         ### TEST ###
         self.test = 0
 
@@ -104,7 +121,6 @@ class Boot_Simulation(Boot.Boot):
         def simulation(self):
             while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
-
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
                     position = self.position
@@ -113,8 +129,8 @@ class Boot_Simulation(Boot.Boot):
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
                 #print("erstes print", time.time()-t)
                 #t_test = time.time()
+                #print(len(tiefenpunkte))
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
-
                 gnss2 = PolaresAnhaengen(position, heading, dist=1)
                 kurs = PolaresAnhaengen(position, heading, dist=1000)
 
@@ -122,11 +138,21 @@ class Boot_Simulation(Boot.Boot):
                 strahl = shp.LineString([(position.x, position.y), (kurs.x, kurs.y)])
                 #print("zweites print", time.time()-t_test)
                 #t_test = time.time()
+                # Prüfen ob Punkt in Umringspolygon liegt
+                impolygon = shp.Point(self.position.x,self.position.y).within(self.umrandung)
+                #print(impolygon)
+
                 schnitt = self.ufer_polygon.intersection(strahl)
+                #print(schnitt)
+
                 if type(schnitt).__name__ == "MultiPoint":
                     schnitt = [numpy.array([pkt.x, pkt.y]) for pkt in schnitt]
                 else:
-                    schnitt = [numpy.array([schnitt.x, schnitt.y])]
+                    try:
+                        schnitt = [numpy.array([schnitt.x, schnitt.y])]
+                    except:
+                        print('Schnittpunkt nicht bestimmbar')
+                        continue
                 #print("drittes print", time.time() - t_test)
                 #t_test = time.time()
                 # Finden des Punkts, der das Ufer als erstes schneidet
@@ -143,23 +169,26 @@ class Boot_Simulation(Boot.Boot):
                             ufer_punkt = pkt
                 if ufer_punkt is None:
                     distanz = 1000
-                    print("Ausnahme bei der Distanz. self.heading ist ", self.heading)
-                    print("position", self.position, "strahl", strahl, "polygon", self.ufer_polygon)
+                    #print("Ausnahme bei der Distanz. self.heading ist ", self.heading)
+                    #print("position", self.position, "strahl", strahl, "polygon", self.ufer_polygon)
                 else:
                     #print("schnittpunkte", schnitt)
                     #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
-                    distanz = random.gauss(distanz, 0.1)
+                    #distanz = random.gauss(distanz, 0)
                 #print("viertes print", time.time()-t_test)
                 with Messgebiet.schloss:
+                    #print(distanz, (self.ist_am_ufer[0] == Boot.UferPosition.AM_UFER),self.ist_am_ufer[1], self.tracking_mode.value <= 10)
                     self.AktuelleSensordaten[0] = Sensoren.Daten(0, [position.x, position.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 4], time.time())
                     self.AktuelleSensordaten[2] = Sensoren.Daten(0, [tiefe, tiefe], time.time())
                     self.AktuelleSensordaten[3] = Sensoren.Daten(0, distanz, time.time())
-
-                schlafen = max(0, (self.akt_takt/4) - (time.time() - t))
+                schlafen = max(0, (self.akt_takt/2) - (time.time() - t))
+                #print(self.akt_takt,schlafen)
                 #print("self.position simulation", position, "benötigte Zeit", time.time() - t, "schlafen", schlafen, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
+                #print(schlafen)
                 time.sleep(schlafen)
+                #time.sleep(self.akt_takt/2)
                 ###########################################################################################
 
         threading.Thread(target=simulation, args=(self,), daemon=True).start()
@@ -173,6 +202,7 @@ class Boot_Simulation(Boot.Boot):
 
                 # auslesen der geteilten Variablen
                 with Messgebiet.schloss:
+
                     gnss1 = self.AktuelleSensordaten[0]
                     gnss2 = self.AktuelleSensordaten[1]
                     echolot = self.AktuelleSensordaten[2]
@@ -199,7 +229,7 @@ class Boot_Simulation(Boot.Boot):
                     Bodendaten = (gnss1, echolot)
                     Letzte_Bodenpunkte.append(Bodendaten)
 
-                    if len(Letzte_Bodenpunkte) > 10:
+                    if len(Letzte_Bodenpunkte) > 0:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         Letzte_Bodenpunkte = []
 
@@ -218,16 +248,17 @@ class Boot_Simulation(Boot.Boot):
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
+                            #print(str(Bodenpunkt))
                             self.median_punkte.append(Bodenpunkt)
 
                     #print("self.position", self.position, "benötigte Zeit", time.time() - t, "self.test", self.test, "threadname", threading.get_ident(), "zeit", time.time())
 
-                schlafen = max(0, self.akt_takt - (time.time() - t))
+                schlafen = max(0, (self.akt_takt - (time.time() - t)))
                 time.sleep(schlafen)
 
         threading.Thread(target=Ueberschreibungsfunktion, args=(self, ), daemon=True).start()
 
-        time.sleep(2)
+        time.sleep(0.2)
         if not self.PixHawk.homepoint:
             with Messgebiet.schloss:
                 punkt = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
@@ -235,27 +266,32 @@ class Boot_Simulation(Boot.Boot):
 
 
     #TODO: nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=5):  # Utm-Koordinaten und Gechwindigkeit setzen
-
+    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=3):  # Utm-Koordinaten und Gechwindigkeit setzen
+        print("Aktueller Zielpunkt ",punkt)
         self.punkt_anfahren = True
         with Messgebiet.schloss:
             self.heading = self.Headingberechnung(punkt)
         #print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
 
         distanz = self.position.Abstand(punkt)
-        testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz)
+        testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(geschw*(self.akt_takt/2))
+        profilpunkte = testprofil.BerechneZwischenpunkte(0.5)    #(geschw*(self.akt_takt*self.Faktor))
 
         #print("Liste der anzufahrenden Punkte auf dem Profil", len(profilpunkte), [str(punkt) for punkt in profilpunkte])
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
-            while self.punkt_anfahren:
+            while self.punkt_anfahren and self.boot_lebt:
+                alte_position = self.position
                 with Messgebiet.schloss:
+                    #print(len(profilpunkte),index)
                     self.position = profilpunkte[index]
+                    #print(self.position)
                     index += 1
+                    entfernung = self.position.Abstand(alte_position)
+                    self.gefahreneStrecke += entfernung
                     #print("hier wird self.position geändert", self.position, "threadname", threading.get_ident())
-                time.sleep(self.akt_takt/20)
+                time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
@@ -264,10 +300,11 @@ class Boot_Simulation(Boot.Boot):
             if self.tracking_mode.value <= 10:
                 self.Ufererkennung(self.heading)
             self.punkt_anfahren = True
-            while self.punkt_anfahren:
+            while self.punkt_anfahren and self.boot_lebt:
                 test = punkt_box.enthaelt_punkt(self.position)
                 #print("hier wird self.position benutzt, ufererkennung", self.position, "threadname", threading.get_ident())
                 if test:
+                    print('Punkt erreicht!')
                     self.punkt_anfahren = False
                 time.sleep(self.akt_takt/20)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)

@@ -3,16 +3,19 @@
     {
 	"simulation_start_x": 451880,
 	"simulation_start_y": 5884978,
-	"simulation_start_heading": 90,
-	"simulation_suchbereich": 2,
-	"simulation_aktualisierungstakt": 0.1,
+	"simulation_start_heading": 75,
+	"simulation_suchbereich": 3,
+	"simulation_aktualisierungstakt": 1,
+	"Simulationsgeschwindigkeit": 3,
 	"stern_winkelinkrement": 50,
 	"stern_grzw_seitenlaenge": 500,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,
-	"profil_grzw_neigungen_topographischer_punkte": 5,
+	"profil_grzw_neigungen_topographischer_punkte": 10,
 	"messgebiet_ausdehnung": [2000, 2000],
 	"offset_gnss_echolot": 0.5,
-	"offset_achsen_distometer_gnss": 0
+	"offset_achsen_distometer_gnss": 0,
+	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.2,
+	"DB_mode": 2
 	},
   "Pixhawk":
     {

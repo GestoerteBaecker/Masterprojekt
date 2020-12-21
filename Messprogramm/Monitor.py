@@ -206,7 +206,7 @@ class Anwendung(Frame):
 
     def boot_stopp(self):
         # TODO: Aktivieren des Loiter-Modus im Pixhawk. Veranlasst den aktuellen Punkt zu halten
-        pass
+        self.boot.boot_lebt = False
 
     def boot_trennen(self):
         self.boot.Trennen() #TODO: das hier muss beim Verlassen unbedingt aufgerufen werden!!!

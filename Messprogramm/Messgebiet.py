@@ -11,8 +11,8 @@ import shapely.geometry as shp
 import shapely
 shapely.speedups.disable()
 import csv
-
 import Simulation
+from scipy.spatial import KDTree
 
 schloss = threading.RLock()
 
@@ -200,7 +200,7 @@ class TIN_Dreieck:
 
 class TIN:
 
-    def __init__(self, Punktliste, Max_len = 0.0):
+    def __init__(self, Punktliste, Max_len = 0.0, nurTIN=False):
 
         self.Punktliste_array = numpy.zeros(shape=(len(Punktliste), 3))
         self.TIN_punkte = []
@@ -211,6 +211,7 @@ class TIN:
 
         # Punkte in Numpy-Array überführen
         for i, punkt in enumerate(Punktliste):
+
             punkt_in_liste = [punkt.x, punkt.y, punkt.z]
             self.Punktliste_array[i] = punkt_in_liste
 
@@ -222,85 +223,93 @@ class TIN:
         else:
             self.mesh = cloud.delaunay_2d(alpha=Max_len)
 
-        # Punkt ID's belegen
+        # Punkt ID's belegen (nur, wenn dies gemacht werden soll, da die berechnung bei vielen Punkten sehr lange dauern kann)
 
-        for i, koords in enumerate(self.mesh.points.tolist()):
+        if not nurTIN:
 
-            tin_punkt = TIN_Punkt(koords[0],koords[1],koords[2],i)
-            self.TIN_punkte.append(tin_punkt)
+            for i, koords in enumerate(self.mesh.points.tolist()):
 
-        #Dreiecke aus mesh Extrhieren
-        for i in range(0,self.mesh.faces.shape[0],4):
-            dreieck_mesh = self.mesh.faces[i:i+4]
-            dreieckpunkte = dreieck_mesh.tolist()
-            dreieckpunkte.pop(0)
+                tin_punkt = TIN_Punkt(koords[0],koords[1],koords[2],i)
+                self.TIN_punkte.append(tin_punkt)
 
-            Dreieckpunkte = []
+            #Dreiecke aus mesh Extrhieren
+            for i in range(0,self.mesh.faces.shape[0],4):
+                dreieck_mesh = self.mesh.faces[i:i+4]
+                dreieckpunkte = dreieck_mesh.tolist()
+                dreieckpunkte.pop(0)
 
-            # Punkte in Punktliste suchen und Dreieckobjekt bilden
-            for Punktindex in dreieckpunkte:
-                for punkt in self.TIN_punkte:
-                    if punkt.TIN_id == Punktindex:
+                Dreieckpunkte = []
 
-                        Dreieckpunkte.append(punkt)
-                        if len(Dreieckpunkte)== 3: break
+                # Punkte in Punktliste suchen und Dreieckobjekt bilden
+                for Punktindex in dreieckpunkte:
+                    for punkt in self.TIN_punkte:
+                        if punkt.TIN_id == Punktindex:
 
-            DreieckId = int(i/4)
-            normalenvektor = self.mesh.face_normals[DreieckId]
+                            Dreieckpunkte.append(punkt)
+                            if len(Dreieckpunkte)== 3: break
 
-            dreieckobjekt = TIN_Dreieck(Dreieckpunkte[0],Dreieckpunkte[1],Dreieckpunkte[2],normalenvektor, int(DreieckId))
+                DreieckId = int(i/4)
+                normalenvektor = self.mesh.face_normals[DreieckId]
 
-            # Nach Nachbardreiecken suchen
+                dreieckobjekt = TIN_Dreieck(Dreieckpunkte[0],Dreieckpunkte[1],Dreieckpunkte[2],normalenvektor, int(DreieckId))
 
-            for dreieckalt in self.Dreieckliste:
-                for punkt1 in dreieckalt.Dreieckspunkte:
-                    if punkt1 in Dreieckpunkte:
-                        for punkt2 in dreieckalt.Dreieckspunkte:
-                            if punkt2 != punkt1 and punkt2 in Dreieckpunkte:
+                # Nach Nachbardreiecken suchen
 
-                                # Abfrage, ob Kante in umgekehrter Form bereits existiert
-                                vorhanden = False
-                                for Kantealt in self.Kantenliste:
-                                    if Kantealt.Anfangspunkt == punkt2 and Kantealt.Endpunkt == punkt1:
-                                        vorhanden = True
+                for dreieckalt in self.Dreieckliste:
+                    for punkt1 in dreieckalt.Dreieckspunkte:
+                        if punkt1 in Dreieckpunkte:
+                            for punkt2 in dreieckalt.Dreieckspunkte:
+                                if punkt2 != punkt1 and punkt2 in Dreieckpunkte:
 
-                                # Kante Bilden und abspeichern
-                                if not vorhanden:
-                                    kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
-                                    self.Kantenliste.append(kante)
+                                    # Abfrage, ob Kante in umgekehrter Form bereits existiert
+                                    vorhanden = False
+                                    for Kantealt in self.Kantenliste:
+                                        if Kantealt.Anfangspunkt == punkt2 and Kantealt.Endpunkt == punkt1:
+                                            vorhanden = True
 
-                                    # Maximale Kantenlänge wird zum Normieren bei der Methode "Anzufahrende_Kanten" gebraucht
+                                    # Kante Bilden und abspeichern
+                                    if not vorhanden:
+                                        kante = TIN_Kante(punkt1,punkt2,[dreieckobjekt,dreieckalt])
+                                        self.Kantenliste.append(kante)
 
-                                    if kante.laenge() > self.max_Kantenlaenge:
-                                        self.max_Kantenlaenge = kante.laenge()
-                                    dreieckobjekt.kanten += 1
-                                    dreieckalt.kanten += 1
-                                    if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
-                                    if dreieckobjekt.kanten == 3: dreieckalt.offen = False
+                                        # Maximale Kantenlänge wird zum Normieren bei der Methode "Anzufahrende_Kanten" gebraucht
 
-            self.Dreieckliste.append(dreieckobjekt)
+                                        if kante.laenge() > self.max_Kantenlaenge:
+                                            self.max_Kantenlaenge = kante.laenge()
+                                        dreieckobjekt.kanten += 1
+                                        dreieckalt.kanten += 1
+                                        if dreieckobjekt.kanten == 3: dreieckobjekt.offen = False
+                                        if dreieckobjekt.kanten == 3: dreieckalt.offen = False
+
+                self.Dreieckliste.append(dreieckobjekt)
 
 
-    def Anzufahrende_Kanten(self,Anz,bootsposition):
+    def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht):
         # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
 
         anzufahrende_Kanten = []
+        kanten_größtes_absolutes_gewicht = None
+        max_gewicht = 0
 
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
                 #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
-                kante.gewicht = laenge_norm*kante.winkel()*(kante.mitte().Abstand(bootsposition)/500) # TODO: Gewichtung anpassen
+                if laenge_norm*kante.winkel() > max_gewicht:
+                    max_gewicht = laenge_norm*kante.winkel()
+                    kanten_größtes_absolutes_gewicht = kante
+                kante.gewicht = laenge_norm*kante.winkel()*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht))) # TODO: Gewichtung anpassen
+
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht:
                     anzufahrende_Kanten.insert(i,kante)
-                    if len(anzufahrende_Kanten) > Anz:
+                    if len(anzufahrende_Kanten) > Anz-1:
                         anzufahrende_Kanten.pop()
                     break
 
-            if len(anzufahrende_Kanten) < Anz and kante not in anzufahrende_Kanten:
+            if len(anzufahrende_Kanten) < Anz-1 and kante not in anzufahrende_Kanten:
                 anzufahrende_Kanten.append(kante)
 
 
@@ -308,10 +317,23 @@ class TIN:
             if anzufahrende_Kanten == []:              # nur für ersten Durchgang benötigt
                 anzufahrende_Kanten.append(kante)
 
+        anzufahrende_Kanten.append(kanten_größtes_absolutes_gewicht)
+
         return anzufahrende_Kanten
 
     def plot(self):
         self.mesh.plot()
+
+    def Vergleich_mit_Original(self,originalmesh):
+        tree = KDTree(originalmesh.mesh.points)
+        d, idx = tree.query(self.mesh.points)
+        self.mesh["distances"] = d
+
+        p = pv.Plotter()
+        p.add_mesh(originalmesh.mesh, color=True, opacity=0.5, smooth_shading=True)
+        p.add_mesh(self.mesh, scalars="distances", smooth_shading=True)
+
+        p.show()
 
 
 class Zelle:
@@ -377,6 +399,7 @@ class Stern:
         self.profil_grzw_neigungen = profil_grzw_neigungen
         self.initialstern = self
         self.ebene = ebene
+        self.median = None
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self):
@@ -426,7 +449,28 @@ class Stern:
             for gesch_stern in stern.weitere_sterne:
                 sterne_durchlaufen(gesch_stern, sterne)
         sterne_durchlaufen(self.initialstern, sterne)
+        print(sterne)
         return sterne
+
+    def Medianberechnung(self):
+        sterne = self.initialstern.Sterne()
+        laengen_ges = []
+
+        def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
+            gesamtlänge = profil.Profillaenge(akt_laenge=False)
+            profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
+            seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True)  # Anfang bis Mitte
+            seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte  # Mitte bis Ende
+            liste_laengen[profilindex] = seitenlänge_vor_mitte
+            liste_laengen[profilindex + len(stern.profile)] = seitenlänge_nach_mitte
+            return liste_laengen
+
+        for stern in sterne:
+            laengen = [0] * (2 * len(stern.profile))
+            for i, profil in enumerate(stern.profile):
+                laengen_ges.extend(profillaenge_von_mitte(stern, profil, i, laengen))
+
+        return statistics.mean(laengen_ges)
 
     # findet eine geschlossene Verbindung zusammenhängener Profile zwischen position und soll_endpunkt und gibt es als Liste zurück
     # wird von Initialstern aufgerufen
@@ -454,7 +498,11 @@ class Stern:
                 if dist_end < dist_end_test:
                     dist_end_test = dist_end
                     end_stern = stern
-            sterne = [start_stern, end_stern]
+            if start_stern != end_stern:
+                sterne = [start_stern, end_stern]
+            else:
+                sterne = [start_stern]
+                alle_sterne = sterne
 
             # Test und Hinzufügen weiterer Sterne, sodass eine verbundene Strecke zwischen den Sternen vorliegt
             for i in range(len(alle_sterne)-2): # i ist die Anzahl zwischen Start- und Endstern einzufügender Sterne
@@ -487,11 +535,13 @@ class Stern:
                 stern1 = sterne[i]
                 stern2 = sterne[i+1]
                 profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt)
+                #print("Verbindung zwischen den sternen",(stern1.mittelpunkt, stern2.mittelpunkt))
                 weitere_profile.append(profil)
 
         anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
         ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1].mittelpunkt, soll_endpunkt)
-        profile = [anfang, *weitere_profile, ende]
+        profile = [anfang, *weitere_profile]#[anfang, *weitere_profile, ende]
+        print([str(profil) for profil in profile])
         return profile
 
 
@@ -534,9 +584,9 @@ class Stern:
             laengen = [0] * (2 *len(stern.profile))
             for i, profil in enumerate(stern.profile):
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
-            median = statistics.median(laengen)
+            stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 5*median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 2*stern.median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -565,7 +615,7 @@ class Stern:
         else:
             self.aktueller_stern = None # alle Sterne sind gemessen
 
-        print("Aktueller Stern:", self.aktueller_stern)
+        #print("Aktueller Stern:", self.aktueller_stern)
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile des aktuellen Sterns und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
@@ -590,10 +640,9 @@ class Stern:
             stern.stern_beendet = True
             # versuch weitere, verdichtende Sterne zu finden
             if self.TestVerdichten(): # bewirkt nur eine Verdichtung, wenn noch keine weiteren Sterne in stern vorliegen
-                # Erst zentrum vom ferigen Stern anfahren (geschieht nur, wenn das profil beendet ist)
-                stern.MittelpunktAnfahren()
+                # Erst Zentrum vom fertigen Stern anfahren (geschieht nur, wenn das profil beendet ist)
                 self.AktuellerStern()  # neuer Stern wird belegt
-                return stern.mittelpunkt # alten Sternmittelpunkt anfahren
+                return stern.mittelpunkt # alten Sternmittelpunkt anfahren! (nicht MittelpunktAnfahren, da jetzt der neue Stern angefahren würde (Zeile drüber))
                 #return self.aktueller_stern.MittelpunktAnfahren()
 
             else:
@@ -618,7 +667,7 @@ class Stern:
             if Zelle(stern.mittelpunkt.x, stern.mittelpunkt.y, 5, 5).enthaelt_punkt(punkt):
                 punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
                 mode = TrackingMode.UFERERKENNUNG
-                print(self.aktueller_stern.mittelpunkt, "Profilerkundung starten")
+                #print(self.aktueller_stern.mittelpunkt, "Profilerkundung starten")
                 #return [punkt, mode]
             else:
                 # wenn das Boot in der Mitte ankommt, aber einen anderen Stern anfangen soll, soll es zunächst zu dessen Mitte fahren
@@ -630,7 +679,7 @@ class Stern:
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-            print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
+            #print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):
@@ -641,10 +690,11 @@ class Stern:
     # pflegt bereits Median-gefilterte Punkte in die entsprechende Liste des aktuellen Profils ein; punkt kann auch eine einziger Punkt sein
     def MedianPunkteEinlesen(self, punkte):
         stern = self.aktueller_stern
-        if type(punkte).__name__ != "list":
-            punkte = [punkte]
-        for punkt in punkte:
-            stern.profile[stern.aktuelles_profil].MedianPunktEinfuegen(punkt)
+        stern.profile[stern.aktuelles_profil].MedianPunkteEinfuegen(punkte)
+        #if type(punkte).__name__ != "list":
+        #    punkte = [punkte]
+        #for punkt in punkte:
+        #    stern.profile[stern.aktuelles_profil].MedianPunktEinfuegen(punkt)
 
     # aus den einzelnen Profilen für das TIN
     def TopographischBedeutsamePunkteAbfragen(self):
@@ -876,6 +926,7 @@ class Profil:
         start = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=-abstand, punkt_objekt=True)
         end = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=abstand, punkt_objekt=True)
         profil = cls.ProfilAusZweiPunkten(start, end, grzw_dichte_topo_pkt, grzw_neigungen)
+        print("Anfangspunt bei Profilberechnung:", start,"Endpunt bei Profilberechnung:", end)
         return profil
 
     # definiert ein Profil aus 2 Puntken
@@ -908,9 +959,13 @@ class Profil:
             self.richtung = -1 * self.richtung
             self.heading = (self.heading+200) % 400
 
-    def MedianPunktEinfuegen(self, punkt):
+    def MedianPunkteEinfuegen(self, punkte):
         if self.ist_definiert.value > 0:
-            self.median_punkte.append(punkt)
+            if type(punkte).__name__ == "list":
+                for punkt in punkte:
+                    self.median_punkte.append(punkt)
+            else:
+                self.median_punkte.append(punkte)
         else:
             raise Exception("Das Profil wurde noch nicht initialisiert (Startpunkt fehlt; Methode ProfilBeginnen muss aufgerufen werden).") # (Boot müsste auf dem Weg zum Startpunkt des Profils sein)
 
@@ -944,8 +999,11 @@ class Profil:
     # fügt einen neuen Endpunkt ein
     # Achtung! Projiziert position auf die Richtung der aktuellen Definition des Profils
     def NeuerEndpunkt(self, position):
+        if position is None:
+            raise Exception("Es muss ein Endpunkt des Profils angegeben werden.")
         self.end_lambda = self.BerechneLambda(position.ZuNumpyPunkt(zwei_dim=True))
         self.endpunkt = self.BerechneNeuenKurspunkt(self.end_lambda, punkt_objekt=True)
+        self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
 
     # aktuell gefahrenen Profillänge, falls Profil abgeschlossen ist, ist es die Gesamtlänge
     def Profillaenge(self, akt_laenge=True):
@@ -956,15 +1014,19 @@ class Profil:
 
     # Punkt muss mind. Toleranz Meter auf dem Profil liegen für return True
     def PruefPunktAufProfil(self, punkt, toleranz=2):
+        if type(punkt).__name__ != "ndarray":
+            punkt = punkt.ZuNumpyPunkt()
         abstand = abstand_punkt_gerade(self.richtung, self.stuetzpunkt, punkt)
         return abs(abstand) < toleranz
 
     # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
-    def PruefPunktInProfil(self, punkt, profilbreite=20):
+    def PruefPunktInProfil(self, punkt, profilpuffer=20):
         if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
-            if self.PruefPunktAufProfil(punkt, profilbreite):
+            if type(punkt).__name__ != "ndarray":
+                punkt = punkt.ZuNumpyPunkt()
+            if self.PruefPunktAufProfil(punkt, profilpuffer):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
-                return self.start_lambda <= lamb <= self.end_lambda
+                return self.start_lambda-profilpuffer <= lamb <= self.end_lambda+profilpuffer
             else:
                 return False
 
@@ -1090,16 +1152,13 @@ class Profil:
         if not self.gemessenes_profil:
             self.gemessenes_profil = True
             if self.ist_definiert != Profil.Definition.START_UND_ENDPUNKT:
-                if end_punkt is None:
-                    raise Exception("Es muss ein Endpunkt des Profils angegeben werden.")
-                self.end_lambda = self.BerechneLambda(end_punkt.ZuNumpyPunkt(zwei_dim=True))
-                self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
-                self.endpunkt = self.BerechneNeuenKurspunkt(self.end_lambda, punkt_objekt=True)
+                self.NeuerEndpunkt(end_punkt)
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
+                #print(len(self.median_punkte))
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
                 steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
                 for i in range(1, len(self.median_punkte) - 1):
@@ -1110,26 +1169,32 @@ class Profil:
                     if abs(winkel) >= grzw_winkel_rad:
                         index_zugefügter_medianpunkte.append(i)
                     steigung_zurück = steigung_vor
-
+                #print(index_zugefügter_medianpunkte)
                 # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
-                    größter_abstand = 0
+                    größter_abstand = -1
                     index = None
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
                     test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
+                        #print(test_indizes,i)
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
-                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt()
-                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt() - stuetz
+                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
+                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=True) - stuetz
+                        print(richtung)
                         richtung = richtung / numpy.linalg.norm(richtung)
+                        print("BerechneRichtung zur Runtimewarning")
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
-                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt()))
-                            if größter_abstand < abstand:
+                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=True)))
+
+                            if größter_abstand <= abstand:
                                 größter_abstand = abstand
                                 index = median_index
-                    index_zugefügter_medianpunkte.append(index)
+                    if index != None:
+                        index_zugefügter_medianpunkte.append(index)
+                        break
                     index_zugefügter_medianpunkte.sort()
 
                 # hinzufügen aller so gefundenen Punkte als topographisch bedeutsame Punkte
@@ -1356,8 +1421,9 @@ class Uferpunktquadtree:
             return True
 
 
-    def abfrage(self, suchgebiet, gefundene_punkte=None):
-        if gefundene_punkte is None:
+    def abfrage(self, suchgebiet,gefundene_punkte = None):
+
+        if gefundene_punkte == None:
             gefundene_punkte = []
 
         if not suchgebiet.gebiet_in_zelle(suchgebiet):
@@ -1411,16 +1477,17 @@ class Messgebiet:
         self.tin = None
         self.profile = []
         self.stern = None
-        self.aktuelles_profil = 0
+        self.aktuelles_profil = -1
         self.verdichtungsmethode = Verdichtungsmode.AUS
         self.punkt_ausserhalb = Punkt(initale_position_x, initale_position_y + hoehe) # dieser Punkt soll sicher außerhalb des Sees liegen
         self.anzufahrende_kanten = [] # nur zum Plotten auf der Karte
+        self.nichtbefahrbareProfile=[]
 
     # Punkte in das TIN einfügen
     def TIN_berechnen(self, punkte=None):
         if punkte is not None:
             self.PunkteEinlesen(punkte) #TODO: ist es möglich in dem Package pyvista das TIN nur in der Region, wo neue Punkte eingefügt werden, neu zu rechnen und den Rest ohne Neuberechnung zu übernehmen? (Rechenzeit einsparen)
-        self.tin = TIN(self.topographische_punkte)
+        self.tin = TIN(self.topographische_punkte) # Zum Vermeiden der Bildung von Dreiecken, die außerhalb des Sees liegen (bei Knickpunkten) #TODO ggf. variabel gestalten
         return self.tin
 
     def Verdichtungsmode(self, mode=None):
@@ -1429,49 +1496,71 @@ class Messgebiet:
         return self.verdichtungsmethode
 
     # sucht die nächste anzufahrende Kante und testet, ob die Punkte anfahrbar sind und ob der Weg dahin schiffbar ist
-    def NaechsterPunkt(self, position, ufer):
+    def NaechsterPunkt(self, position, ufer, entfernungsgewicht):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                profil = self.profile[self.aktuelles_profil]
+                #profil = self.profile[self.aktuelles_profil]
                 soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
+                #print("Sollendpunkt: ", soll_endpunkt)
                 self.aktuelles_profil += 1
-                profil.NeuerEndpunkt(position)
+                #profil.NeuerEndpunkt(position)
                 profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
+                #print("Finde Verbindung",[str(profil) for profil in profile])
                 self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
                 punkt = profile[0].endpunkt
                 methode = Verdichtungsmode.WEGFÜHRUNG
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt
+                #print("jetzt soll (natürlich dasselbe wie eben) profil angefahren werden", self.profile[self.aktuelles_profil])
                 methode = Verdichtungsmode.KANTEN
         elif self.verdichtungsmethode == Verdichtungsmode.KANTEN: # Boot ist gerade auf einem verdichtenden Profil gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                profil = self.profile[self.aktuelles_profil]
-                profil.NeuerEndpunkt(position)
-            kanten = self.tin.Anzufahrende_Kanten(10, position)
+                pass # da das Profil bereits zuvor beendet worden ist
+                #profil = self.profile[self.aktuelles_profil]
+                #profil.NeuerEndpunkt(position)
+            self.TIN_berechnen()
+            kanten = self.tin.Anzufahrende_Kanten(10,position,entfernungsgewicht)
+            #print(kanten, "in nächster Punkt")
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
+            print("Anzahl Kanten", len(kanten))
+            zaehler = 0
             for kante in kanten:
+                zaehler += 1
+                print(zaehler)
                 profil = Profil.VerdichtendesProfil(kante)
-                for existierendesProfil in self.profile:
-                    if not existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,
-                                                                    toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]): #TODO: Parameter aus Attributen der Klasse einfügen
-                        startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
-                        verbindungsprofil = Profil.ProfilAusZweiPunkten(position, profil.startpunkt) # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                        anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil) # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
-                        # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
-                        if anfahrbar is None and startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte
-                            print("dieses profil messen", profil)
-                            naechstesProfil = profil
+                print("folgendes Profil berechnet:", profil)
+                bestehendeProfile = self.profile+self.nichtbefahrbareProfile
+                print("Länge der befahrenen Profile",len(bestehendeProfile))
+                for existierendesProfil in bestehendeProfile:
+                    verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
+                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
                             break
                 else:
-                    continue # wenn die Schleife ordnungsgemäß durchläuft, soll die äußere Schleife ab hier die Iterationsschritt abbrechen und zur nächsten Iteration übergehen und nicht das nachfolgende break machen; das nachfolgende wird nur ausgeführt, wenn das innere ausgeführt wird
-                break
+                        # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
+                    print("Profil zum Anfahren gefunden")
+
+                    anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
+                    startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
+                    print("anfahrbar",anfahrbar,"  Startpunkt im See",startpunkt_in_see)
+                    if startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
+                        print("=========")
+                        print("dieses verbinsungsprofilprofil messen", verbindungsprofil, "dieses profil messen", profil)
+                        naechstesProfil = profil
+                        break
+
             if naechstesProfil is None: # keine zu messenden Profile mehr gefunden bzw. alle Profile fallen außerhalb des Sees
                 punkt = None
             else:
+                e_start = position.Abstand(naechstesProfil.startpunkt)
+                e_end = position.Abstand(naechstesProfil.endpunkt)
+                if e_start > e_end:
+                    naechstesProfil.Flip()
                 punkt = naechstesProfil.startpunkt
+
                 self.profile.append(verbindungsprofil)
                 self.profile.append(naechstesProfil)
                 self.aktuelles_profil += 1 # Index liegt zunächst auf dem Verbindungsprofil
@@ -1487,14 +1576,25 @@ class Messgebiet:
         self.verdichtungsmethode = methode
         return punkt
 
-    # Einfügen von Profilen
+    # beendet das aktuelle Profil und bestimmt die topographisch bedeutsamen Punkte und liest diese ins Messgebiet ein
+    def AktuellesProfilBeenden(self, position, median_punkte):
+        profil = self.profile[self.aktuelles_profil]
+        profil.NeuerEndpunkt(position)
+        profil.MedianPunkteEinfuegen(median_punkte)
+        profil.ProfilAbschliessenUndTopoPunkteFinden() # finden der topographisch bedeutsamen Punkte
+        self.PunkteEinlesen(profil.topographisch_bedeutsame_punkte)
+
+    # Einfügen von Profilen, die bereits gemessen wurden!
     def ProfileEinlesen(self, profile):
         if type(profile).__name__ != "list":
             profile = [profile]
         for profil in profile:
             self.profile.append(profil)
+            self.aktuelles_profil += 1
+
 
     # liest die angegebenen Punkte in die Liste der topographisch bedeutsamen Punkte ein
+    # nur innerhalb dieser Klasse nutzen! Von außen sollten nur die Profile beendet werden
     def PunkteEinlesen(self, punkte):
         if type(punkte).__name__ != "list":
             punkte = [punkte]

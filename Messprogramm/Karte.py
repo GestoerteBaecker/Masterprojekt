@@ -69,6 +69,7 @@ class Anwendung_Karte():
         self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.richtungslinie,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
+        self.boot_streifen,=self.ax.plot([],[],':',lw=1, color="black")
         self.boot_allekanten=[\
            self.ax.plot([],[],'-',lw=1, color="black")[0],\
             self.ax.plot([],[],'-',lw=1, color="grey")[0],\
@@ -84,7 +85,7 @@ class Anwendung_Karte():
         #TODO: Positionierung nachgucken
         #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten):
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten, streifen):
         # Setzen einer leeren Variable für die Boot-Position
         update_interval = 1
 
@@ -96,6 +97,8 @@ class Anwendung_Karte():
             self.plot_boatroute(gnss_north,gnss_east)
 
         self.plot_kanten(kanten)
+        if streifen != []:
+            self.plot_streifen(streifen)
 
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
@@ -118,6 +121,15 @@ class Anwendung_Karte():
         except:
             self.ax.text(.5, .5,'NO GPS DATA', horizontalalignment='center',
                             verticalalignment='center', size=15, color="red",transform=self.ax.transAxes)
+
+    def plot_streifen(self,streifen):
+        sanfang_x = streifen.startpunkt.x
+        sanfang_y = streifen.startpunkt.y
+        sende_x = streifen.endpunkt.x
+        sende_y = streifen.endpunkt.y
+
+        self.boot_streifen.set_xdata([sanfang_x, sende_x])
+        self.boot_streifen.set_ydata([sanfang_y, sende_y])
 
     def plot_kanten(self, kanten):
         for i, kante in enumerate(kanten):

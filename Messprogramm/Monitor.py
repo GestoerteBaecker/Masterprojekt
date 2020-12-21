@@ -272,9 +272,11 @@ class Anwendung(Frame):
                         if self.karte_window!= None:
                             try:
                                 kanten = self.boot.KantenPlotten()
-                                self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten)
+                                streifen = self.boot.StreifenPlotten()
+                                self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten,streifen)
 
-                            except:
+                            except Exception as e:
+                                print(e)
                                 print("Karte kann nicht aktualisiert werden.")
                     except:
                         if not gnss.simulation:

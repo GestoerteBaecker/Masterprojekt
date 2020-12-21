@@ -75,6 +75,8 @@ class Boot:
         self.db_mode = json_daten["Boot"]["DB_mode"]
         self.sicherheitsabstand = json_daten["Boot"]["sicherheitsabstand"]   # für teilautomatischen Ansatz
         self.streifenabstand = json_daten["Boot"]["streifenabstand"]   # für teilautomatischen Ansatz
+        self.streifenprofile= None
+        self.aktuelles_Profil= None
 
         self.PixHawk = Pixhawk.Pixhawk(json_daten["Pixhawk"]["COM"])
         takt = []
@@ -402,14 +404,15 @@ class Boot:
         thread.start()
 
     def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y):
-        profile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
-        profile = profile.gespeicherte_profile
-        abstand_anfang1 = self.position.Abstand(profile[0].startpunkt)
-        abstand_anfang2 = self.position.Abstand(profile[0].endpunkt)
-        abstand_ende1 = self.position.Abstand(profile[-1].startpunkt)
-        abstand_ende2 = self.position.Abstand(profile[-1].endpunkt)
-        test = [[abstand_anfang1, 0], [abstand_anfang2, 0], [abstand_ende1, len(profile) - 1],
-                [abstand_ende2, len(profile) - 1]]
+
+        self.streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
+        self.streifenprofile = self.streifenprofile.gespeicherte_profile
+        abstand_anfang1 = self.position.Abstand(self.streifenprofile[0].startpunkt)
+        abstand_anfang2 = self.position.Abstand(self.streifenprofile[0].endpunkt)
+        abstand_ende1 = self.position.Abstand(self.streifenprofile[-1].startpunkt)
+        abstand_ende2 = self.position.Abstand(self.streifenprofile[-1].endpunkt)
+        test = [[abstand_anfang1, 0], [abstand_anfang2, 0], [abstand_ende1, len(self.streifenprofile) - 1],
+                [abstand_ende2, len(self.streifenprofile) - 1]]
         min = numpy.inf
         for i in range(4):
             if test[i][0] < min:
@@ -417,10 +420,46 @@ class Boot:
                 index = test[i][1]
 
         if index == 0:
-            profile.reverse()
+            self.streifenprofile.reverse()
 
         # Streifen abfahren
-        
+
+        def Streifen_abfahren(self):
+            profilindex = 0
+            punktzaehler = 0
+            while self.boot_lebt:
+                abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
+                if abbruch_durch_ufer or not self.punkt_anfahren:
+                    mode_alt = self.tracking_mode
+                    self.punkt_anfahren = False  # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
+                    self.ufererkennung_aktiv = False
+                    time.sleep(self.akt_takt)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
+
+                    if punktzaehler == 0:
+                        if profilindex == len(self.streifenprofile):
+                            break
+                        self.aktuelles_Profil = self.streifenprofile[profilindex]
+                        e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
+                        e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
+                        profilindex += 1
+
+                        if e_start > e_end:
+                            self.aktuelles_Profil.Flip()
+
+                        self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+                        self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
+                        punktzaehler = 1
+
+                    elif punktzaehler == 1:
+                        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+                        self.Punkt_anfahren(self.aktuelles_Profil.endpunkt)
+                        punktzaehler = 0
+
+                time.sleep(self.akt_takt / 2)
+
+        threading.Thread(target=Streifen_abfahren, args=(self,), daemon=True).start()
+
+
 
 
     def Erkunden(self):   # Art des Gewässers (optional)
@@ -521,6 +560,12 @@ class Boot:
             #rueckgabe = self.messgebiet.nichtbefahrbareProfile
             rueckgabe = self.messgebiet.anzufahrende_kanten
             return rueckgabe
+
+    def StreifenPlotten(self):
+        if self.streifenprofile == None:
+            return []
+        else:
+            return self.aktuelles_Profil
 
     def GeschwindigkeitSetzen(self, geschw):
         self.PixHawk.Geschwindigkeit_setzen(geschw)

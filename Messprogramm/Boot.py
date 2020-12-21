@@ -75,6 +75,9 @@ class Boot:
         self.db_mode = json_daten["Boot"]["DB_mode"]
         self.sicherheitsabstand = json_daten["Boot"]["sicherheitsabstand"]   # für teilautomatischen Ansatz
         self.streifenabstand = json_daten["Boot"]["streifenabstand"]   # für teilautomatischen Ansatz
+        self.Grenzwert_Uferkategorie2 = json_daten["Boot"]["Grenzwert_Uferkategorie2"]
+        self.Grenzwert_Uferkategorie3 = json_daten["Boot"]["Grenzwert_Uferkategorie3"]
+
         self.streifenprofile= None
         self.aktuelles_Profil= None
 
@@ -381,8 +384,8 @@ class Boot:
                     tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
                     #TODO: Gewichten wann welche Kategorie gewählt werden soll
                     #print("tiefe", round(tiefe, 5) , "entfernung", round(entfernung, 5), "extrapolation", round(extrapolation, 5))
-                    if tiefe < 2 or entfernung < 20 or extrapolation < 1.5:
-                        if entfernung < 20 or steigung > 0:
+                    if tiefe < 2 or entfernung < self.Grenzwert_Uferkategorie3 or extrapolation < 1.5:
+                        if entfernung < self.Grenzwert_Uferkategorie3 or steigung > 0:
                             #print("tiefe", tiefe, "entfernung", entfernung, "extrapolation", extrapolation, "steigung", steigung)
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             print(entfernung, tiefe, steigung, extrapolation)
@@ -390,8 +393,8 @@ class Boot:
                             self.Bodenpunkte = []
                         else:
                             self.ist_am_ufer = [UferPosition.AM_UFER, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
-                    elif tiefe < 5 or entfernung < 50 or extrapolation < 7:
-                        if entfernung < 50 or steigung > 0:
+                    elif tiefe < 5 or entfernung < self.Grenzwert_Uferkategorie2 or extrapolation < 7:
+                        if entfernung < self.Grenzwert_Uferkategorie2 or steigung > 0:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, True]  # sehr kurz davor und Boot guckt Richtung Ufer
                         else:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
@@ -419,7 +422,7 @@ class Boot:
                 min = test[i][0]
                 index = test[i][1]
 
-        if index == 0:
+        if index != 0:
             self.streifenprofile.reverse()
 
         # Streifen abfahren
@@ -435,32 +438,52 @@ class Boot:
                     self.ufererkennung_aktiv = False
                     time.sleep(self.akt_takt)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
 
-                    if punktzaehler == 0:
-                        if profilindex == len(self.streifenprofile):
-                            break
-                        self.aktuelles_Profil = self.streifenprofile[profilindex]
-                        e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
-                        e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
-                        profilindex += 1
+                    if not abbruch_durch_ufer:
+                        if punktzaehler == 0:
+                            if profilindex == len(self.streifenprofile):
+                                break
+                            self.aktuelles_Profil = self.streifenprofile[profilindex]
+                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
+                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
+                            profilindex += 1
 
-                        if e_start > e_end:
+                            if e_start > e_end:
+                                self.aktuelles_Profil.Flip()
+
+                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
+                            punktzaehler = 1
+
+                        elif punktzaehler == 1:
+                            self.tracking_mode = Messgebiet.TrackingMode.PROFIL
+                            self.Punkt_anfahren(self.aktuelles_Profil.endpunkt)
+                            punktzaehler = 0
+                    else:
+                        if punktzaehler == 1:
                             self.aktuelles_Profil.Flip()
+                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
 
-                        self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
-                        self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-                        punktzaehler = 1
+                        elif punktzaehler == 0:
+                            if profilindex == len(self.streifenprofile):
+                                break
+                            self.aktuelles_Profil = self.streifenprofile[profilindex]
+                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
+                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
+                            profilindex += 1
 
-                    elif punktzaehler == 1:
-                        self.tracking_mode = Messgebiet.TrackingMode.PROFIL
-                        self.Punkt_anfahren(self.aktuelles_Profil.endpunkt)
-                        punktzaehler = 0
+                            if e_start > e_end:
+                                self.aktuelles_Profil.Flip()
 
+                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
+                            punktzaehler = 1
+                    time.sleep(self.akt_takt*10)
                 time.sleep(self.akt_takt / 2)
 
+            print(self.gefahreneStrecke)
+            gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
+            gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
         threading.Thread(target=Streifen_abfahren, args=(self,), daemon=True).start()
-
-
-
 
     def Erkunden(self):   # Art des Gewässers (optional)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
@@ -472,6 +495,7 @@ class Boot:
 
             # Anlegen eines Sterns mit zeitgleicher Messung (Funktion "Erkunden" ist für die Dauer der Messung gefroren)
             self.SternAbfahren(self.position, self.heading, initial=True)
+            print(self.gefahreneStrecke,"m nach Sternen")
             self.messgebiet.stern = self.stern
             self.messgebiet.topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
 

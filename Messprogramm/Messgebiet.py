@@ -766,7 +766,9 @@ class Profilstreifenerzeugung:
 
                 self.mittlerer_abstand[i] += abstand_r1 + abstand_r2
 
-                self.mittlerer_abstand[i] = self.mittlerer_abstand[i] / len(hilfsprofilpunkte)
+            self.mittlerer_abstand[i] = self.mittlerer_abstand[i] / len(hilfsprofilpunkte)
+
+        print(self.mittlerer_abstand)
 
     # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
     def richtungslinien_erweiterung(self):
@@ -835,14 +837,16 @@ class Profilstreifenerzeugung:
 
                         # im ersten Durchgang sind keine bestehenden Linien zu erwarten, daher kann der Streifen direkt gespeichert werden
                         if i == 0:
-                            gespeicherte_streifen[i].append(streifen)
-                            self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
+                            if str(startpunkt) != str(endpunkt):
+                                gespeicherte_streifen[i].append(streifen)
+                                self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
 
                     # Abbruch, sobald eine andere Linie in der Nähe ist
                     else:
                         if i == 0:
-                            startpunkt = Punkt(schnitt_r1.x, schnitt_r1.y)
-                            endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
+                            if str(startpunkt) != str(endpunkt):
+                                startpunkt = Punkt(schnitt_r1.x, schnitt_r1.y)
+                                endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
 
                             gespeicherte_streifen[i].append(streifen)
                             self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))

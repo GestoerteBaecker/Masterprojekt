@@ -6,7 +6,9 @@
 	"simulation_start_heading": 75,
 	"simulation_suchbereich": 3,
 	"simulation_aktualisierungstakt": 1,
-	"Simulationsgeschwindigkeit": 3,
+	"Simulationsgeschwindigkeit": 3.5,
+	"Grenzwert_Uferkategorie2": 50,
+	"Grenzwert_Uferkategorie3": 10,
 	"stern_winkelinkrement": 50,
 	"stern_grzw_seitenlaenge": 500,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,
@@ -16,8 +18,8 @@
 	"offset_achsen_distometer_gnss": 0,
 	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.2,
 	"DB_mode": 2,
-	"sicherheitsabstand": 20,
-	"streifenabstand": 20
+	"sicherheitsabstand": 15,
+	"streifenabstand": 10
 	},
   "Pixhawk":
     {

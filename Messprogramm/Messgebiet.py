@@ -1549,8 +1549,8 @@ class Messgebiet:
                 print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
-                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
+                    if existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.1, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5): #TODO: Parameter aus Attributen der Klasse einfügen
+                        if existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.3, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2):
                             break
                 else:
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden

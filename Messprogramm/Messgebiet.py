@@ -13,6 +13,7 @@ shapely.speedups.disable()
 import csv
 import Simulation
 from scipy.spatial import KDTree
+import scipy
 import time
 
 schloss = threading.RLock()
@@ -422,7 +423,7 @@ class Stern:
             existiert = False
             for profil in existierendeProfile:
                 if profil.ist_definiert != Profil.Definition.NUR_RICHTUNG: # hier werden die in den vorherigen Schleifen eingefügten Profile ignoriert, da sie selbst noch nicht gemessen wurden
-                    if profil.PruefProfilExistiert(winkel,mitte, 10, 0.1):
+                    if profil.PruefProfilExistiert(winkel,mitte, 10, 0.8):
                         existiert = True
             if not existiert:
                 profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
@@ -1034,13 +1035,16 @@ class Profil:
         return abs(abstand) < toleranz
 
     # prüft, ob ein geg Punkt innerhalb des Profils liegt (geht nur, wenn self.gemessenes_profil = True ODER wenn self.end_lambda != None
-    def PruefPunktInProfil(self, punkt, profilpuffer=20):
+    def PruefPunktInProfil(self, punkt, profilpuffer=20, mit_längspuffer=True):
         if self.ist_definiert == Profil.Definition.START_UND_ENDPUNKT:
             if type(punkt).__name__ != "ndarray":
                 punkt = punkt.ZuNumpyPunkt()
             if self.PruefPunktAufProfil(punkt, profilpuffer):
                 lamb = numpy.dot(self.richtung, (punkt - self.stuetzpunkt))
-                return self.start_lambda-profilpuffer <= lamb <= self.end_lambda+profilpuffer
+                if mit_längspuffer:
+                    return self.start_lambda-profilpuffer <= lamb <= self.end_lambda+profilpuffer
+                else:
+                    return self.start_lambda <= lamb <= self.end_lambda
             else:
                 return False
 
@@ -1140,7 +1144,7 @@ class Profil:
                             pruef_intervall = quer_lambda_intervall
                     schnittpunkt = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_eckpunkt, test_intervall, pruef_intervall)
                     if schnittpunkt is not None:
-                        if not test_profil_unendlich and self.PruefPunktInProfil(pruef_eckpunkt, profilbreite):
+                        if not test_profil_unendlich and self.PruefPunktInProfil(pruef_eckpunkt, profilbreite, mit_längspuffer=False):
                             x.append(pruef_eckpunkt[0])
                             y.append(pruef_eckpunkt[1])
                         x.append(schnittpunkt[0])
@@ -1154,7 +1158,19 @@ class Profil:
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
 
             if len(x) >= 3:
-                überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
+                Punktliste_array = numpy.zeros(shape=(len(x), 2))
+                for i in range(len(x)):
+                    punkt_in_liste = [x[i], y[i]]
+                    Punktliste_array[i] = punkt_in_liste
+                konvexe_hülle = scipy.spatial.ConvexHull(Punktliste_array)
+
+                """x, y = [], []
+                for i in range(len(kovexe_hülle)):
+                    pkt = kovexe_hülle[i,0:1]
+                    x.append(pkt[0])
+                    y.append(pkt[1])
+                überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))"""
+                überdeckung = konvexe_hülle.volume
                 print("Profil existiert: (Zeit, Überdeckung, Fläche)", time.time(), überdeckung, fläche)
                 return (überdeckung / fläche) > toleranz
             else:

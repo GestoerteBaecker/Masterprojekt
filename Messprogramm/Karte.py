@@ -1,14 +1,9 @@
-from tkinter import *
-from PIL import Image
-from pyproj import Proj, transform
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
 import rasterio
 from rasterio.plot import show
 import csv
-import Messgebiet
-import time
 
 # Klasse, die als Softwareverteilung dient und jedes weitere Unterprogramm per Buttondruck bereithält
 class Anwendung_Karte():
@@ -105,9 +100,6 @@ class Anwendung_Karte():
 
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
-
-
-
 
     def plot_boat(self,gnss_north,gnss_east,gnss_heading):
         try:

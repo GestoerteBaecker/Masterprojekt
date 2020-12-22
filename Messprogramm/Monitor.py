@@ -146,15 +146,12 @@ class Anwendung(Frame):
         ttk.Separator(self, orient=HORIZONTAL).grid(row=6, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL).grid(row=7, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL).grid(row=8, column=0, columnspan=3, rowspan=2, sticky='ew')
-        #ttk.Separator(self, orient=HORIZONTAL).grid(row=10, column=0, columnspan=3, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=9, column=0, columnspan=4, rowspan=3, sticky='ew')
-
 
         # Abrufen der neuesten Daten und Stati
         self.verbindung_initialisiert=False
         self.status_und_daten_aktualisieren()
         self.t=0
-
 
     def karte_laden(self):
         # Öffnen der Datei
@@ -164,13 +161,6 @@ class Anwendung(Frame):
             self.karte_window=Karte.Anwendung_Karte(self,self.position,geotiff_path,self.__om_variable_mode.get())
         except:
             print("Dateien ungültig")
-
-
-    def simulationsabfrage(self, x):
-        print(x)
-
-    def modusabfrage(self, x):
-        print(x)
 
     def boot_verbinden(self):
         try:

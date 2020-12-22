@@ -10,11 +10,9 @@ import threading
 import shapely.geometry as shp
 import shapely
 shapely.speedups.disable()
-import csv
 import Simulation
 from scipy.spatial import KDTree
 import scipy
-import time
 
 schloss = threading.RLock()
 
@@ -296,12 +294,12 @@ class TIN:
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
-                #Kantenlängen normieren(mit max Kantenlaenge)   TODO: gewichtung besprechen
+                #Kantenlängen normieren(mit max Kantenlaenge)
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
                 if laenge_norm*kante.winkel() > max_gewicht:
                     max_gewicht = laenge_norm*kante.winkel()
                     kanten_größtes_absolutes_gewicht = kante
-                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht))) # TODO: Gewichtung anpassen
+                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
 
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
@@ -417,9 +415,7 @@ class Stern:
         winkel = start_winkel
         existierendeProfile = self.Profile()
 
-        #rot_matrix = numpy.array([[numpy.cos(stern.winkelinkrement*numpy.pi/200), numpy.sin(stern.winkelinkrement*numpy.pi/200)], [-numpy.sin(stern.winkelinkrement*numpy.pi/200), numpy.cos(stern.winkelinkrement*numpy.pi/200)]])
         while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
-            #richtung = numpy.dot(rot_matrix, richtung)
             existiert = False
             for profil in existierendeProfile:
                 if profil.ist_definiert != Profil.Definition.NUR_RICHTUNG: # hier werden die in den vorherigen Schleifen eingefügten Profile ignoriert, da sie selbst noch nicht gemessen wurden
@@ -451,7 +447,6 @@ class Stern:
             for gesch_stern in stern.weitere_sterne:
                 sterne_durchlaufen(gesch_stern, sterne)
         sterne_durchlaufen(self.initialstern, sterne)
-        print(sterne)
         return sterne
 
     def Medianberechnung(self):
@@ -537,15 +532,11 @@ class Stern:
                 stern1 = sterne[i]
                 stern2 = sterne[i+1]
                 profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt)
-                #print("Verbindung zwischen den sternen",(stern1.mittelpunkt, stern2.mittelpunkt))
                 weitere_profile.append(profil)
 
         anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
-        ende = Profil.ProfilAusZweiPunkten(alle_sterne[len(sterne)-1].mittelpunkt, soll_endpunkt)
-        profile = [anfang, *weitere_profile]#[anfang, *weitere_profile, ende]
-        print([str(profil) for profil in profile])
+        profile = [anfang, *weitere_profile]
         return profile
-
 
     # test der Überschreitung des Grenzwerts der Länge eines Profils
     def TestVerdichten(self):
@@ -617,7 +608,6 @@ class Stern:
         else:
             self.aktueller_stern = None # alle Sterne sind gemessen
 
-        #print("Aktueller Stern:", self.aktueller_stern)
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile des aktuellen Sterns und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
@@ -645,8 +635,6 @@ class Stern:
                 # Erst Zentrum vom fertigen Stern anfahren (geschieht nur, wenn das profil beendet ist)
                 self.AktuellerStern()  # neuer Stern wird belegt
                 return stern.mittelpunkt # alten Sternmittelpunkt anfahren! (nicht MittelpunktAnfahren, da jetzt der neue Stern angefahren würde (Zeile drüber))
-                #return self.aktueller_stern.MittelpunktAnfahren()
-
             else:
                 self.AktuellerStern()
 
@@ -669,19 +657,15 @@ class Stern:
             if Zelle(stern.mittelpunkt.x, stern.mittelpunkt.y, 5, 5).enthaelt_punkt(punkt):
                 punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
                 mode = TrackingMode.UFERERKENNUNG
-                #print(self.aktueller_stern.mittelpunkt, "Profilerkundung starten")
-                #return [punkt, mode]
             else:
                 # wenn das Boot in der Mitte ankommt, aber einen anderen Stern anfangen soll, soll es zunächst zu dessen Mitte fahren
                 punkt = stern.mittelpunkt
                 mode = TrackingMode.BLINDFAHRT
-                #return [stern.mittelpunkt, TrackingMode.BLINDFAHRT]
         elif mode == TrackingMode.UFERERKENNUNG:
             profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
             punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
             mode = TrackingMode.PROFIL
-            #print(self.aktueller_stern.mittelpunkt,"Profilmessung Starten")
         return [punkt, mode]
 
     def MittelpunktAnfahren(self):
@@ -693,10 +677,6 @@ class Stern:
     def MedianPunkteEinlesen(self, punkte):
         stern = self.aktueller_stern
         stern.profile[stern.aktuelles_profil].MedianPunkteEinfuegen(punkte)
-        #if type(punkte).__name__ != "list":
-        #    punkte = [punkte]
-        #for punkt in punkte:
-        #    stern.profile[stern.aktuelles_profil].MedianPunktEinfuegen(punkt)
 
     # aus den einzelnen Profilen für das TIN
     def TopographischBedeutsamePunkteAbfragen(self):
@@ -770,8 +750,6 @@ class Profilstreifenerzeugung:
 
             self.mittlerer_abstand[i] = self.mittlerer_abstand[i] / len(hilfsprofilpunkte)
 
-        print(self.mittlerer_abstand)
-
     # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
     def richtungslinien_erweiterung(self):
         for i in range(len(self.richtungslinie_x) - 1):
@@ -795,7 +773,7 @@ class Profilstreifenerzeugung:
             self.richtungslinien.append([startpunkt, endpunkt])
 
     def profilstreifen_anlegen(self):
-        gespeicherte_streifen = [[] for i in range(len(self.richtungslinien))]
+        gespeicherte_streifen = [[] for _ in range(len(self.richtungslinien))]
         for i in range(len(self.richtungslinien)):
             linienstart = self.richtungslinien[i][0]
             linienende = self.richtungslinien[i][1]
@@ -808,7 +786,6 @@ class Profilstreifenerzeugung:
             linienprofilpunkte = linienprofil.BerechneZwischenpunkte(self.streifenabstand)
 
             # Liste über alle Zwischenpunkte des temporären Profils
-            # if i == 0:
             for linienpunkt in linienprofilpunkte:
 
                 # Schnittpunkte mit Polygon in 1. Richtung
@@ -852,11 +829,9 @@ class Profilstreifenerzeugung:
 
                             gespeicherte_streifen[i].append(streifen)
                             self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
-
                         break
 
                 # Prüfung, ob andere Streifen bereits im Gebiet sind
-                abstand = numpy.Inf
                 if i != 0:
                     min_abstand_r1 = abstand_r1
                     min_abstand_r2 = abstand_r2
@@ -872,16 +847,14 @@ class Profilstreifenerzeugung:
                                 if abstand < min_abstand_r1:
                                     min_abstand_r1 = abstand
                                     min_schnittpunkt_r1 = schnittpunkt_r1
-                                    startpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r1, heading - 100,
-                                                                             dist=self.streifenabstand)
+                                    startpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r1, heading - 100, dist=self.streifenabstand)
 
                             if type(schnittpunkt_r2).__name__ == "Point":
                                 abstand = linienpunkt.Abstand(schnittpunkt_r2)
                                 if abstand < min_abstand_r2:
                                     min_abstand_r2 = abstand
                                     min_schnittpunkt_r2 = schnittpunkt_r2
-                                    endpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r2, heading + 100,
-                                                                           dist=self.streifenabstand)
+                                    endpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r2, heading + 100, dist=self.streifenabstand)
 
                     if str(startpunkt) != str(endpunkt):
                         streifen = shp.LineString([(startpunkt.x, startpunkt.y), (endpunkt.x, endpunkt.y)])
@@ -941,7 +914,6 @@ class Profil:
         start = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=-abstand, punkt_objekt=True)
         end = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=abstand, punkt_objekt=True)
         profil = cls.ProfilAusZweiPunkten(start, end, grzw_dichte_topo_pkt, grzw_neigungen)
-        print("Anfangspunt bei Profilberechnung:", start,"Endpunt bei Profilberechnung:", end)
         return profil
 
     # definiert ein Profil aus 2 Puntken
@@ -1164,14 +1136,7 @@ class Profil:
                     Punktliste_array[i] = punkt_in_liste
                 try:
                     konvexe_hülle = scipy.spatial.ConvexHull(Punktliste_array)
-                    """x, y = [], []
-                                    for i in range(len(kovexe_hülle)):
-                                        pkt = kovexe_hülle[i,0:1]
-                                        x.append(pkt[0])
-                                        y.append(pkt[1])
-                                    überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))"""
                     überdeckung = konvexe_hülle.volume
-                    print("Profil existiert: (Zeit, Überdeckung, Fläche)", time.time(), überdeckung, fläche)
                     return (überdeckung / fläche) > toleranz
                 except Exception as e:
                     print("Die konvexe Hülle der Überdeckung der Profile konnte nicht gebildet werden.", e)
@@ -1192,7 +1157,6 @@ class Profil:
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
-                #print(len(self.median_punkte))
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
                 steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
                 for i in range(1, len(self.median_punkte) - 1):
@@ -1203,7 +1167,7 @@ class Profil:
                     if abs(winkel) >= grzw_winkel_rad:
                         index_zugefügter_medianpunkte.append(i)
                     steigung_zurück = steigung_vor
-                #print(index_zugefügter_medianpunkte)
+
                 # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
                 while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
                     größter_abstand = -1
@@ -1211,14 +1175,11 @@ class Profil:
                     # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
                     test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
                     for i in range(len(test_indizes)-1):
-                        #print(test_indizes,i)
                         median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
                         median_index_ende = test_indizes[i+1]
                         stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
                         richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=True) - stuetz
-                        print(richtung)
                         richtung = richtung / numpy.linalg.norm(richtung)
-                        print("BerechneRichtung zur Runtimewarning")
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
                             abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=True)))
@@ -1317,7 +1278,6 @@ def Headingberechnung(boot=None, richtungspunkt=None, position=None):
     if boot is not None:
         with schloss:
             if not boot.AktuelleSensordaten[0]:
-                print("self.heading ist None")
                 return None
 
             gnss1 = boot.AktuelleSensordaten[0]
@@ -1440,7 +1400,7 @@ class Uferpunktquadtree:
             if not ebene: # wenn None zurückgegeben wird, was passiert, wenn der Punkt nicht ins Quadtree fällt
                 ebene = 0
             if ebene >= max_ebene:
-                return punkt                        # Bei True liegt das Profil auf einem Quadtree in einer Ebene, wo ein Ufer sehr wahrscheinlich ist
+                return punkt # Bei True liegt das Profil auf einem Quadtree in einer Ebene, wo ein Ufer sehr wahrscheinlich ist
 
         return None # == False
 
@@ -1481,9 +1441,6 @@ class Uferpunktquadtree:
 
     def zeichnen(self, ax):
         self.zelle.zeichnen(ax)
-        #TODO: welche Variante?
-        #if not self.geteilt:
-        #    self.zelle.draw(ax)
         if self.geteilt:
             self.nw.zeichnen(ax)
             self.no.zeichnen(ax)
@@ -1524,7 +1481,7 @@ class Messgebiet:
     # Punkte in das TIN einfügen
     def TIN_berechnen(self, punkte=None):
         if punkte is not None:
-            self.PunkteEinlesen(punkte) #TODO: ist es möglich in dem Package pyvista das TIN nur in der Region, wo neue Punkte eingefügt werden, neu zu rechnen und den Rest ohne Neuberechnung zu übernehmen? (Rechenzeit einsparen)
+            self.PunkteEinlesen(punkte)
         self.tin = TIN(self.topographische_punkte) # Zum Vermeiden der Bildung von Dreiecken, die außerhalb des Sees liegen (bei Knickpunkten) #TODO ggf. variabel gestalten
         return self.tin
 
@@ -1537,41 +1494,27 @@ class Messgebiet:
     def NaechsterPunkt(self, position, ufer, entfernungsgewicht, längengewicht, winkelgewicht, anzahl_anzufahrende_kanten):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                #profil = self.profile[self.aktuelles_profil]
                 soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
-                #print("Sollendpunkt: ", soll_endpunkt)
                 self.aktuelles_profil += 1
-                #profil.NeuerEndpunkt(position)
                 profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
-                #print("Finde Verbindung",[str(profil) for profil in profile])
                 self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
                 punkt = profile[0].endpunkt
                 methode = Verdichtungsmode.WEGFÜHRUNG
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt
-                #print("jetzt soll (natürlich dasselbe wie eben) profil angefahren werden", self.profile[self.aktuelles_profil])
                 methode = Verdichtungsmode.KANTEN
         elif self.verdichtungsmethode == Verdichtungsmode.KANTEN: # Boot ist gerade auf einem verdichtenden Profil gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
                 pass # da das Profil bereits zuvor beendet worden ist
-                #profil = self.profile[self.aktuelles_profil]
-                #profil.NeuerEndpunkt(position)
             self.TIN_berechnen()
             kanten = self.tin.Anzufahrende_Kanten(anzahl_anzufahrende_kanten,position,entfernungsgewicht,längengewicht,winkelgewicht)
-            #print(kanten, "in nächster Punkt")
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
-            print("Anzahl Kanten", len(kanten))
-            zaehler = 0
             for kante in kanten:
-                zaehler += 1
-                print(zaehler)
                 profil = Profil.VerdichtendesProfil(kante)
-                print("folgendes Profil berechnet:", profil)
                 bestehendeProfile = self.profile + self.nichtbefahrbareProfile
-                print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
@@ -1579,20 +1522,12 @@ class Messgebiet:
                     existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[profil.start_lambda, profil.end_lambda])
                     liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
                     existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
-                    print("Profilprüfung:", existiert_profil, liegt_profilpunkt_in_existierendem_profil, existiert_verbindungsprofil)
-                    if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil: #TODO: Parameter aus Attributen der Klasse einfügen
-                    #if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,toleranz=0.5,lambda_intervall=[profil.start_lambda,profil.end_lambda])) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading,verbindungsprofil.stuetzpunkt, profilbreite=5,toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda,verbindungsprofil.end_lambda])):
+                    if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
                         break
                 else:
-                        # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden
-                    print("Profil zum Anfahren gefunden")
-
                     anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                     startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
-                    print("anfahrbar",anfahrbar,"  Startpunkt im See",startpunkt_in_see)
-                    if startpunkt_in_see:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
-                        print("=========")
-                        print("dieses verbinsungsprofilprofil messen", verbindungsprofil, "dieses profil messen", profil)
+                    if startpunkt_in_see and anfahrbar:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
                         naechstesProfil = profil
                         break
 
@@ -1647,718 +1582,3 @@ class Messgebiet:
 
     def Uferpunkt_abspeichern(self, punkt):
         self.Uferquadtree.punkt_einfuegen(punkt)
-
-if __name__=="__main__":
-    #grenzpoly_x=[451911.25873675593, 452073.2169656865, 451968.8438848201, 452007.53390617575, 451938.251774911, 451806.88565588964, 451795.1886726891, 451868.0698757078, 451907.65966500196, 451858.1724283843, 451911.25873675593]
-    #grenzpoly_x=[451913.3030789013, 451902.51359814394, 451856.6583049252, 451938.25375315273, 451891.7241173866,451976.01693580346, 451980.7373336348, 452065.0301520517,451913.3030789013]
-    grenzpoly_x=[451830.7012373299, 452009.07005307666, 452127.3145489088, 452199.4637328064, 452221.5093167751, 452095.24824495433, 451977.0037491222, 451983.01618111366, 451942.9333011706, 451932.9125811848, 451864.77168528154, 451702.436021512, 451722.47746148356, 451754.543765438, 451778.5934934039, 451856.7551092929, 451888.8214132474, 451898.8421332332, 451930.90843718767, 451983.01618111366, 451960.970597145, 451850.74267730146, 451816.67222934985, 451744.52304545225, 451682.3945815405, 451666.36142956326, 451692.41530152626, 451722.47746148356, 451738.5106134608, 451792.622501384, 451792.622501384, 451810.6597973584, 451810.6597973584, 451830.7012373299]
-    #grenzpoly_y=[5885062.991617536, 5884967.616216055, 5884868.64174282, 5884775.065877216, 5884759.769822261, 5884776.865413093, 5884869.541510759, 5884876.739654267, 5884946.021785531, 5884997.308558026, 5885062.991617536]
-    #grenzpoly_y=[5885058.634187477, 5885024.242717562, 5884988.502562554, 5884917.022252536, 5884861.051821107, 5884806.430074773, 5884850.26234035, 5884971.64399887,5885058.634187477]
-    grenzpoly_y=[5885619.900478659, 5885553.763726753, 5885537.730574776, 5885503.660126825, 5885445.539950907, 5885054.7318714615, 5884798.201439826, 5884730.060543923, 5884605.803616099, 5884543.675152187, 5884537.662720196, 5884762.126847877, 5884782.168287849, 5884880.3713437095, 5884880.3713437095, 5885030.682143496, 5885064.752591448, 5885120.868623368, 5885156.943215317, 5885295.22915112, 5885313.266447095, 5885333.307887066, 5885353.349327038, 5885363.3700470235, 5885407.4612149615, 5885435.519230921, 5885489.631118844, 5885515.684990807, 5885561.780302742, 5885585.830030708, 5885585.830030708, 5885601.863182685, 5885601.863182685, 5885619.900478659]
-    #richtungslinie_x=[451905.86012912495, 451994.03738709824, 451908.5594329405, 451838.3775337372]
-    #richtungslinie_x=[451903.8622832386, 452006.36235043354, 451934.88204041607]
-    richtungslinie_x=[451842.72610131284, 452127.3145489088, 451776.5893494068]
-    #richtungslinie_y=[5885013.50438092, 5884958.618536671, 5884820.054274142, 5884847.947080235]
-    #richtungslinie_y=[5885022.219689921, 5884962.877545754, 5884840.821544687]
-    richtungslinie_y=[5884691.981807977, 5885407.4612149615, 5885513.68084681]
-    streifenabstand=35+1
-    sicherheitsabstand=20
-    max_dist = 100000
-
-    testdaten = []
-    # Lesen der Datei
-    for i in range(len(grenzpoly_x)):
-        testdaten.append((grenzpoly_x[i],grenzpoly_y[i]))
-    grenzpoly_shape = shp.LinearRing(testdaten)
-
-    fig = plt.figure()
-    ax = plt.subplot()
-    plt.gca().set_aspect('equal', adjustable='box')
-
-    ax.plot(richtungslinie_x,richtungslinie_y,color='lightgrey',lw=1,ls=":")
-    profilpunkte_plot,=ax.plot([],[],marker='o',markersize=3,color='green', lw=0)
-
-    # EINLESEN DES TEST POLYGONS
-    testdaten_path = open("Testdaten_Polygon.txt", "r")
-    lines = csv.reader(testdaten_path, delimiter=";")
-    testdaten = []
-
-    #grenzpoly_x=[]
-    #grenzpoly_y=[]
-    # Lesen der Datei
-    for line in lines:
-        testdaten.append(tuple([float(komp) for komp in line]))
-        #grenzpoly_x.append(float(line[0]))
-        #grenzpoly_y.append(float(line[1]))
-    testdaten_path.close()
-    #grenzpoly_shape = shp.LinearRing(testdaten)
-    ax.plot(grenzpoly_x,grenzpoly_y,color='red',lw=1)
-
-
-
-    mittlerer_abstand = (len(richtungslinie_x)-1)*[0]
-
-    # Ermitteln der mittleren Streifenbreite je Richtungslinie
-    for i in range(len(richtungslinie_x)-1):
-        p1=Punkt(richtungslinie_x[i],richtungslinie_y[i])
-        p2=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
-        heading = Headingberechnung(None, p2, p1)
-        dist=p1.Abstand(p2)
-
-        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
-        hilfsprofil = Profil(heading,p1,True,0,dist)
-        hilfsprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
-        hilfsprofilpunkte=hilfsprofil.BerechneZwischenpunkte(streifenabstand)
-
-        abstand_summe_r1=0
-        abstand_summe_r2=0
-
-        # Liste über alle Zwischenpunkte des temporären Profils
-        # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
-        for punkt in hilfsprofilpunkte:
-
-            # Berechnung von Endpunkt und Strahl zur 1. Richtung
-            endpunkt=Simulation.PolaresAnhaengen(punkt, heading+100, dist=max_dist)
-            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
-            schnittpunkte = grenzpoly_shape.intersection(strahl)
-            schnitt_r1,abstand_r1=naechster_schnittpunkt(punkt,schnittpunkte)
-
-            # Berechnung von Endpunkt und Strahl zur 2. Richtung
-            endpunkt=Simulation.PolaresAnhaengen(punkt, heading-100, dist=max_dist)
-            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
-            schnittpunkte = grenzpoly_shape.intersection(strahl)
-            schnitt_r2,abstand_r2=naechster_schnittpunkt(punkt,schnittpunkte)
-
-            mittlerer_abstand[i]+=abstand_r1+abstand_r2
-
-        mittlerer_abstand[i]=mittlerer_abstand[i]/len(hilfsprofilpunkte)
-
-    richtungslinien=[]
-
-    # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
-    for i in range(len(richtungslinie_x)-1):
-        p1=Punkt(richtungslinie_x[i],richtungslinie_y[i])
-        p2=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
-        heading = Headingberechnung(None, p1, p2)
-
-        endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=max_dist)
-        endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading+200, dist=max_dist)
-
-        strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
-        strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
-
-        schnittpunkte_r1 = grenzpoly_shape.intersection(strahl_r1)
-        schnitt_r1, abstand_r1 = naechster_schnittpunkt(p1, schnittpunkte_r1)
-
-        schnittpunkte_r2 = grenzpoly_shape.intersection(strahl_r2)
-        schnitt_r2, abstand_r2 = naechster_schnittpunkt(p2, schnittpunkte_r2)
-
-        startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading+200, dist=sicherheitsabstand)
-        endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=sicherheitsabstand)
-
-        richtungslinien.append([startpunkt,endpunkt])
-
-        ax.plot(startpunkt.x, startpunkt.y, marker='o', markersize=5, color='green', lw=0)
-        ax.plot(endpunkt.x, endpunkt.y, marker='o', markersize=5, color='green', lw=0)
-        ax.plot([startpunkt.x,endpunkt.x], [startpunkt.y, endpunkt.y], color='grey', lw=1,ls="-.")
-        plt.pause(0.1)
-
-    gespeicherte_streifen = [[] for i in range(len(richtungslinien))]
-    gespeicherte_profile = []
-
-
-    for i in range(len(richtungslinien)):
-        abbruch = False
-        linienstart = richtungslinien[i][0]
-        linienende = richtungslinien[i][1]
-        distanz = linienstart.Abstand(linienende)
-        heading = Headingberechnung(None, linienende, linienstart)
-
-        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
-        linienprofil = Profil(heading,linienstart,True,0,distanz)
-        linienprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
-        linienprofilpunkte=linienprofil.BerechneZwischenpunkte(streifenabstand)
-
-        # Liste über alle Zwischenpunkte des temporären Profils
-        #if i == 0:
-        for linienpunkt in linienprofilpunkte:
-
-            # Schnittpunkte mit Polygon in 1. Richtung
-            endpunkt_r1 = Simulation.PolaresAnhaengen(linienpunkt, heading+100, dist=max_dist)
-            strahl_r1 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r1.x, endpunkt_r1.y)])
-            schnittpunkte_r1 = strahl_r1.intersection(grenzpoly_shape.buffer(sicherheitsabstand-1))
-            schnitt_r1, abstand_r1 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r1)
-
-            # Schnittpunkte mit Polygon in 2. Richtung
-            endpunkt_r2 = Simulation.PolaresAnhaengen(linienpunkt, heading-100, dist=max_dist)
-            strahl_r2 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r2.x, endpunkt_r2.y)])
-            schnittpunkte_r2 = strahl_r2.intersection(grenzpoly_shape.buffer(sicherheitsabstand-1))
-            schnitt_r2, abstand_r2 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r2)
-
-            startpunkt = Punkt(schnitt_r1.x, schnitt_r1.y)
-            endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
-
-            streifen = shp.LineString([(startpunkt.x, startpunkt.y), (endpunkt.x, endpunkt.y)])
-
-            # Abfrage, ob eine weitere Teillinie in die Nähe der jetzigen kommt
-            # Für letzte Teillinie nicht durchlaufen (da hier kein nächster Punkt mehr erwartet wird)
-            if i < len(richtungslinien)-1:
-                # Laden des nächsten Punktes
-                naechster_linienpunkt=Punkt(richtungslinie_x[i+1],richtungslinie_y[i+1])
-
-                # Anstand zum Punkt soll die halbe mittlere Länge der Profile nicht überschreiten
-                if linienpunkt.Abstand(naechster_linienpunkt) > mittlerer_abstand[i+1]/2:
-
-                    # im ersten Durchgang sind keine bestehenden Linien zu erwarten, daher kann der Streifen direkt gespeichert werden
-                    if i==0:
-                        if str(startpunkt) != str(endpunkt):
-                            ax.plot(linienpunkt.x, linienpunkt.y, marker='o', markersize=2, color="blue")
-                            ax.plot([startpunkt.x,endpunkt.x],[startpunkt.y,endpunkt.y], color='blue', lw=1)
-                            plt.pause(0.2)
-
-                            gespeicherte_streifen[i].append(streifen)
-                            gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt,endpunkt))
-
-                # Abbruch, sobald eine andere Linie in der Nähe ist
-                else:
-                    if i == 0:
-                        if str(startpunkt) != str(endpunkt):
-                            startpunkt = Punkt(schnitt_r1.x,schnitt_r1.y)
-                            endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
-
-                            ax.plot(linienpunkt.x, linienpunkt.y, marker='o', markersize=2, color="blue")
-                            ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
-                            plt.pause(0.2)
-
-                            gespeicherte_streifen[i].append(streifen)
-                            gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt,endpunkt))
-                    break
-
-            if i == 0:
-                if str(startpunkt) != str(endpunkt):
-                    ax.plot(linienpunkt.x, linienpunkt.y, marker='o', markersize=2, color="blue")
-                    ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
-                    plt.pause(0.2)
-
-                    gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
-
-            # Prüfung, ob andere Streifen bereits im Gebiet sind
-            abstand=numpy.Inf
-            if i != 0:
-                min_abstand_r1 = abstand_r1
-                min_abstand_r2 = abstand_r2
-
-                for j in range(len(gespeicherte_streifen)-1):
-                    for gespeicherter_streifen in gespeicherte_streifen[j]:
-
-                        schnittpunkt_r1 = strahl_r1.intersection(gespeicherter_streifen)
-                        schnittpunkt_r2 = strahl_r2.intersection(gespeicherter_streifen)
-
-                        if type(schnittpunkt_r1).__name__ == "Point":
-                            abstand = linienpunkt.Abstand(schnittpunkt_r1)
-                            if abstand < min_abstand_r1:
-                                min_abstand_r1 = abstand
-                                min_schnittpunkt_r1 = schnittpunkt_r1
-                                startpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r1, heading - 100, dist=streifenabstand)
-
-                        if type(schnittpunkt_r2).__name__ == "Point":
-                            abstand = linienpunkt.Abstand(schnittpunkt_r2)
-                            if abstand < min_abstand_r2:
-                                min_abstand_r2 = abstand
-                                min_schnittpunkt_r2 = schnittpunkt_r2
-                                endpunkt = Simulation.PolaresAnhaengen(min_schnittpunkt_r2, heading + 100, dist=streifenabstand)
-
-                if str(startpunkt) != str(endpunkt):
-                    streifen = shp.LineString([(startpunkt.x, startpunkt.y), (endpunkt.x, endpunkt.y)])
-                    #try:
-                    gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
-                    gespeicherte_streifen[i].append(streifen)
-                    ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
-               # except:
-                   # pass
-
-                plt.pause(0.2)
-
-    print(gespeicherte_profile)
-
-            #
-            #abstand=abstand1 + abstand2
-            #abstand_summe+=abstand
-
-            #if abstand < 1.5 * abstand_summe/j:#
-
-      #          alle_streifen.append(aktueller_streifen)
-       #         abstand_intersec = numpy.Inf
-        #        for streifen in alle_streifen:
-         #           schnittpunkt = streifen.intersection(aktueller_streifen)
-          #          if type(schnittpunkt).__name__ == "Point":
-           #             abstand = punkt.Abstand(schnittpunkt)
-            #            if abstand < abstand_intersec:
-             #               abstand_intersec=abstand
-              ##              schnitt=schnittpunkt
-            #j+=1
-"""
-    # Erweitern der Richtungslinien bis zum Polygon (mit x m Sicherheitsabstand)
-    for i in range(len(richtungslinie_x) - 1):
-        p1 = Punkt(richtungslinie_x[i], richtungslinie_y[i])
-        p2 = Punkt(richtungslinie_x[i + 1], richtungslinie_y[i + 1])
-        heading = Headingberechnung(None, p1, p2)
-
-        endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=max_dist)
-        endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading + 200, dist=max_dist)
-
-        strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
-        strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
-
-        schnittpunkte_r1 = grenzpoly_shape.intersection(strahl_r1)
-        schnittpunkte_r2 = grenzpoly_shape.intersection(strahl_r2)
-
-        if type(schnittpunkte_r1).__name__ == "MultiPoint":
-            abstand = numpy.Inf
-            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
-            for schnitt in schnittpunkte_r1:
-                abstand_r1 = p1.Abstand(schnitt)
-                if abstand_r1 < abstand:
-                    schnitt_r1 = schnitt
-        # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
-        # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
-        elif type(schnittpunkte_r1).__name__ == "Point":
-            schnitt_r1 = schnittpunkte_r1
-            abstand_r1 = p1.Abstand(schnitt_r1)
-
-        if type(schnittpunkte_r2).__name__ == "MultiPoint":
-            abstand = numpy.Inf
-            # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
-            for schnitt in schnittpunkte_r2:
-                abstand_r2 = p2.Abstand(schnitt)
-                if abstand_r2 < abstand:
-                    schnitt_r2 = schnitt
-        # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
-        # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
-        elif type(schnittpunkte_r2).__name__ == "Point":
-            schnitt_r2 = schnittpunkte_r2
-            abstand_r2 = p2.Abstand(schnitt_r2)
-
-        startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=sicherheitsabstand)
-        endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=sicherheitsabstand)
-
-        richtungslinien.append([startpunkt, endpunkt])
-
-        # startpunkt=Punkt(schnitt_r1.x,schnitt_r1.y)
-
-        # endpunkt=Punkt(schnitt_r2.x,schnitt_r2.y)
-
-        ax.plot(startpunkt.x, startpunkt.y, marker='o', markersize=5, color='green', lw=0)
-        ax.plot(endpunkt.x, endpunkt.y, marker='o', markersize=5, color='green', lw=0)
-        ax.plot([startpunkt.x, endpunkt.x], [startpunkt.y, endpunkt.y], color='blue', lw=1)
-
-    alle_streifen_r1 = [[] for i in range(len(richtungslinien))]
-    alle_streifen_r2 = [[] for i in range(len(richtungslinien))]
-
-    mittlerer_abstand = len(richtungslinien) * [0]
-
-    # Liste über alle angebenen Punkte der (quer) zu befahrenen Linie
-    for i in range(len(richtungslinien)):
-
-        # P1 und P2 ergeben sich aus den betrachteten Punkten der Linie
-        p1 = richtungslinien[i][0]
-        p2 = richtungslinien[i][1]
-        heading = Headingberechnung(None, p2, p1)
-        dist = p1.Abstand(p2)
-
-        # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
-        hilfsprofil = Profil(heading, p1, True, 0, dist)
-        hilfsprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
-        hilfsprofilpunkte = hilfsprofil.BerechneZwischenpunkte(streifenabstand)
-
-        abstand_summe_r1 = 0
-        abstand_summe_r2 = 0
-
-        # Liste über alle Zwischenpunkte des temporären Profils
-        # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
-        for punkt in hilfsprofilpunkte:
-            ax.plot(punkt.x, punkt.y, marker='o', markersize=4, color='blue')
-            plt.pause(0.1)
-
-            # Berechnung von Endpunkt und Strahl zur 1. Richtung
-            endpunkt = Simulation.PolaresAnhaengen(punkt, heading + 100, dist=max_dist)
-            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
-            schnittpunkte = grenzpoly_shape.intersection(strahl)
-            if type(schnittpunkte).__name__ == "MultiPoint":
-                abstand = numpy.Inf
-                # Schleife, um den nächstgelegenen Schnittpunkt zu berechnen
-                for schnitt in schnittpunkte:
-                    abstand_r1 = punkt.Abstand(schnitt)
-                    if abstand_r1 < abstand:
-                        schnitt_r1 = schnitt
-            # Falls Polygon länger als 1 km kann kein Schnittpunkt bestimmt werden
-            # (in dem Fall außerhalb der Funk-Reichweite, daher soll das Boot hier nicht weiterfahren)
-            elif type(schnittpunkte).__name__ == "LineString":
-                schnitt_r1 = endpunkt
-                abstand_r1 = max_dist
-            else:
-                schnitt_r1 = schnittpunkte
-                abstand_r1 = punkt.Abstand(schnitt_r1)
-
-            aktueller_streifen_r1 = shp.LineString([(punkt.x, punkt.y), (schnitt_r1.x, schnitt_r1.y)])
-            alle_streifen_r1[i].append(aktueller_streifen_r1)
-
-            # Berechnung von Endpunkt und Strahl zur 1. Richtung
-            endpunkt = Simulation.PolaresAnhaengen(punkt, heading - 100, dist=max_dist)
-            strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-            schnittpunkte = grenzpoly_shape.intersection(strahl)
-
-            # TODO: Sicherheitsabstand zum Ufer implentieren?
-            # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
-            if type(schnittpunkte).__name__ == "MultiPoint":
-                abstand = numpy.Inf
-                for schnitt in schnittpunkte:
-                    abstand_r2 = punkt.Abstand(schnitt)
-                    if abstand_r2 < abstand:
-                        schnitt_r2 = schnitt
-            elif type(schnittpunkte).__name__ == "LineString":
-                schnitt_r1 = endpunkt
-                abstand_r2 = max_dist
-            else:
-                schnitt_r2 = schnittpunkte
-                abstand_r2 = punkt.Abstand(schnitt_r2)
-
-            mittlerer_abstand[i] += abstand_r1 + abstand_r2
-
-            aktueller_streifen_r2 = shp.LineString([(punkt.x, punkt.y), (schnitt_r2.x, schnitt_r2.y)])
-            alle_streifen_r2[i].append(aktueller_streifen_r2)
-
-        mittlerer_abstand[i] = mittlerer_abstand[i] / len(hilfsprofilpunkte)
-        print(mittlerer_abstand[i])
-
-    sparse_streifen_r1 = [[] for i in range(len(richtungslinien) - 1)]
-    sparse_streifen_r2 = [[] for i in range(len(richtungslinien) - 1)]
-
-    for i in range(len(richtungslinien)):
-        print(i)
-        p1 = richtungslinien[i][0]
-        p2 = richtungslinien[i][1]
-
-        # Verringern der Streifenanzahl, wenn andere Teillinien in der Nähe sind
-        if i < len(richtungslinien) - 1:
-            for j in range(len(alle_streifen_r1[i])):
-                streifen_r1 = alle_streifen_r1[i][j]
-                streifen_r2 = alle_streifen_r2[i][j]
-
-                x, y = streifen_r1.coords[0]
-                x1, y1 = streifen_r1.coords[1]
-                x2, y2 = streifen_r2.coords[1]
-
-                linienpunkt = Punkt(x, y)
-
-                if linienpunkt.Abstand(p2) > mittlerer_abstand[i + 1] / 2:
-                    sparse_streifen_r1[i].append(streifen_r1)
-                    sparse_streifen_r2[i].append(streifen_r2)
-
-                    ax.plot([x1, x2], [y1, y2], marker='o', markersize=10)
-
-        # Profile der ersten Teil-Linie bleiben unberührt
-        if i == 0:
-            pass
-        # Ab der zweiten Teillinie Prüfung, ob Routen geschnitten werden
-        else:
-            # Schleife über alle Punkte bzw. Streifen der Teil-Linie
-            for j in range(len(alle_streifen_r1[i])):
-                streifen_r1 = alle_streifen_r1[i][j]
-                streifen_r2 = alle_streifen_r2[i][j]
-
-                min_abstand_r1 = numpy.Inf
-                min_abstand_r2 = numpy.Inf
-
-                x, y = streifen_r1.coords[0]
-                x1, y1 = streifen_r1.coords[1]
-                x2, y2 = streifen_r2.coords[1]
-
-                linienpunkt = Punkt(x, y)
-                endpunkt_r1 = Punkt(x1, y1)
-                endpunkt_r2 = Punkt(x2, y2)
-
-                # Schleife über alle Streifen aller anderen(!) Teil-Linien
-
-                for n in range(len(sparse_streifen_r1)):
-                    if n == i:
-                        pass
-                    else:
-                        for m in range(len(sparse_streifen_r1[n])):
-                            schnittpunkt_r1 = streifen_r1.intersection(sparse_streifen_r1[n - 1][m])
-                            schnittpunkt_r2 = streifen_r2.intersection(sparse_streifen_r2[n - 1][m])
-
-                            if type(schnittpunkt_r1).__name__ == "Point":
-                                abstand = linienpunkt.Abstand(schnittpunkt_r1)
-                                if abstand < min_abstand_r1:
-                                    min_abstand_r1 = abstand
-                                    min_schnittpunkt_r1 = schnittpunkt_r1
-                            else:
-                                min_schnittpunkt_r1 = Punkt(x1, y1)
-
-                            if type(schnittpunkt_r2).__name__ == "Point":
-                                abstand = linienpunkt.Abstand(schnittpunkt_r2)
-                                if abstand < min_abstand_r2:
-                                    min_abstand_r2 = abstand
-                                    min_schnittpunkt_r2 = schnittpunkt_r2
-                            else:
-                                min_schnittpunkt_r2 = Punkt(x2, y2)
-
-                        # ax.plot(min_schnittpunkt_r2.x, min_schnittpunkt_r2.y, marker='o', markersize=8)
-
-                        ax.plot(min_schnittpunkt_r1.x, min_schnittpunkt_r1.y, marker='o', markersize=5)
-                        ax.plot(min_schnittpunkt_r2.x, min_schnittpunkt_r2.y, marker='o', markersize=5)
-                        plt.pause(0.3)
-
-
-
-
-            #if type(schnitt).__name__ == "MultiPoint":
-            #    schnitt = [numpy.array([pkt.x, pkt.y]) for pkt in schnitt]
-            #else:
-            #    schnitt = [numpy.array([schnitt.x, schnitt.y])]
-            #print(schnitt)
-            #querprofil = Profil(heading+numpy.pi,)
-
-    plt.show()
-
-
-    time.sleep(1)
-
-
-"""
-"""
-    richtung = 50
-    stuetz = numpy.array([0,0])
-
-    test_richtung = 0
-    test_stuetz = numpy.array([10,0])
-
-    profil = Profil(richtung, stuetz)
-    profil.end_lambda = 20
-    profil.lamb = 20
-    profil.start_lambda = 0
-    profil.aktuelles_profil = False
-
-    #quer_richtung = numpy.array([profil.richtung[1], -profil.richtung[0]])
-    #punkt = profil.stuetzpunkt + (profil.lamb + 0) * profil.richtung + 5 * quer_richtung
-
-    print(profil.PruefProfilExistiert(test_richtung, test_stuetz, profilbreite=5, toleranz=0.3, lambda_intervall=[0,50]))
-    
-    # Test Geradenschnitt
-    richtung1 = numpy.array([1,1])
-    richtung1 = richtung1 / numpy.linalg.norm(richtung1)
-    richtung2 = numpy.array([0,1])
-    stuetz1 = numpy.array([0,0])
-    stuetz2 = numpy.array([5,0])
-    print("========")
-    print(schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, [0,5], [0,10]))
-    
-    # Test Quadtree
-
-    startzeit = time.time()
-
-    # Quadtree von DHM berechnen
-    testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r",encoding='utf-8-sig') # ArcGIS Encoding :)
-    lines=csv.reader(testdaten,delimiter=";")
-    id_testdaten=[]
-    x_testdaten=[]
-    y_testdaten=[]
-    tiefe_testdaten=[]
-
-    # Lesen der Datei
-    for line in lines:
-        id_testdaten.append(int(line[0]))
-        x_testdaten.append(float(line[1]))
-        y_testdaten.append(float(line[2]))
-        tiefe_testdaten.append(float(line[3]))
-    testdaten.close()
-
-    xmin=min(x_testdaten)-10
-    xmax=max(x_testdaten)+10
-    ymin=min(y_testdaten)-10
-    ymax=max(y_testdaten)+10
-
-    xdiff = xmax - xmin
-    ydiff = ymax - ymin
-    xzentrum = xmin + xdiff / 2
-    yzentrum = ymin + ydiff / 2
-
-    initialrechteck = Zelle(xzentrum,yzentrum,xdiff,ydiff)
-    Testdaten_quadtree = Uferpunktquadtree(initialrechteck)
-
-
-    # Generieren des Quadtree
-    for i in range(len(id_testdaten)):
-        x=x_testdaten[i]
-        y=y_testdaten[i]
-        tiefe=tiefe_testdaten[i]
-
-        p=Bodenpunkt(x,y,tiefe)
-
-        Testdaten_quadtree.punkt_einfuegen(p)
-
-    fig = plt.figure()
-    ax = plt.subplot()
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-    plt.gca().set_aspect('equal', adjustable='box')
-    #Testdaten_quadtree.zeichnen(ax)
-
-    ax.scatter(x_testdaten, y_testdaten, s=1)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    # Punkte innerhalb eines Suchgebietes finden
-    boot_position, = ax.plot([], [], marker='o', markersize=3, color='blue')
-    plt_gefundene_punkte, = ax.plot([],[], marker='o', markersize=5,color='red',lw=0)
-    plt_suchgebiet,=ax.plot([],[],c='r',lw=1)
-
-    xpos=451880
-    ypos=5884944
-    pkt = Punkt(xpos, ypos)
-    xsuch=5
-    ysuch=5
-    richtung=50+random.random()
-    testprofil=Profil(richtung, pkt, True, 0, 100)
-    testprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
-    profilpunkte=testprofil.BerechneZwischenpunkte(2)
-
-    for punkt in profilpunkte:
-        gefundene_punkte = []
-        plt.pause(0.01)
-        xpos=punkt.x
-        ypos=punkt.y
-        boot_position.set_xdata(xpos)
-        boot_position.set_ydata(ypos)
-        suchgebiet = Zelle(xpos, ypos, xsuch, ysuch)
-        suchgebiet.zeichnen(plt_suchgebiet)
-        Testdaten_quadtree.abfrage(suchgebiet, gefundene_punkte)
-        plt_gefundene_punkte.set_xdata([p.x for p in gefundene_punkte])
-        plt_gefundene_punkte.set_ydata([p.y for p in gefundene_punkte])
-
-        time.sleep(0.1)
-
-    #plt.show()
-
-
-    
-    for i in range(0,10000):
-        x = random.randint(-1000, 1000)
-        y = random.randint(-1000, 1000)
-
-        p = Uferpunkt(x,y)
-
-        Testquadtree.punkt_einfuegen(p)
-
-    print("Quadtree angelegt")
-    Testquadtree.zeichnen()
-
-    for i in range(0,1000):
-        x = random.randint(-1000, 1000)
-        y = random.randint(-1000, 1000)
-
-        p = Uferpunkt(x, y)
-
-        wert = Testquadtree.ebene_von_punkt(p)
-        print(i, wert)
-
-    endzeit = time.time()
-    zeitdifferenz = endzeit-startzeit
-    print(zeitdifferenz)
-
-
-    # Testdaten für Mesh
-
-
-    punkt1 = Bodenpunkt(0, 0, 0)
-    punkt2 = Bodenpunkt(0, 10, 0)
-    punkt3 = Bodenpunkt(15, 10, 0)
-    punkt4 = Bodenpunkt(15, 0, 0)
-    punkt5 = Bodenpunkt(7.5, 5, 5)
-   
-    x_koordinaten = []
-    y_koordinaten = []
-    Testdaten_txt = open("Test_DHM.txt", "r")
-    Topographisch_bedeutsame_Bodenpunkte = []
-    Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
-    laenge = 0
-    anfangszeit = time.time()
-    while laenge < 200:
-    #while Datenzeile != ['']:
-        tin_punkt = Bodenpunkt(float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3]))
-        punkt_in_liste = [float(Datenzeile[1]), float(Datenzeile[2]), float(Datenzeile[3])]
-
-        x_koordinaten.append(float(Datenzeile[1]))
-        y_koordinaten.append(float(Datenzeile[2]))
-
-        Topographisch_bedeutsame_Bodenpunkte.append(tin_punkt)
-        # Punktliste_arry.insert(punkt_in_liste)
-
-        print(laenge)
-
-        Datenzeile = Testdaten_txt.readline().replace("\n", "").split(";")
-        laenge += 1
-
-
-
-    tin = TIN(Topographisch_bedeutsame_Bodenpunkte,10.0)
-
-    endzeit = time.time()
-
-    print(endzeit-anfangszeit)
-    naechsteKanten = tin.Anzufahrende_Kanten(5)
-
-    maximalesKantengewicht = 0
-    for kante in tin.Kantenliste:
-        if kante.gewicht > maximalesKantengewicht: maximalesKantengewicht = kante.gewicht
-
-    x = []
-    y = []
-    grauwerte = []
-    for kante in tin.Kantenliste:
-        x1, y1 = kante.Anfangspunkt.x, kante.Anfangspunkt.y
-        x2, y2 = kante.Endpunkt.x, kante.Endpunkt.y
-        x.append(x1)
-        x.append(x2)
-        y.append(y1)
-        y.append(y2)
-        grauwert = kante.gewicht/maximalesKantengewicht
-        grauwerte.append((-grauwert+1))
-
-    fig, ax = plt.subplots()
-
-    def connectpoints(x, y, p1, p2, g):
-        x1, x2 = x[p1], x[p2]
-        y1, y2 = y[p1], y[p2]
-        ax.plot([x1, x2], [y1, y2], color= g)
-
-
-    for i in range(0,len(x),2):
-        g = (i)//2
-        connectpoints(x,y,i,i+1, str(grauwerte[g]))
-
-    def plot_mat():
-        plt.ioff()
-        plt.show()
-    def plot_tin():
-        tin.plot()
-
-
-    ax.plot(x_koordinaten, y_koordinaten, 'r+')
-    #plot_tin()
-    plot_mat()
-
-    #threading.Thread(target=plot_mat(), args=(), daemon=True)
-    #threading.Thread(target=plot_tin(), args=(), daemon=True)
-
-    #print(time.time()-endzeit)
-
-    print("Break")
-    """

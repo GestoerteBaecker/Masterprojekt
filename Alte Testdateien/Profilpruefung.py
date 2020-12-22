@@ -1,4 +1,4 @@
-import Masterprojekt.Messprogramm.Messgebiet as MG
+import Messprogramm.Messgebiet as MG
 Punkt1 = MG.Punkt(1,1)
 Punkt2 = MG.Punkt(1,100)
 Punkt3 = MG.Punkt(40,101)

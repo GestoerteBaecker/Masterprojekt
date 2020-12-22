@@ -13,6 +13,7 @@ shapely.speedups.disable()
 import csv
 import Simulation
 from scipy.spatial import KDTree
+import time
 
 schloss = threading.RLock()
 
@@ -1154,6 +1155,7 @@ class Profil:
 
             if len(x) >= 3:
                 überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))
+                print("Profil existiert: (Zeit, Überdeckung, Fläche)", time.time(), überdeckung, fläche)
                 return (überdeckung / fläche) > toleranz
             else:
                 return False
@@ -1552,9 +1554,15 @@ class Messgebiet:
                 bestehendeProfile = self.profile + self.nichtbefahrbareProfile
                 print("Länge der befahrenen Profile",len(bestehendeProfile))
                 for existierendesProfil in bestehendeProfile:
+                    # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-                    #if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.9, lambda_intervall=[profil.start_lambda, profil.end_lambda]) or existierendesProfil.PruefPunktInProfil(profil.startpunkt,5)) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.9, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda]) or existierendesProfil.PruefPunktInProfil(verbindungsprofil.startpunkt,2)): #TODO: Parameter aus Attributen der Klasse einfügen
-                    if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,toleranz=0.5,lambda_intervall=[profil.start_lambda,profil.end_lambda])) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading,verbindungsprofil.stuetzpunkt, profilbreite=5,toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda,verbindungsprofil.end_lambda])):
+
+                    existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[profil.start_lambda, profil.end_lambda])
+                    liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
+                    existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
+                    print("Profilprüfung:", existiert_profil, liegt_profilpunkt_in_existierendem_profil, existiert_verbindungsprofil)
+                    if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil: #TODO: Parameter aus Attributen der Klasse einfügen
+                    #if (existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5,toleranz=0.5,lambda_intervall=[profil.start_lambda,profil.end_lambda])) or (existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading,verbindungsprofil.stuetzpunkt, profilbreite=5,toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda,verbindungsprofil.end_lambda])):
                         break
                 else:
                         # TODO: wenn das letzte zu fahrende Profil mit der Lage ins Ufer fällt, sollte es anderweitig angefahren werden (über Umweg); so wie jetzt impl. würde es gar nicht angefahren werden

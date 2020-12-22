@@ -408,8 +408,8 @@ class Boot:
 
     def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y):
 
-        self.streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
-        self.streifenprofile = self.streifenprofile.gespeicherte_profile
+        streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
+        self.streifenprofile = streifenprofile.gespeicherte_profile
         abstand_anfang1 = self.position.Abstand(self.streifenprofile[0].startpunkt)
         abstand_anfang2 = self.position.Abstand(self.streifenprofile[0].endpunkt)
         abstand_ende1 = self.position.Abstand(self.streifenprofile[-1].startpunkt)

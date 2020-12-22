@@ -1519,9 +1519,9 @@ class Messgebiet:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
 
-                    existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[profil.start_lambda, profil.end_lambda])
+                    existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.65, lambda_intervall=[profil.start_lambda, profil.end_lambda])
                     liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
-                    existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.5, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
+                    existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.8, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
                     if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
                         break
                 else:

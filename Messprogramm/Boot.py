@@ -523,7 +523,6 @@ class Boot:
                     if abbruch_durch_ufer and self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil])  #Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1])
-                        print("Nicht befahrbare Profile:",len(self.messgebiet.nichtbefahrbareProfile),self.messgebiet.nichtbefahrbareProfile[-2],self.messgebiet.nichtbefahrbareProfile[-1])
                     self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
                     self.median_punkte = []
 
@@ -531,7 +530,6 @@ class Boot:
                 neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer, self.Entfernungsfaktor_fuer_Verdichtung, self.längengewicht, self.winkelgewicht, self.anzahl_anzufahrende_kanten)
 
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
-
                 if neuer_punkt is None:
                     break
                 #self.messgebiet.aktuellesprofil anlegen
@@ -564,7 +562,6 @@ class Boot:
         self.PixHawk.Geschwindigkeit_setzen(geschw)
         self.PixHawk.Wegpunkt_anfahren(punkt.x, punkt.y)
         self.punkt_anfahren = True
-        #print("Fahre Punkt mit Koordinaten E:", punkt.x, "N:", punkt.y, "an")
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
         sollheading = self.Headingberechnung(punkt)
 
@@ -582,9 +579,6 @@ class Boot:
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
-    def Wegberechnung(self):
-        pass
-
     def SternAbfahren(self, startpunkt, heading, initial=True):
         self.Ufererkennung(heading)
         self.stern = Messgebiet.Stern(startpunkt, heading, self.stern_winkelinkrement, self.stern_grzw_seitenlaenge, initial, self.profil_grzw_dichte_topographischer_punkte, self.profil_grzw_neigungen_topographischer_punkte)
@@ -593,18 +587,13 @@ class Boot:
         self.Punkt_anfahren(punkt)
         while self.boot_lebt:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
-                print("in Stern abfahren: self position", self.position, "self.heading", self.heading, "ist_am_ufer", self.ist_am_ufer, "tracking", self.tracking_mode, "self.punt anfahren", self.punkt_anfahren)
-                #print("Stern abfahren nächste aktion")
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
-                #if len(self.median_punkte) > 1:
                 if self.tracking_mode == Messgebiet.TrackingMode.PROFIL or self.tracking_mode == Messgebiet.TrackingMode.VERBINDUNG:
                     self.stern.MedianPunkteEinlesen(self.median_punkte)
                 self.median_punkte = []
                 [neuer_kurspunkt, neues_tracking] = self.stern.NaechsteAktion(self.position, self.tracking_mode)
-                #print("in Stern abfahren: neuer kurspunkt und neues tracking", neuer_kurspunkt, neues_tracking)
-                #print("==== ENDE DER PRINTS IN STERN ABFAHREN ====")
                 self.tracking_mode = neues_tracking
                 if neuer_kurspunkt is None:
                     break
@@ -615,9 +604,6 @@ class Boot:
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True
         self.median_punkte = []
-
-    def Gewaesseraufnahme(self):
-        pass
 
     def Boot_stoppen(self):
 
@@ -654,7 +640,7 @@ class Boot:
         return aktiv
 
     def postprocessing(self):
-        pass
+        pass #Auswertung der gemessenen Daten findet ausßerhalb des Programms statt
 
     # Berechnet das Gefälle unterhalb des Bootes
     # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
@@ -696,7 +682,6 @@ class Boot:
                 lamb = numpy.dot(r0, (p - st0)) / d12
                 lambdas.append(lamb)
                 A_spalte_r0[0, i * 3] = lamb
-                # x0 = numpy.append(x0, lamb)
                 A = numpy.hstack((A, numpy.roll(A_spalte_lamb, 3 * i, 0)))
             A_spalte_r0 = A_spalte_r0.getT()
             A = numpy.hstack((A, A_spalte_r0))
@@ -787,17 +772,3 @@ class Boot:
             y.append(pkt[1])
             tiefe.append(pkt[2])
         return [numpy.array(x), numpy.array(y), numpy.array(tiefe)]
-
-
-# Zum Testen
-if __name__=="__main__":
-
-    Boot = Boot()
-
-    Boot.Sensorwerte_auslesen()
-    time.sleep(5)
-
-    Boot.Datenbank_beschreiben()
-    time.sleep(10)
-
-    Boot.Trennen()

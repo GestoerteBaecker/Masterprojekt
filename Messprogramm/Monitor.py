@@ -176,6 +176,12 @@ class Anwendung(Frame):
             print(exc_type, fname, exc_tb.tb_lineno)
             messagebox.showerror(title="Verbindungsfehler!", message=("Verbindung zu den Sensoren konnte nicht hergestellt werden: "+str(e)+"\nTyp: "+str(exc_type)+"\nName: "+str(fname)+"\nZeile: "+str(exc_tb.tb_lineno)))
 
+    def simulationsabfrage(self, x): #nicht löschen!
+        print(x)
+
+    def modusabfrage(self, x):  #nicht löschen!
+        print(x)
+
     def boot_daten_lesen(self):
         try:
             self.datenlesen_initialisiert=True

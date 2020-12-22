@@ -31,6 +31,8 @@ class Anwendung_Karte():
         # Darstellen der Karte
         self.plt = plt
         self.figure, self.ax = plt.subplots()
+        self.ax.set_xlim((451832, 452100))
+        self.ax.set_ylim((5884780, 5885070))
         self.figure.suptitle("EchoBoat - Autopilot Navigator")
         self.figure.patch.set_facecolor('white')
         self.figure.canvas.set_window_title('EchoBoat - Autopilot Navigator')

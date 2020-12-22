@@ -286,7 +286,7 @@ class TIN:
                 self.Dreieckliste.append(dreieckobjekt)
 
 
-    def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht):
+    def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht,längengewicht,winkelgewicht):
         # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
 
         anzufahrende_Kanten = []
@@ -301,7 +301,7 @@ class TIN:
                 if laenge_norm*kante.winkel() > max_gewicht:
                     max_gewicht = laenge_norm*kante.winkel()
                     kanten_größtes_absolutes_gewicht = kante
-                kante.gewicht = laenge_norm*kante.winkel()*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht))) # TODO: Gewichtung anpassen
+                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht))) # TODO: Gewichtung anpassen
 
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
@@ -1107,7 +1107,7 @@ class Profil:
                 if test_profil_unendlich:
                     abst_g1 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[0], eckpunkt)
                     abst_g2 = abstand_punkt_gerade(pruef_richtung, pruef_stuetz[1], eckpunkt)
-                    drinnen = (abst_g1 < 0 and abst_g2 > 0) or (abst_g1 > 0 and abst_g2 < 0)
+                    drinnen = (abst_g1 <= 0 and abst_g2 > 0) or (abst_g1 >= 0 and abst_g2 < 0)
                     return drinnen
                 else:
                     pruef_temp = pruef_richtung
@@ -1116,8 +1116,8 @@ class Profil:
                     pruef_temp = numpy.array([pruef_temp[1], -pruef_temp[0]])
                     abst_g2 = abstand_punkt_gerade(pruef_temp, pruef_stuetz[1], eckpunkt)
                     abst_g4 = abstand_punkt_gerade(pruef_temp, pruef_stuetz[3], eckpunkt)
-                    drinnen_1 = (abst_g1 < 0 and abst_g3 > 0) or (abst_g1 > 0 and abst_g3 < 0)
-                    drinnen_2 = (abst_g2 < 0 and abst_g4 > 0) or (abst_g2 > 0 and abst_g4 < 0)
+                    drinnen_1 = (abst_g1 <= 0 and abst_g3 > 0) or (abst_g1 >= 0 and abst_g3 < 0)
+                    drinnen_2 = (abst_g2 <= 0 and abst_g4 > 0) or (abst_g2 >= 0 and abst_g4 < 0)
                     return drinnen_1 and drinnen_2
 
             # Schleife über alle Eckpunkte des self Profils
@@ -1162,17 +1162,20 @@ class Profil:
                 for i in range(len(x)):
                     punkt_in_liste = [x[i], y[i]]
                     Punktliste_array[i] = punkt_in_liste
-                konvexe_hülle = scipy.spatial.ConvexHull(Punktliste_array)
-
-                """x, y = [], []
-                for i in range(len(kovexe_hülle)):
-                    pkt = kovexe_hülle[i,0:1]
-                    x.append(pkt[0])
-                    y.append(pkt[1])
-                überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))"""
-                überdeckung = konvexe_hülle.volume
-                print("Profil existiert: (Zeit, Überdeckung, Fläche)", time.time(), überdeckung, fläche)
-                return (überdeckung / fläche) > toleranz
+                try:
+                    konvexe_hülle = scipy.spatial.ConvexHull(Punktliste_array)
+                    """x, y = [], []
+                                    for i in range(len(kovexe_hülle)):
+                                        pkt = kovexe_hülle[i,0:1]
+                                        x.append(pkt[0])
+                                        y.append(pkt[1])
+                                    überdeckung = Flächenberechnung(numpy.array(x), numpy.array(y))"""
+                    überdeckung = konvexe_hülle.volume
+                    print("Profil existiert: (Zeit, Überdeckung, Fläche)", time.time(), überdeckung, fläche)
+                    return (überdeckung / fläche) > toleranz
+                except Exception as e:
+                    print("Die konvexe Hülle der Überdeckung der Profile konnte nicht gebildet werden.", e)
+                    return True # macht keinen Sinn, aber so wird das Profil wenigstens nicht abgefahren
             else:
                 return False
         else:
@@ -1531,7 +1534,7 @@ class Messgebiet:
         return self.verdichtungsmethode
 
     # sucht die nächste anzufahrende Kante und testet, ob die Punkte anfahrbar sind und ob der Weg dahin schiffbar ist
-    def NaechsterPunkt(self, position, ufer, entfernungsgewicht):
+    def NaechsterPunkt(self, position, ufer, entfernungsgewicht, längengewicht, winkelgewicht, anzahl_anzufahrende_kanten):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
                 #profil = self.profile[self.aktuelles_profil]
@@ -1555,7 +1558,7 @@ class Messgebiet:
                 #profil = self.profile[self.aktuelles_profil]
                 #profil.NeuerEndpunkt(position)
             self.TIN_berechnen()
-            kanten = self.tin.Anzufahrende_Kanten(10,position,entfernungsgewicht)
+            kanten = self.tin.Anzufahrende_Kanten(anzahl_anzufahrende_kanten,position,entfernungsgewicht,längengewicht,winkelgewicht)
             #print(kanten, "in nächster Punkt")
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None

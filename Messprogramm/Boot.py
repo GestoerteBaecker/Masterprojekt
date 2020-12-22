@@ -54,7 +54,10 @@ class Boot:
         self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
-        self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"]
+        self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"] # je größer, desto eher werden nah liegende Kanten berücksichtigt
+        self.längengewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil"] # je größer, desto eher werden längere Kanten angefahren
+        self.winkelgewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil"] # je größer, desto eher werden die Winkel berücksichtigt
+        self.anzahl_anzufahrende_kanten = json_daten["Boot"]["Anzahl_berechneter_TIN_Kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
@@ -564,7 +567,7 @@ class Boot:
                     self.median_punkte = []
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)
-                neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer, self.Entfernungsfaktor_fuer_Verdichtung)
+                neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer, self.Entfernungsfaktor_fuer_Verdichtung, self.längengewicht, self.winkelgewicht, self.anzahl_anzufahrende_kanten)
 
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
 

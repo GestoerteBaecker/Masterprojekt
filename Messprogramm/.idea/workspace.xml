@@ -5,10 +5,7 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gemessenePunktwolke.ply" afterPath="$PROJECT_DIR$/gemessenePunktwolke.ply" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Alle_Bodenpunkte.txt" afterPath="$PROJECT_DIR$/Alle_Bodenpunkte.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Karte.py" afterPath="$PROJECT_DIR$/Karte.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Messgebiet.py" afterPath="$PROJECT_DIR$/Messgebiet.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Monitor.py" afterPath="$PROJECT_DIR$/Monitor.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/boot_init.json" afterPath="$PROJECT_DIR$/boot_init.json" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -24,7 +21,7 @@
     <favorites_list name="Sensoren" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.5093985">
+    <splitter split-orientation="horizontal" split-proportion="0.62781954">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file leaf-file-name="Simulation.py" pinned="false" current-in-tab="false">
@@ -41,7 +38,7 @@
             <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="274">
-                  <caret line="1538" column="85" lean-forward="false" selection-start-line="1538" selection-start-column="85" selection-end-line="1538" selection-end-column="85" />
+                  <caret line="586" column="53" lean-forward="true" selection-start-line="586" selection-start-column="53" selection-end-line="586" selection-end-column="53" />
                   <folding>
                     <element signature="e#0#11#0" expanded="true" />
                   </folding>
@@ -821,7 +818,7 @@
     <entry file="file://$PROJECT_DIR$/Messgebiet.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="274">
-          <caret line="1538" column="85" lean-forward="false" selection-start-line="1538" selection-start-column="85" selection-end-line="1538" selection-end-column="85" />
+          <caret line="586" column="53" lean-forward="true" selection-start-line="586" selection-start-column="53" selection-end-line="586" selection-end-column="53" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

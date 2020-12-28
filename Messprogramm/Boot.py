@@ -528,6 +528,7 @@ class Boot:
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)
                 neuer_punkt = self.messgebiet.NaechsterPunkt(self.position, abbruch_durch_ufer, self.Entfernungsfaktor_fuer_Verdichtung, self.längengewicht, self.winkelgewicht, self.anzahl_anzufahrende_kanten)
+                self.tracking_mode = self.messgebiet.HoleTrackingMode()
 
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
                 if neuer_punkt is None:

@@ -1555,6 +1555,12 @@ class Messgebiet:
         self.verdichtungsmethode = methode
         return punkt
 
+    def HoleTrackingMode(self):
+        if self.verdichtungsmethode == Verdichtungsmode.WEGFÜHRUNG or self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG:
+            return TrackingMode.VERBINDUNG
+        else:
+            return TrackingMode.PROFIL
+
     # beendet das aktuelle Profil und bestimmt die topographisch bedeutsamen Punkte und liest diese ins Messgebiet ein
     def AktuellesProfilBeenden(self, position, median_punkte):
         profil = self.profile[self.aktuelles_profil]

@@ -266,23 +266,26 @@ class Anwendung(Frame):
                             else:
                                 self.con_qual_gnss1.config(bg="yellow")
                         if self.karte_window!= None:
-                            try:
+                            #try:
                                 kanten = self.boot.KantenPlotten()
                                 streifen = self.boot.StreifenPlotten()
-                                self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten,streifen)
+                                trackingmodus = str(self.boot.tracking_mode)
+                                self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten,streifen,trackingmodus)
 
-                            except Exception as e:
-                                x = e
-                                #print(e)
+                            #except Exception as e:
+                             #   x = e
+                              #  exc_type, exc_obj, exc_tb = sys.exc_info()
+                               # print(e,exc_type, exc_tb.tb_lineno)
                                 #print("Karte kann nicht aktualisiert werden.")
-                    except:
+
+                    except Exception as e:
                         if not gnss.simulation:
                             self.con_qual_gnss1.config(bg="orange")
-                            if self.karte_window: self.karte_window.karte_updaten(None, None, None, None)
+                            if self.karte_window: self.karte_window.karte_updaten(None, None, None, None, None, None, None)
                         else:
                             self.con_qual_gnss1.config(bg="orange")
                 else:
-                    if self.karte_window: self.karte_window.karte_updaten(None, None, None, None)
+                    if self.karte_window: self.karte_window.karte_updaten(None, None, None, None, None, None, None)
                     self.con_qual_gnss1.config(bg="red")
 
             # E C H T E  D A T E N  G N S S 2

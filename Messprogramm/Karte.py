@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
 import rasterio
@@ -28,9 +29,9 @@ class Anwendung_Karte():
         self.figure, self.ax = plt.subplots()
         self.ax.set_xlim((451832, 452100))
         self.ax.set_ylim((5884780, 5885070))
-        self.figure.suptitle("EchoBoat - Autopilot Navigator")
+        self.figure.suptitle("Echoboot - Autopilot Navigator")
         self.figure.patch.set_facecolor('white')
-        self.figure.canvas.set_window_title('EchoBoat - Autopilot Navigator')
+        self.figure.canvas.set_window_title('Echoboot - Autopilot Navigator')
 
         # Zum Abfangen von Fehlern beim Schließen der Karte
         self.figure.canvas.mpl_connect('close_event', self.karte_geschlossen)
@@ -61,19 +62,35 @@ class Anwendung_Karte():
         self.ax.scatter(x_testdaten, y_testdaten, s=1)
 
         # Variablen für das spätere Boot setzen
-        self.boat_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
-        self.current_boat_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
+        self.boot_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
+        self.current_boot_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
         self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.richtungslinie,=self.ax.plot([], [], marker='o',markersize=2, color="red")
-        self.boat_route,=self.ax.plot([],[],'-',lw=1, color="red")
-        self.boot_streifen,=self.ax.plot([],[],':',lw=1, color="black")
+        self.boot_streifen, = self.ax.plot([], [], ':', lw=1, color="black")
         self.boot_allekanten=[\
            self.ax.plot([],[],'-',lw=1, color="black")[0],\
             self.ax.plot([],[],'-',lw=1, color="grey")[0],\
             self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
-        self.route_x,self.route_y=[],[]
         self.grenzpolygon_x,self.grenzpolygon_y=[],[]
         self.richtungslinie_x,self.richtungslinie_y=[],[]
+
+        # Anlegen von LineCollections um durch Farben den momentanen Tracking-Zustand anzudeuten
+        # leere Liste für jeden Tracking Zustand
+        self.profilroute=[]
+        self.verbindungsroute=[]
+        self.blindfahrtroute=[]
+        self.alter_modus=None
+        self.letzter_routenpunkt=None
+        #Start-Index für jede Liste (wird beim ersten Benutzen auf 0 gesetzt)
+        self.verbindung_index,self.profil_index,self.blindfahrt_index=-1,-1,-1
+        # Anlegen der leeren LineCollection
+        self.profilroute_lc = LineCollection([], linewidths=1, colors='red', linestyle='solid')
+        self.verbindungsroute_lc = LineCollection([], linewidths=1, colors='orange', linestyle='solid')
+        self.blindfahrtroute_lc = LineCollection([], linewidths=1, colors='black', linestyle='dotted')
+        # Hinzufügen der LCs zu dem zu aktualisierenden Plot
+        self.ax.add_collection(self.profilroute_lc)
+        self.ax.add_collection(self.verbindungsroute_lc)
+        self.ax.add_collection(self.blindfahrtroute_lc)
 
 
         # Abfragen und Setzen der Fenster-Position
@@ -82,35 +99,36 @@ class Anwendung_Karte():
         #TODO: Positionierung nachgucken
         #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
 
-    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten, streifen):
+    def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten, streifen, trackingmodus):
         # Setzen einer leeren Variable für die Boot-Position
         update_interval = 1
 
         # Plotten der aktuellen Boot-Position inklusive Heading
-        self.plot_boat(gnss_north,gnss_east,gnss_heading)
+        self.plot_boot(gnss_north,gnss_east,gnss_heading)
 
         # Alle 10 Durchläufe soll die Route ergänzt werden
         if t and t % update_interval == 0:
-            self.plot_boatroute(gnss_north,gnss_east)
+            self.plot_bootroute(gnss_north,gnss_east, trackingmodus)
 
-        if kanten[0].startpunkt:
-            self.plot_kanten(kanten)
+        #if kanten[0].startpunkt:
+        #    self.plot_kanten(kanten) # TODO: Hier stürzt irgendwas ab
+
         if streifen != []:
             self.plot_streifen(streifen)
 
         # Plotten der aktuellen Wegpunkte
         # self.plot_waypoint()
 
-    def plot_boat(self,gnss_north,gnss_east,gnss_heading):
+    def plot_boot(self,gnss_north,gnss_east,gnss_heading):
         try:
             # Einlesen der aktuellen Boot-Daten
 
             # Setzen der Punkte im Plot auf neue Werte
-            self.current_boat_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 10000])
-            self.current_boat_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 10000])
-            self.boat_position.set_xdata(gnss_north)
-            self.boat_position.set_ydata(gnss_east)
-            self.boat_position.set_marker(marker=(3,0,-gnss_heading*180/200))
+            self.current_boot_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 10000])
+            self.current_boot_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 10000])
+            self.boot_position.set_xdata(gnss_north)
+            self.boot_position.set_ydata(gnss_east)
+            self.boot_position.set_marker(marker=(3,0,-gnss_heading*180/200))
 
         # Wenn keine GPS-Daten vorhanden, Fehlermeldung ausgeben
         except:
@@ -150,13 +168,71 @@ class Anwendung_Karte():
     def plot_waypoint(self):
         x=1
 
-    def plot_boatroute(self,gnss_north,gnss_east):
-        self.route_x.append(gnss_north)
-        self.route_y.append(gnss_east)
-        # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
-        if len(self.route_y)>1:
-            self.boat_route.set_xdata(self.route_x)
-            self.boat_route.set_ydata(self.route_y)
+    def plot_bootroute(self, gnss_north, gnss_east, trackingmodus):
+        if trackingmodus == "TrackingMode.VERBINDUNG":
+            # Prüfen, ob ein einer Modus vorherrscht
+            # wenn ja, dann muss die Linie in einen Index geschrieben werden
+            if trackingmodus != self.alter_modus:
+                # Zum Verhindern von Lücken wird der letzte Punkt der vorangehenden Linie mit übergeben
+                # Falls ein Punkt vorhanden, soll dieser als Stadt der neuen Linie gelten
+                if self.letzter_routenpunkt:
+                    self.verbindungsroute.append([self.letzter_routenpunkt])
+                    self.verbindung_index += 1
+                    self.verbindungsroute[self.verbindung_index].append((gnss_north, gnss_east))
+                # Falls vorher keine Linie vorhanden, soll der erste Punkt der Linienbeginn sein
+                else:
+                    self.verbindungsroute.append([(gnss_north, gnss_east)])
+                    self.verbindung_index += 1
+
+                # Setzen des alten Modus auf den aktuellen Modus für die Modus-Abfrage
+                self.alter_modus = trackingmodus
+
+            # wenn der Modus identisch ist zur Schleife davor, kann der aktuelle Punkt einfach hinzugefügt werden
+            else:
+                self.verbindungsroute[self.verbindung_index].append((gnss_north, gnss_east))
+                self.verbindungsroute_lc.set_segments(self.verbindungsroute)
+                self.alter_modus = trackingmodus
+                self.letzter_routenpunkt=(gnss_north, gnss_east)
+
+        elif trackingmodus == "TrackingMode.PROFIL":
+            if trackingmodus != self.alter_modus:
+                if self.letzter_routenpunkt:
+                    self.profilroute.append([self.letzter_routenpunkt])
+                    self.profil_index += 1
+                    self.profilroute[self.profil_index].append((gnss_north, gnss_east))
+                else:
+                    self.profilroute.append([(gnss_north, gnss_east)])
+                    self.profil_index += 1
+
+                self.alter_modus = trackingmodus
+
+            # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
+            else:
+                self.profilroute[self.profil_index].append((gnss_north, gnss_east))
+                self.profilroute_lc.set_segments(self.profilroute)
+                self.alter_modus = trackingmodus
+                self.letzter_routenpunkt=(gnss_north, gnss_east)
+
+        elif trackingmodus == "TrackingMode.BLINDFAHRT" or "TrackingMode.UFERERKENNUNG":
+            if trackingmodus != self.alter_modus:
+                if self.letzter_routenpunkt:
+                    self.blindfahrtroute.append([self.letzter_routenpunkt])
+                    self.blindfahrt_index += 1
+                    self.blindfahrtroute[self.blindfahrt_index].append((gnss_north, gnss_east))
+                else:
+                    self.blindfahrtroute.append([(gnss_north, gnss_east)])
+                    self.blindfahrt_index += 1
+                self.alter_modus = trackingmodus
+
+            # Setzen der Route erst, wenn eine Linie gezogen werden kann (also 2 Punkte verfügbar sind)
+            else:
+                self.blindfahrtroute[self.blindfahrt_index].append((gnss_north, gnss_east))
+                self.blindfahrtroute_lc.set_segments(self.blindfahrtroute)
+                self.alter_modus = trackingmodus
+                self.letzter_routenpunkt=(gnss_north, gnss_east)
+
+        else:
+            self.alter_modus = None
 
     # Funktion registriert Klick-Events
     def onclick(self,event):

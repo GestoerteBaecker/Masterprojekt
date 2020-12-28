@@ -67,12 +67,14 @@ class Anwendung_Karte():
         self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.richtungslinie,=self.ax.plot([], [], marker='o',markersize=2, color="red")
         self.boot_streifen, = self.ax.plot([], [], ':', lw=1, color="black")
-        self.boot_allekanten=[\
-           self.ax.plot([],[],'-',lw=1, color="black")[0],\
-            self.ax.plot([],[],'-',lw=1, color="grey")[0],\
-            self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
+        #self.boot_allekanten=[\
+           #self.ax.plot([],[],'-',lw=1, color="black")[0],\
+           # self.ax.plot([],[],'-',lw=1, color="grey")[0],\
+           # self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
         self.grenzpolygon_x,self.grenzpolygon_y=[],[]
         self.richtungslinie_x,self.richtungslinie_y=[],[]
+        self.boot_allekanten = LineCollection([], linewidths=1, colors="grey")
+        self.ax.add_collection(self.boot_allekanten)
 
         # Anlegen von LineCollections um durch Farben den momentanen Tracking-Zustand anzudeuten
         # leere Liste für jeden Tracking Zustand
@@ -112,6 +114,8 @@ class Anwendung_Karte():
 
         #if kanten[0].startpunkt:
         #    self.plot_kanten(kanten) # TODO: Hier stürzt irgendwas ab
+        if kanten != []:
+            self.plot_kanten(kanten)
 
         if streifen != []:
             self.plot_streifen(streifen)
@@ -145,23 +149,25 @@ class Anwendung_Karte():
         self.boot_streifen.set_ydata([sanfang_y, sende_y])
 
     def plot_kanten(self, kanten):
-        for i, kante in enumerate(kanten):
-            kante = kanten[i]
+        temp_kanten = []
+        for kante in kanten:
             """
             kanfang_x = kante.Anfangspunkt.x
             kanfang_y = kante.Anfangspunkt.y
             kende_x = kante.Endpunkt.x
             kende_y = kante.Endpunkt.y
             """
-            kanfang_x = kante.startpunkt.x
-            kanfang_y = kante.startpunkt.y
-            kende_x = kante.endpunkt.x
-            kende_y = kante.endpunkt.y
+            kanfang_x = kante.Anfangspunkt.x
+            kanfang_y = kante.Anfangspunkt.y
+            kende_x = kante.Endpunkt.x
+            kende_y = kante.Endpunkt.y
 
-            self.boot_allekanten[i].set_xdata([kanfang_x,kende_x])
-            self.boot_allekanten[i].set_ydata([kanfang_y,kende_y])
+            #self.boot_allekanten[i].set_xdata([kanfang_x,kende_x])
+            #self.boot_allekanten[i].set_ydata([kanfang_y,kende_y])
+            temp_kanten.append([(kanfang_x, kanfang_y), (kende_x, kende_y)])
             #self.ax.plot([kanfang_x,kende_x],[kanfang_y,kende_y],lw=1,color='black')
             #kante.gewicht
+        self.boot_allekanten.set_segments(temp_kanten)
 
 
     # TODO: Funktion definieren

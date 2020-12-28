@@ -159,8 +159,8 @@ class Anwendung(Frame):
         try:
             self.position=(self.winfo_width()+self.master.winfo_x()+10,self.master.winfo_y())
             self.karte_window=Karte.Anwendung_Karte(self,self.position,geotiff_path,self.__om_variable_mode.get())
-        except:
-            print("Dateien ungültig")
+        except Exception as e:
+            print("Dateien ungültig", e)
 
     def boot_verbinden(self):
         try:

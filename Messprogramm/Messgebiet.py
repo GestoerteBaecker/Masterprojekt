@@ -586,7 +586,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 2*stern.median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= 3*stern.median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -1402,7 +1402,7 @@ class Uferpunktquadtree:
 
     def linienabfrage(self, profil):
 
-        max_ebene = self.max_ebenen - 1
+        max_ebene = self.max_ebenen #- 1
         Pruefpunkte = profil.BerechneZwischenpunkte() #TODO: Anpassung der Auflösung nach kleinster Zelle
 
         for punkt in Pruefpunkte:
@@ -1530,14 +1530,14 @@ class Messgebiet:
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
 
                     existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.65, lambda_intervall=[profil.start_lambda, profil.end_lambda])
-                    liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
+                    liegt_profilpunkt_in_existierendem_profil = False#existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
                     existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.8, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
                     if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
                         break
                 else:
                     anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                     startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
-                    if startpunkt_in_see and anfahrbar:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
+                    if startpunkt_in_see and anfahrbar is None:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
                         naechstesProfil = profil
                         break
 

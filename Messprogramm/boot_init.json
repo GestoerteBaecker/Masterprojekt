@@ -16,7 +16,7 @@
 	"messgebiet_ausdehnung": [2000, 2000],
 	"offset_gnss_echolot": 0.5,
 	"offset_achsen_distometer_gnss": 0,
-	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.2,
+	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 1,
 	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 1.5,
 	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 1,
 	"Anzahl_berechneter_TIN_Kanten": 15,

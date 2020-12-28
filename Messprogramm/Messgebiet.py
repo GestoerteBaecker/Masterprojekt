@@ -184,7 +184,7 @@ class TIN_Kante:
         if numpy.array_equal(n1,n2):  # Normalenvekroten sind paralel zueinander und arccos kann nicht berechnet werden
             alpha = 0
         else:
-            alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
+            alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2))) / numpy.pi # mit Normierung
 
         return alpha
 
@@ -291,6 +291,12 @@ class TIN:
         kanten_größtes_absolutes_gewicht = None
         max_gewicht = 0
 
+        max_entfernung = 0
+        for kante in self.Kantenliste:
+            entfernung = kante.mitte().Abstand(bootsposition)
+            if entfernung > max_entfernung:
+                max_entfernung = entfernung
+
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
@@ -299,7 +305,8 @@ class TIN:
                 if laenge_norm*kante.winkel() > max_gewicht:
                     max_gewicht = laenge_norm*kante.winkel()
                     kanten_größtes_absolutes_gewicht = kante
-                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
+                abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition))/max_entfernung)**entfernungsgewicht)
+                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
 
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
@@ -1155,6 +1162,9 @@ class Profil:
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
+            if mind_anzahl_topo_punkte < 3:
+                self.topographisch_bedeutsame_punkte = self.median_punkte
+                return
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
             if len(self.median_punkte) > mind_anzahl_topo_punkte:
                 index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden

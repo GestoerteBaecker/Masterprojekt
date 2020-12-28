@@ -207,7 +207,7 @@ class Boot_Simulation(Boot.Boot):
                     Bodendaten = (gnss1, echolot)
                     Letzte_Bodenpunkte.append(Bodendaten)
 
-                    if len(Letzte_Bodenpunkte) > 0:
+                    if len(Letzte_Bodenpunkte) > 10:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         Letzte_Bodenpunkte = []
 

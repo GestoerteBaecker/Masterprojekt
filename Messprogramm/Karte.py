@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+import json
 plt.ion() # Aktivieren eines dynamischen Plots
 import math
 import rasterio
@@ -11,24 +12,26 @@ class Anwendung_Karte():
     # Konstruktor  der GUI der Hauptanwendung zum Öffnen aller weiteren GUIs
     def __init__(self,Monitor,position=0,geotiff_path=None,messmodus="Vollautomatisch"):
 
+        # Json-Datei einlesen
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.x_lim = tuple(json_daten['GUI']['map_xlim'])
+        self.y_lim = tuple(json_daten['GUI']['map_ylim'])
+        self.update_interval = json_daten['GUI']['map_updateinterval']
+
         # Übernehmen des Ordnerpfades und Fensterposition
         self.geotiff_path=geotiff_path
         self.position=position
         self.monitor=Monitor
         self.messmodus=messmodus
 
-        # Abschluss der Initialisierung durch erstmaliges Laden der Karte
-        self.karte_laden()
-
-    def karte_laden(self):
-        self.grenzpolygon_vorhanden = False
-        self.richtungslinie_vorhanden = False
-
         # Darstellen der Karte
         self.plt = plt
         self.figure, self.ax = plt.subplots()
-        self.ax.set_xlim((451832, 452100))
-        self.ax.set_ylim((5884780, 5885070))
+        self.ax.set_xlim(self.x_lim)
+        self.ax.set_ylim(self.y_lim)
         self.figure.suptitle("Echoboot - Autopilot Navigator")
         self.figure.patch.set_facecolor('white')
         self.figure.canvas.set_window_title('Echoboot - Autopilot Navigator')
@@ -42,6 +45,38 @@ class Anwendung_Karte():
         # Anzeigen der geotiff
         self.geotiff = rasterio.open(self.geotiff_path)
         show(self.geotiff, adjust='None', ax=self.ax)
+
+        # parameter vordefinieren
+        self.boot_position, = self.ax.plot([], [], marker=(3, 0, 0), markersize=10, color="darkblue")
+        self.current_boot_heading, = self.ax.plot([], [], ':', lw=1, color="darkblue")
+        self.grenzpolygon, = self.ax.plot([], [], marker='o', markersize=2, color="red")
+        self.richtungslinie, = self.ax.plot([], [], marker='o', markersize=2, color="red")
+        self.boot_streifen, = self.ax.plot([], [], ':', lw=1, color="black")
+        self.grenzpolygon_x, self.grenzpolygon_y = [], []
+        self.richtungslinie_x, self.richtungslinie_y = [], []
+        self.boot_allekanten = LineCollection([], linewidths=1, colors="grey")
+        self.ax.add_collection(self.boot_allekanten)
+
+        # Anlegen von LineCollections um durch Farben den momentanen Tracking-Zustand anzudeuten
+        # leere Liste für jeden Tracking Zustand
+        self.profilroute = []
+        self.verbindungsroute = []
+        self.blindfahrtroute = []
+        self.alter_modus = None
+        self.letzter_routenpunkt = None
+        # Start-Index für jede Liste (wird beim ersten Benutzen auf 0 gesetzt)
+        self.verbindung_index, self.profil_index, self.blindfahrt_index = -1, -1, -1
+        # Anlegen der leeren LineCollection
+        self.profilroute_lc = LineCollection([], linewidths=1, colors='red', linestyle='solid')
+        self.verbindungsroute_lc = LineCollection([], linewidths=1, colors='orange', linestyle='solid')
+        self.blindfahrtroute_lc = LineCollection([], linewidths=1, colors='black', linestyle='dotted')
+        # Hinzufügen der LCs zu dem zu aktualisierenden Plot
+        self.ax.add_collection(self.profilroute_lc)
+        self.ax.add_collection(self.verbindungsroute_lc)
+        self.ax.add_collection(self.blindfahrtroute_lc)
+
+        self.grenzpolygon_vorhanden = False
+        self.richtungslinie_vorhanden = False
 
         # Quadtree von DHM berechnen
         testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding :)
@@ -61,59 +96,21 @@ class Anwendung_Karte():
 
         self.ax.scatter(x_testdaten, y_testdaten, s=1)
 
-        # Variablen für das spätere Boot setzen
-        self.boot_position, = self.ax.plot([], [], marker=(3, 0, 0),markersize=10, color="darkblue")
-        self.current_boot_heading,=self.ax.plot([],[],':',lw=1, color="darkblue")
-        self.grenzpolygon,=self.ax.plot([], [], marker='o',markersize=2, color="red")
-        self.richtungslinie,=self.ax.plot([], [], marker='o',markersize=2, color="red")
-        self.boot_streifen, = self.ax.plot([], [], ':', lw=1, color="black")
-        #self.boot_allekanten=[\
-           #self.ax.plot([],[],'-',lw=1, color="black")[0],\
-           # self.ax.plot([],[],'-',lw=1, color="grey")[0],\
-           # self.ax.plot([],[],'-',lw=1, color="lightgrey")[0]]
-        self.grenzpolygon_x,self.grenzpolygon_y=[],[]
-        self.richtungslinie_x,self.richtungslinie_y=[],[]
-        self.boot_allekanten = LineCollection([], linewidths=1, colors="grey")
-        self.ax.add_collection(self.boot_allekanten)
-
-        # Anlegen von LineCollections um durch Farben den momentanen Tracking-Zustand anzudeuten
-        # leere Liste für jeden Tracking Zustand
-        self.profilroute=[]
-        self.verbindungsroute=[]
-        self.blindfahrtroute=[]
-        self.alter_modus=None
-        self.letzter_routenpunkt=None
-        #Start-Index für jede Liste (wird beim ersten Benutzen auf 0 gesetzt)
-        self.verbindung_index,self.profil_index,self.blindfahrt_index=-1,-1,-1
-        # Anlegen der leeren LineCollection
-        self.profilroute_lc = LineCollection([], linewidths=1, colors='red', linestyle='solid')
-        self.verbindungsroute_lc = LineCollection([], linewidths=1, colors='orange', linestyle='solid')
-        self.blindfahrtroute_lc = LineCollection([], linewidths=1, colors='black', linestyle='dotted')
-        # Hinzufügen der LCs zu dem zu aktualisierenden Plot
-        self.ax.add_collection(self.profilroute_lc)
-        self.ax.add_collection(self.verbindungsroute_lc)
-        self.ax.add_collection(self.blindfahrtroute_lc)
-
 
         # Abfragen und Setzen der Fenster-Position
         thismanager=self.plt.get_current_fig_manager()
         positionx,positiony=self.position
-        #TODO: Positionierung nachgucken
-        #thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony))
+        thismanager.window.wm_geometry("+"+str(positionx)+"+"+str(positiony)) #TODO: bei Absturz auskommentieren
 
     def karte_updaten(self,gnss_north,gnss_east,gnss_heading,t,kanten, streifen, trackingmodus):
-        # Setzen einer leeren Variable für die Boot-Position
-        update_interval = 1
 
         # Plotten der aktuellen Boot-Position inklusive Heading
         self.plot_boot(gnss_north,gnss_east,gnss_heading)
 
         # Alle 10 Durchläufe soll die Route ergänzt werden
-        if t and t % update_interval == 0:
+        if t and t % self.update_interval == 0:
             self.plot_bootroute(gnss_north,gnss_east, trackingmodus)
 
-        #if kanten[0].startpunkt:
-        #    self.plot_kanten(kanten) # TODO: Hier stürzt irgendwas ab
         if kanten != []:
             self.plot_kanten(kanten)
 
@@ -121,12 +118,10 @@ class Anwendung_Karte():
             self.plot_streifen(streifen)
 
         # Plotten der aktuellen Wegpunkte
-        # self.plot_waypoint()
+        # self.plot_waypoint() #TODO: Wenn der Pixhawk verbunden ist, können die anzufahrenden Punkt geplottet werden
 
     def plot_boot(self,gnss_north,gnss_east,gnss_heading):
         try:
-            # Einlesen der aktuellen Boot-Daten
-
             # Setzen der Punkte im Plot auf neue Werte
             self.current_boot_heading.set_xdata([gnss_north, gnss_north + math.sin(gnss_heading*math.pi/200) * 10000])
             self.current_boot_heading.set_ydata([gnss_east, gnss_east + math.cos(gnss_heading*math.pi/200) * 10000])
@@ -151,28 +146,17 @@ class Anwendung_Karte():
     def plot_kanten(self, kanten):
         temp_kanten = []
         for kante in kanten:
-            """
             kanfang_x = kante.Anfangspunkt.x
             kanfang_y = kante.Anfangspunkt.y
             kende_x = kante.Endpunkt.x
             kende_y = kante.Endpunkt.y
-            """
-            kanfang_x = kante.Anfangspunkt.x
-            kanfang_y = kante.Anfangspunkt.y
-            kende_x = kante.Endpunkt.x
-            kende_y = kante.Endpunkt.y
-
-            #self.boot_allekanten[i].set_xdata([kanfang_x,kende_x])
-            #self.boot_allekanten[i].set_ydata([kanfang_y,kende_y])
             temp_kanten.append([(kanfang_x, kanfang_y), (kende_x, kende_y)])
-            #self.ax.plot([kanfang_x,kende_x],[kanfang_y,kende_y],lw=1,color='black')
-            #kante.gewicht
         self.boot_allekanten.set_segments(temp_kanten)
 
 
     # TODO: Funktion definieren
     def plot_waypoint(self):
-        x=1
+        pass
 
     def plot_bootroute(self, gnss_north, gnss_east, trackingmodus):
         if trackingmodus == "TrackingMode.VERBINDUNG":

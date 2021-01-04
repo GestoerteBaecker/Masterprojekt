@@ -36,7 +36,8 @@ class Boot:
         self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
         self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"] # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"] # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
-        self.messgebiet_ausdehnung = json_daten["Boot"]["messgebiet_ausdehnung"] # Breite und Höhe in m
+        self.telemetriereichweite = json_daten["Boot"]["Telemetriereichweite"]
+        self.messgebiet_ausdehnung = [self.telemetriereichweite,self.telemetriereichweite] # Breite und Höhe in m
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
         self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
@@ -50,7 +51,9 @@ class Boot:
         self.db_database = None
         self.db_table = None
         self.heading = None
-        self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_echolot"]   # TODO: Tatsächliches Offset messen und ergänzen
+        self.anz_Bodenpunkte = json_daten["Boot"]["Anzahl_an_Bodenpunkte_zur_Medianberechnung"]
+        self.anfahrtoleranz = json_daten["Boot"]["anfahrtoleranz_von_punkten"]
+        self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_disto"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
         self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"] # je größer, desto eher werden nah liegende Kanten berücksichtigt
@@ -59,13 +62,13 @@ class Boot:
         self.anzahl_anzufahrende_kanten = json_daten["Boot"]["Anzahl_berechneter_TIN_Kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
-        self.Offset_GNSS_Echo = 0       # TODO. Höhenoffset zwischen GNSS und Echolot bestimmen
+        self.Offset_GNSS_Echo = json_daten["Boot"]["offset_gnss_echolot"]       # TODO: Höhenoffset zwischen GNSS und Echolot bestimmen (wichtig für absolute Vergleiche)
         self.db_id = 0
         self.messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
         self.stern_beendet = False
-        self.geschwindigkeit = 2 # in km/h
+        self.max_geschwindigkeit = 2 # in km/h für spätere Steuerung der PixHawk-Maximalgeschwindigkeit
         self.tracking_mode = Messgebiet.TrackingMode.BLINDFAHRT
         self.punkt_anfahren = False
         self.position = Messgebiet.Punkt(0,0,0) # Punkt des Bootes
@@ -76,8 +79,10 @@ class Boot:
         self.db_mode = json_daten["Boot"]["DB_mode"]
         self.sicherheitsabstand = json_daten["Boot"]["sicherheitsabstand"]   # für teilautomatischen Ansatz
         self.streifenabstand = json_daten["Boot"]["streifenabstand"]   # für teilautomatischen Ansatz
-        self.Grenzwert_Uferkategorie2 = json_daten["Boot"]["Grenzwert_Uferkategorie2"]
-        self.Grenzwert_Uferkategorie3 = json_daten["Boot"]["Grenzwert_Uferkategorie3"]
+        self.grenzwert_entfernung_UK2 = json_daten["Boot"]["grenzwert_entfernung_UK2"]
+        self.grenzwert_entfernung_UK3 = json_daten["Boot"]["grenzwert_entfernung_UK3"]
+        self.grenzwert_tiefe_UK2 = json_daten["Boot"]["grenzwert_tiefe_UK2"]
+        self.grenzwert_tiefe_UK3 = json_daten["Boot"]["grenzwert_tiefe_UK3"]
 
         self.streifenprofile= None
         self.aktuelles_Profil= None
@@ -86,6 +91,7 @@ class Boot:
         takt = []
         sensorklassen = [Sensoren.GNSS, Sensoren.GNSS, Sensoren.Echolot, Sensoren.Distanzmesser]
 
+        # Sensoren anlegen
         for i, sensorname in enumerate(self.Sensornamen):
             if sensorname in json_daten:
                 takt.append(json_daten[sensorname]["takt"])
@@ -117,8 +123,9 @@ class Boot:
     # muss einmalig angestoßen werden
     def Datenbank_beschreiben(self):
         """
-        :param mode: 0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
+            0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
             1 für separate DB-Tabellen je Sensor (ursprüngliches Vorhaben)
+            2 für Abspeichern in einer Textdatei
         """
         self.Verbinden_mit_DB()
 
@@ -127,6 +134,7 @@ class Boot:
 
         if self.db_mode == 0:
 
+            # Schleife zum Abspeichern in Datenbank (eine Tabelle für alle Sensoren)
             def Datenbank_Boot(self):
                 db_text = "INSERT INTO " + self.db_database + "." + self.db_table + " VALUES ("
                 while self.datenbankbeschreiben and self.boot_lebt:
@@ -144,7 +152,6 @@ class Boot:
                         zeit_mittel = statistics.mean(zeiten)
                         self.db_id += 1
                         db_text = db_text + str(self.db_id) + ", " + str(zeit_mittel) + db_temp + ");"
-                        #print(db_text)
                         self.db_zeiger.execute(db_text)
                         self.db_zeiger.commit()
                     schlafen = max(0, self.db_takt - (time.time() - t))
@@ -156,6 +163,8 @@ class Boot:
                 self.datenbankbeschreiben_thread.start()
 
         elif self.db_mode == 1:
+
+            # Schleife zum Abspeichern in Datenbank (eine Tabelle für jeden Sensor)
             if not self.datenbankbeschreiben:
                 self.datenbankbeschreiben = True
                 for Sensor in self.Sensorliste:
@@ -163,6 +172,7 @@ class Boot:
 
         elif self.db_mode == 2:
 
+            # Schleife zum Abspeichern in einer Textdatei
             def Bodenpunkte_abspeichern(self):
                 while self.datenbankbeschreiben and self.boot_lebt:
                     t = time.time()
@@ -180,10 +190,7 @@ class Boot:
                 self.datenbankbeschreiben_thread.start()
 
     def Verbinden_mit_DB(self, server="localhost", uid="root", password="EchoBoat"):
-        """
-        :param mode: 0 für eine DB-Tabelle, in der alle Daten als ein einziger Eintrag eingeführt werden
-            1 für separate DB-Tabellen je Sensor (ursprüngliches Vorhaben)
-        """
+
         if self.db_mode == 0:
             self.db_database = "`"+str((datetime.datetime.fromtimestamp(time.time())))+"`"
             self.db_table = "Messkampagne"
@@ -208,7 +215,7 @@ class Boot:
                         temp = temp + ", " + self.Sensornamen[i] + "_" + sensor.db_felder[j+2][0] + " " + sensor.db_felder[j+2][1] + spatial_string
 
             self.db_zeiger.execute(connect_table_string + temp + ");")
-            temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");"
+            temp = "CREATE SPATIAL INDEX ind_" + spatial_index_name + " ON " + self.db_database + ".`" + self.db_table + "`(" + spatial_index_name + ");" # Spatial Index wird nicht gebraucht, da bei zwei gleichen Positionen Fehler auftreten können
             self.db_zeiger.execute(temp)
 
         elif self.db_mode == 1:
@@ -265,7 +272,7 @@ class Boot:
                     Bodendaten = (self.AktuelleSensordaten[0], self.AktuelleSensordaten[2])
                     Letzte_Bodenpunkte.append(Bodendaten)
 
-                    if len(Letzte_Bodenpunkte) > 10:
+                    if len(Letzte_Bodenpunkte) > self.anz_Bodenpunkte:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         self.Bodenpunkte.append(Bodenpunkt)
                         if len(self.Bodenpunkte) > 2:
@@ -374,16 +381,17 @@ class Boot:
                         extrapolation = 10 # Falls profile sehr kurz sind, kann die Extrapolation nicht berechnet werden
                         steigung = 0
                     entfernung = self.AktuelleSensordaten[3].daten # zum Ufer
+                    #TODO: Wenn keine Entfernung zurückkommen sollte, kann das Programm abstürzen: Lösung: Abfangen ob Entfernungswerte empfangen werden
                     tiefe = abs(self.AktuelleSensordaten[2].daten[0]) #TODO: Richtige Frequenz wählen
-                    if tiefe < 2 or entfernung < self.Grenzwert_Uferkategorie3 or extrapolation < 1.5:
-                        if entfernung < self.Grenzwert_Uferkategorie3 or steigung > 0:
+                    if tiefe < self.grenzwert_tiefe_UK3 or entfernung < self.grenzwert_entfernung_UK3 or extrapolation < self.grenzwert_tiefe_UK3*(2/3):
+                        if entfernung < self.grenzwert_entfernung_UK3 or steigung > 0:
                             self.ist_am_ufer = [UferPosition.AM_UFER, True]  # "direkt" am Ufer und Boot guckt Richtung Ufer
                             self.ufererkennung_aktiv = False
                             self.Bodenpunkte = []
                         else:
                             self.ist_am_ufer = [UferPosition.AM_UFER, False]  # "direkt" am Ufer, aber Boot guckt vom Ufer weg
-                    elif tiefe < 5 or entfernung < self.Grenzwert_Uferkategorie2 or extrapolation < 7:
-                        if entfernung < self.Grenzwert_Uferkategorie2 or steigung > 0:
+                    elif tiefe < self.grenzwert_tiefe_UK2 or entfernung < self.grenzwert_entfernung_UK2 or extrapolation < self.grenzwert_tiefe_UK2*(2/3):
+                        if entfernung < self.grenzwert_entfernung_UK2 or steigung > 0:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, True]  # sehr kurz davor und Boot guckt Richtung Ufer
                         else:
                             self.ist_am_ufer = [UferPosition.NAH_AM_UFER, False]  # sehr kurz davor, aber Boot guckt vom Ufer weg
@@ -396,7 +404,7 @@ class Boot:
 
     def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y):
 
-        streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand)
+        streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand, self.telemetriereichweite)
         self.streifenprofile = streifenprofile.gespeicherte_profile
         abstand_anfang1 = self.position.Abstand(self.streifenprofile[0].startpunkt)
         abstand_anfang2 = self.position.Abstand(self.streifenprofile[0].endpunkt)
@@ -468,10 +476,13 @@ class Boot:
                 time.sleep(self.akt_takt / 2)
 
             print("Gefahrene Strecke:", self.gefahreneStrecke)
+
+            # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
         threading.Thread(target=Streifen_abfahren, args=(self,), daemon=True).start()
 
+    # Automatisches Erkunden und Verdichten
     def Erkunden(self):   # Art des Gewässers (optional)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         def erkunden_extern(self):
@@ -519,11 +530,10 @@ class Boot:
 
                 # Medianpunkte ins aktuelle Profil einlesen, um daraus (auch in diesem Schritt) die topographisch bedeutsamen Punkte zu ermitteln
                 if mode_alt == Messgebiet.TrackingMode.PROFIL or mode_alt == Messgebiet.TrackingMode.VERBINDUNG:
-                    #print("self medianpunkte", [str(pkt) for pkt in self.median_punkte], self.tracking_mode.value)
                     if abbruch_durch_ufer and self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil])  #Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
                         self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1])
-                    self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte) #TODO: WEGFÜHRUNG anpasen (fährt denselben Punkt an wie gestartet)
+                    self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte)
                     self.median_punkte = []
 
                 # Abfragen des neuen Punkts (TIN berechnen, neue Kanten finden und bewerten, anzufahrenden Punkt ausgeben)
@@ -559,13 +569,14 @@ class Boot:
 
     # TODO: evtl Rechteck abhängig von Geschw. oder direkt Rechteck um das Boot legen
     # TODO: toleranz muss auf die Pixhawk interne Toleranz passen (Pixhawk-Toleranz muss kleiner gleich toleranz sein)
-    def Punkt_anfahren(self, punkt, geschw =2.0, toleranz=10):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw =2.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         self.PixHawk.Geschwindigkeit_setzen(geschw)
         self.PixHawk.Wegpunkt_anfahren(punkt.x, punkt.y)
         self.punkt_anfahren = True
-        punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
+        punkt_box = Messgebiet.Zelle(punkt.x, punkt.y,  self.anfahrtoleranz,  self.anfahrtoleranz)
         sollheading = self.Headingberechnung(punkt)
 
+        # Testet bei jedem Schleifendurchgang ob der Punkt erreicht wurde (hohe Frequnez wichtig)
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
                 self.Ufererkennung(sollheading)
@@ -582,7 +593,7 @@ class Boot:
 
     def SternAbfahren(self, startpunkt, heading, initial=True):
         self.Ufererkennung(heading)
-        self.stern = Messgebiet.Stern(startpunkt, heading, self.stern_winkelinkrement, self.stern_grzw_seitenlaenge, initial, self.profil_grzw_dichte_topographischer_punkte, self.profil_grzw_neigungen_topographischer_punkte)
+        self.stern = Messgebiet.Stern(startpunkt, heading, initial)
         self.tracking_mode = Messgebiet.TrackingMode.PROFIL
         punkt = self.stern.InitProfil()
         self.Punkt_anfahren(punkt)
@@ -600,7 +611,6 @@ class Boot:
                     break
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_kurspunkt)
-                #TODO: warum muss hier 10*self.akt_takt stehen? (5fach reicht nicht, hat das was mit der Datengrundlage zu tun (dass also Ufer erkannt wird wenn zu früh gestartet wird oder müssen die anderen Threads wirklich erst anlaufen?)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.stern_beendet = True
@@ -608,13 +618,15 @@ class Boot:
 
     def Boot_stoppen(self):
 
-        self.Punkt_anfahren(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], 0.5)
+        self.Punkt_anfahren(Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1]), 0.5)
+        self.boot_lebt = False # Alle Threads werden beendet (kein weiterbearbeiten der vorngegengenen Arbeiten möglich)
         print("Notstopp! Letzte Posotion wird langsam angefahren")
 
-        #todo: Notstopp richtig implementieren
+        #todo: Notstopp richtig implementieren (ggf. Loiter-Modus vom Pix-Hawk)
 
     def Trennen(self):
-
+        self.boot_lebt = False
+        time.sleep(self.akt_takt)
         for sensor in self.Sensorliste:
             sensor.kill()
         self.datenbankbeschreiben = False
@@ -625,6 +637,7 @@ class Boot:
 
         if self.PixHawk.verbindung_hergestellt:
             self.PixHawk.Trennen()
+        self.boot_lebt = True
 
     def RTL(self):
 
@@ -645,6 +658,7 @@ class Boot:
 
     # Berechnet das Gefälle unterhalb des Bootes
     # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
+    # Berechnungen für Ausgleichsebenen und Ausgleichgraden, wird nicht verwendet
     def Hydrographische_abfrage(self, punkt):
         """
         :param punkt: Punkt des Bootes
@@ -757,6 +771,7 @@ class Boot:
     # https://stackoverflow.com/questions/35093608/spatial-index-not-being-used
     # für Beschleunigung über PostGIS (PostgreSQL): https://gis.stackexchange.com/questions/123911/st-distance-doesnt-use-index-for-spatial-query
     # https://dba.stackexchange.com/questions/214268/mysql-geo-spatial-query-is-very-slow-although-index-is-used)
+    # wird momentan nicht verwendet
     def Daten_abfrage(self, punkt, radius=20):
         x = []
         y = []

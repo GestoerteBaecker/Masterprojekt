@@ -61,7 +61,7 @@ class Pixhawk:
         self.initialisierung = True
         self.HomepointSetzen()
 
-        #todo: Takeoff einbauen?
+        #todo: Takeoff einbauen? Konnte im Rahmen des Projekts nicht mehr erprobt werden
 
     def Geschwindigkeit_setzen(self, v):  # v = Geschwindigkeit im m/s
 

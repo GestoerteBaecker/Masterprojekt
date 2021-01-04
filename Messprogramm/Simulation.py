@@ -35,8 +35,12 @@ class Boot_Simulation(Boot.Boot):
         self.PixHawk.verbindungsversuch = False
 
         # EINLESEN DES MODELLS ALS QUADTREE
-        testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
-        #testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+
+        # Unterscheidung Daten mit und ohne Berg
+        #testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+
+
         lines = csv.reader(testdaten, delimiter=";")
         id_testdaten = []
         x_testdaten = []
@@ -44,6 +48,8 @@ class Boot_Simulation(Boot.Boot):
         tiefe_testdaten = []
 
 
+        # Unterscheidung Daten mit und ohne Berg
+        """
         # Lesen der Datei Für nicht manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[0]))
@@ -52,13 +58,13 @@ class Boot_Simulation(Boot.Boot):
             tiefe_testdaten.append(float(line[3]))
         testdaten.close()
         """ 
-        # Lesen der Datei Für manipulierte Datei
+        # Lesen der Datei für manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[1]))
             x_testdaten.append(float(line[2]))
             y_testdaten.append(float(line[3]))
             tiefe_testdaten.append(float(line[4]))
-        testdaten.close()"""
+        testdaten.close()
 
         testdaten_xmin = min(x_testdaten) - 10
         testdaten_xmax = max(x_testdaten) + 10
@@ -85,8 +91,8 @@ class Boot_Simulation(Boot.Boot):
             Punktliste.append(p)
 
             self.Testdaten_quadtree.punkt_einfuegen(p)
-        # Anlegen der Referenzoberfläche
 
+        # Anlegen der Referenzoberfläche
         self.originalmesh = Messgebiet.TIN(Punktliste, 10, nurTIN=True)
         self.originalmesh.mesh.save("Originalmesh.ply")
 
@@ -124,9 +130,6 @@ class Boot_Simulation(Boot.Boot):
                     heading = self.heading
                 suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
-                #print("erstes print", time.time()-t)
-                #t_test = time.time()
-                #print(len(tiefenpunkte))
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
                 gnss2 = PolaresAnhaengen(position, heading, dist=1)
                 kurs = PolaresAnhaengen(position, heading, dist=1000)
@@ -134,7 +137,7 @@ class Boot_Simulation(Boot.Boot):
                 p1, p2 = numpy.array([position.x, position.y]), numpy.array([kurs.x, kurs.y])
                 strahl = shp.LineString([(position.x, position.y), (kurs.x, kurs.y)])
                 # Prüfen ob Punkt in Umringspolygon liegt
-                impolygon = shp.Point(self.position.x,self.position.y).within(self.umrandung)
+                #impolygon = shp.Point(self.position.x,self.position.y).within(self.umrandung)
 
                 schnitt = self.ufer_polygon.intersection(strahl)
 
@@ -160,7 +163,7 @@ class Boot_Simulation(Boot.Boot):
                 if ufer_punkt is None:
                     distanz = 1000
                 else:
-                    #TODO: Anfangen, dass die Distanz mal nicht gegeben sein kann
+                    #TODO: Abfangen, dass die Distanz mal nicht gegeben sein kann
                     distanz = ((ufer_punkt[0] - p1[0]) ** 2 + (ufer_punkt[1] - p1[1]) ** 2) ** 0.5
 
                 with Messgebiet.schloss:
@@ -196,7 +199,6 @@ class Boot_Simulation(Boot.Boot):
 
                 # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
                 if gnss1 and gnss2 and disto:  # Uferpunktberechnung
-                    #print("bootsmitte", [gnss1.daten[0], gnss1.daten[1]])
                     position = Messgebiet.Punkt(gnss1.daten[0], gnss1.daten[1])
                     uferpunkt = self.Uferpunktberechnung()
                     if self.messgebiet != None:
@@ -207,7 +209,7 @@ class Boot_Simulation(Boot.Boot):
                     Bodendaten = (gnss1, echolot)
                     Letzte_Bodenpunkte.append(Bodendaten)
 
-                    if len(Letzte_Bodenpunkte) > 10:
+                    if len(Letzte_Bodenpunkte) > self.anz_Bodenpunkte:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         Letzte_Bodenpunkte = []
 
@@ -217,6 +219,7 @@ class Boot_Simulation(Boot.Boot):
                     if position is not None:
                         self.position = position
 
+                    # Letzte zwei Bodenpunkte zur Extrapolation zur Ufererkennung
                     if Bodenpunkt is not None:
                         self.Bodenpunkte.append(Bodenpunkt)
                         if len(self.Bodenpunkte) > 2:
@@ -238,7 +241,7 @@ class Boot_Simulation(Boot.Boot):
 
 
     # nicht mehr anpacken, läuft
-    def Punkt_anfahren(self, punkt, geschw=5.0, toleranz=3):  # Utm-Koordinaten und Gechwindigkeit setzen
+    def Punkt_anfahren(self, punkt, geschw=5.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         self.punkt_anfahren = True
         with Messgebiet.schloss:
             self.heading = self.Headingberechnung(punkt)
@@ -259,7 +262,7 @@ class Boot_Simulation(Boot.Boot):
                 time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()
 
-        punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, toleranz, toleranz)
+        punkt_box = Messgebiet.Zelle(punkt.x, punkt.y, self.anfahrtoleranz, self.anfahrtoleranz)
 
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:

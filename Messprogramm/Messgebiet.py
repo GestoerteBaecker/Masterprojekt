@@ -13,6 +13,7 @@ shapely.speedups.disable()
 import Simulation
 from scipy.spatial import KDTree
 import scipy
+import json
 
 schloss = threading.RLock()
 
@@ -21,7 +22,7 @@ schloss = threading.RLock()
 class TrackingMode(enum.Enum):
     # ab hier soll Tracking und Ufererkennung erfolgen
     PROFIL = 0 # volles Tracking
-    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen; ausgedünntes Tracking
+    VERBINDUNG = 1 # auf Verbindungsstück zwischen zwei verdichtenden Profilen;
     # ab hier soll kein Tracking erfolgen
     UFERERKENNUNG = 10 # kein Tracking, aber Ufererkennung
     # ab hier weder Ufererkennung noch Tracking
@@ -60,20 +61,16 @@ class Punkt:
         self.x = x
         self.y = y
         self.z = z
-        self.zelle = self.Zellenzugehoerigkeit()
+        self.zelle = None
 
-    def Zellenzugehoerigkeit(self):
-
-        # gibt Rasterzelle des Punktes wieder; größe der Rasterzellen muss bekannt sein
-        # oder Liste aller Rasterzellen iterieren und Methode enthaelt_punkt() verwenden
-        pass
-
+    # Abstand zu anderem Punkt berechnen
     def Abstand(self, pkt, zwei_dim=False):
         summe = (self.x - pkt.x)**2 + (self.y - pkt.y)**2
         if self.z is not None and pkt.z is not None and not zwei_dim:
             summe += (self.z - pkt.z)**2
         return numpy.sqrt(summe)
 
+    #Punkt in Numpy-Format umwandeln
     def ZuNumpyPunkt(self, zwei_dim=False):
         if self.z is not None and not zwei_dim:
             punkt = numpy.array([self.x, self.y, self.z])
@@ -81,9 +78,11 @@ class Punkt:
             punkt = numpy.array([self.x, self.y])
         return punkt
 
+    # Stringfunktion
     def __str__(self):
         return "\"Punkt: " + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "\""
 
+    # Punkt mit weitern Punkt addieren
     def __add__(self, p2):
         if self.z is None or p2.z is None:
             z = None
@@ -91,6 +90,7 @@ class Punkt:
             z = self.z + p2.z
         return Punkt(self.x+p2.x, self.y+p2.y, z)
 
+    # Punkt mit weitern Punkt subtrahieren
     def __sub__(self, p2):
         if self.z is None or p2.z is None:
             z = None
@@ -98,6 +98,7 @@ class Punkt:
             z = self.z - p2.z
         return Punkt(self.x-p2.x, self.y-p2.y, z)
 
+    # Punkt mit weiterem Punkt multiplizieren
     def __mul__(self, obj):
         if type(obj).__name__ == "Punkt": # Skalarprodukt
             if self.z is None or obj.z is None:
@@ -184,7 +185,7 @@ class TIN_Kante:
         if numpy.array_equal(n1,n2):  # Normalenvekroten sind paralel zueinander und arccos kann nicht berechnet werden
             alpha = 0
         else:
-            alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2))) / numpy.pi # mit Normierung
+            alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
 
         return alpha
 
@@ -283,34 +284,40 @@ class TIN:
 
                 self.Dreieckliste.append(dreieckobjekt)
 
-
+    # Gibt eine Liste mit den abzufahrenden Kantenobjekten wieder.
     def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht,längengewicht,winkelgewicht):
-        # Gibt eine Liste mit den Abzufahrenden kantenobjekten wieder.
 
         anzufahrende_Kanten = []
         kanten_größtes_absolutes_gewicht = None
         max_gewicht = 0
 
         max_entfernung = 0
+        max_winkel = 0
         for kante in self.Kantenliste:
             entfernung = kante.mitte().Abstand(bootsposition)
             if entfernung > max_entfernung:
                 max_entfernung = entfernung
+            if kante.winkel() > max_winkel:
+                max_winkel = kante.winkel()
 
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
                 #Kantenlängen normieren(mit max Kantenlaenge)
                 laenge_norm = kante.laenge()/self.max_Kantenlaenge
+                kante_norm = kante.winkel()/max_winkel
                 if laenge_norm*kante.winkel() > max_gewicht:
                     max_gewicht = laenge_norm*kante.winkel()
                     kanten_größtes_absolutes_gewicht = kante
-                abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition))/max_entfernung)**entfernungsgewicht)
-                kante.gewicht = laenge_norm**längengewicht*kante.winkel()**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
+                abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** entfernungsgewicht)
+                kantenlaengenanteil= laenge_norm**längengewicht
+                kantenwinkelanteil= kante_norm**winkelgewicht
+
+                kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
 
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
-                if kante.gewicht > kante_i.gewicht:
+                if kante.gewicht > kante_i.gewicht and (kantenlaengenanteil > abstandsgewicht or kantenwinkelanteil > abstandsgewicht):
                     anzufahrende_Kanten.insert(i,kante)
                     if len(anzufahrende_Kanten) > Anz-1:
                         anzufahrende_Kanten.pop()
@@ -345,7 +352,7 @@ class TIN:
 
 class Zelle:
 
-    def __init__(self,cx, cy, w, h):    # Rasterzelle mit mittelpunkt, weite und Höhe definieren, siehe
+    def __init__(self,cx, cy, w, h):    # Rasterzelle mit Mittelpunkt, Weite und Höhe definieren
         self.cx, self.cy = cx, cy
         self.mittelpunkt = Punkt(self.cx, self.cy)
         self.w, self.h = w, h
@@ -386,10 +393,23 @@ class Zelle:
 
 class Stern:
 
-    # bei initial = True, ist der Startpunkt er Punkt, an dem die Messung losgeht (RTL), bei False ist der Stern ein zusätzlicher und startpunkt demnach die Mitte des neuen Sterns
+    # bei initial = True, ist der Startpunkt der Punkt, an dem die Messung losgeht (RTL), bei False ist der Stern ein zusätzlicher und startpunkt demnach die Mitte des neuen Sterns
     # winkelinkrement in gon
     # grzw_seitenlaenge in Meter, ab wann die auf entsprechender Seite ein verdichtender Stern platziert werden soll
-    def __init__(self, startpunkt, heading, winkelinkrement=50, grzw_seitenlaenge=500, initial=True, profil_grzw_dichte_topo_pkt=0.1, profil_grzw_neigungen=50, ebene=0):
+    def __init__(self, startpunkt, heading, initial=True, ebene=0):
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.winkelinkrement = json_daten["Boot"]["stern_winkelinkrement"]  # Winkel der konvergenten Strahlen des Sterns
+        self.grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"]  # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.anfahrtoleranz = json_daten["Boot"]["anfahrtoleranz_von_punkten"]
+        self.min_sternabstand = json_daten['Boot']['min_Sternabstand']
+        self.medianfaktor = json_daten['Boot']['Medianfaktor_zur_Profilbildung_im_Stern']
+        self.telemetriereichweite = json_daten["Boot"]["Telemetriereichweite"]
+
         self.profile = []
         self.aktuelles_profil = 0 # Index des aktuellen Profils bezogen auf self.aktueller_stern
         self.initial = initial # nur für den ersten Stern True; alle verdichtenden sollten False sein
@@ -398,12 +418,8 @@ class Stern:
         self.weitere_sterne = []
         # der aktuelle Stern wird in dieser Variable gesichert, sodass die Methoden statt mit self von dieser Variablen aufgerufen werden (Steuerung von außen geschieht nämlich nur über den einen Init-Stern)
         self.aktueller_stern = self
-        self.winkelinkrement = winkelinkrement
-        self.grzw_seitenlaenge = grzw_seitenlaenge
         self.startpunkt = startpunkt # nur für initiales Profil
         self.heading = heading # nur für initiales Profil
-        self.profil_grzw_dichte_topo_pkt = profil_grzw_dichte_topo_pkt
-        self.profil_grzw_neigungen = profil_grzw_neigungen
         self.initialstern = self
         self.ebene = ebene
         self.median = None
@@ -422,8 +438,10 @@ class Stern:
         winkel = start_winkel
         existierendeProfile = self.Profile()
 
+        # Hinzufügen der Profile
         while winkel < start_winkel + 200 - 1.001*stern.winkelinkrement:
             existiert = False
+            # Prüfen ob das Profil bereits existiert
             for profil in existierendeProfile:
                 if profil.ist_definiert != Profil.Definition.NUR_RICHTUNG: # hier werden die in den vorherigen Schleifen eingefügten Profile ignoriert, da sie selbst noch nicht gemessen wurden
                     if profil.PruefProfilExistiert(winkel,mitte, 10, 0.8):
@@ -555,10 +573,10 @@ class Stern:
             stern_isoliert = True
             for akt_stern in sterne:
                 distanz = neue_mitte.Abstand(akt_stern.mittelpunkt)
-                if distanz < 30:
+                if distanz < self.min_sternabstand:
                     stern_isoliert = False
             if stern_isoliert:
-                neuer_stern = Stern(profil.stuetzpunkt, profil.heading, stern.winkelinkrement, stern.grzw_seitenlaenge, initial=False, profil_grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, profil_grzw_neigungen=stern.profil_grzw_neigungen, ebene=stern.ebene+1)
+                neuer_stern = Stern(profil.stuetzpunkt, profil.heading,initial=False, ebene=stern.ebene+1)
                 neuer_stern.initialstern = stern.initialstern
                 # nicht stern.init, da dieses Profil bereits vom übergeordneten Stern gemessen wurde; stattdessen soll dieses Profil als bereits gemessen übernommen werden
                 neuer_stern.profile.append(profil)
@@ -586,7 +604,7 @@ class Stern:
                 laengen = profillaenge_von_mitte(stern, profil, i, laengen)
             stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
-                if laenge >= self.grzw_seitenlaenge or laenge >= 2*stern.median:
+                if laenge >= self.grzw_seitenlaenge or laenge >= self.medianfaktor*stern.median:
                     neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
@@ -661,8 +679,8 @@ class Stern:
             mode = TrackingMode.BLINDFAHRT
         elif mode == TrackingMode.BLINDFAHRT: # das Boot soll keine Messungen vornehmen und zurück zur Sternmitte fahren
             # wenn das Boot an der Mitte ankommt und der Stern zwischenzeitlich nicht aktualisiert wurde (also gleich geblieben ist)
-            if Zelle(stern.mittelpunkt.x, stern.mittelpunkt.y, 5, 5).enthaelt_punkt(punkt):
-                punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-2000, punkt_objekt=True)
+            if Zelle(stern.mittelpunkt.x, stern.mittelpunkt.y, self.anfahrtoleranz*2, self.anfahrtoleranz*2).enthaelt_punkt(punkt):
+                punkt = stern.profile[stern.aktuelles_profil].BerechneNeuenKurspunkt(-self.telemetriereichweite , punkt_objekt=True)
                 mode = TrackingMode.UFERERKENNUNG
             else:
                 # wenn das Boot in der Mitte ankommt, aber einen anderen Stern anfangen soll, soll es zunächst zu dessen Mitte fahren
@@ -671,7 +689,7 @@ class Stern:
         elif mode == TrackingMode.UFERERKENNUNG:
             profil = stern.profile[stern.aktuelles_profil]
             profil.ProfilBeginnen(punkt)
-            punkt = profil.BerechneNeuenKurspunkt(2000, punkt_objekt=True)
+            punkt = profil.BerechneNeuenKurspunkt(self.telemetriereichweite, punkt_objekt=True)
             mode = TrackingMode.PROFIL
         return [punkt, mode]
 
@@ -1331,8 +1349,14 @@ def Headingberechnung(boot=None, richtungspunkt=None, position=None):
 
 class Uferpunktquadtree:
 
-    def __init__(self, zelle, max_punkte_pro_zelle = 2, ebene = 0, max_ebenen=8):
-        self.zelle = zelle                                # Rechteck, was das den Umfang des Quadtreeelements definiert
+    def __init__(self, zelle, max_punkte_pro_zelle = 2, ebene = 0):
+
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+        max_ebenen = json_daten["Boot"]["Quadtreeebenen_fuer_Messgebiet"]
+
+        self.zelle = zelle                                  # Rechteck, was das den Umfang des Quadtreeelements definiert
         self.max_punkte_pro_zelle = max_punkte_pro_zelle    # Maximale Anzahl der Punkte pro Zelle
         self.ebene = ebene                                  # Ferfeinerungsgrad des Quadtrees
         self.uferpunkte =[]
@@ -1428,7 +1452,7 @@ class Uferpunktquadtree:
         else:
             return True
 
-
+    #Abfrage, ob im Suchgebiet Punkte in einem vordefinierten Bereich sind
     def abfrage(self, suchgebiet,gefundene_punkte = None):
 
         if gefundene_punkte == None:
@@ -1476,6 +1500,14 @@ class Messgebiet:
         :param initiale_ausdehnung: grobe Ausdehnung in Meter
         :param auflösung:
         """
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.profilbreite = json_daten["Boot"]["Profilbreite_zum_pruefen"]
+        self.Profiltoleranz = json_daten["Boot"]["Toleranz_fuer_Profilexistenzpruefung"]
+        self.Verbindungsprofiltoleranz = json_daten["Boot"]["Toleranz_fuer_Verbindungsexistenzpruefung"]
+
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
         self.topographische_punkte = []
@@ -1529,9 +1561,9 @@ class Messgebiet:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
 
-                    existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=5, toleranz=0.65, lambda_intervall=[profil.start_lambda, profil.end_lambda])
-                    liegt_profilpunkt_in_existierendem_profil = False#existierendesProfil.PruefPunktInProfil(profil.startpunkt, 2)
-                    existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=5, toleranz=0.8, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
+                    existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Profiltoleranz, lambda_intervall=[profil.start_lambda, profil.end_lambda])
+                    liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, self.profilbreite/2)
+                    existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Verbindungsprofiltoleranz, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
                     if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
                         break
                 else:

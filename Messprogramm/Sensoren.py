@@ -396,7 +396,7 @@ if __name__ == "__main__":
     echo.read_datastream()
     echo.start_pushing_db()
 
-    #todo Überprüfen von Fetch in datenbank  Lösung: Neustart https://stackoverflow.com/questions/57905821/tables-and-views-keep-on-fetching-in-mysql
+    #todo Überprüfen von Fetch in datenbank Lösung: Neustart https://stackoverflow.com/questions/57905821/tables-and-views-keep-on-fetching-in-mysql
     time.sleep(10)
     print("Kills ausführen")
     gps1.kill()

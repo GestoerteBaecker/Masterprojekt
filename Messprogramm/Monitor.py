@@ -4,6 +4,7 @@ from tkinter import messagebox
 import tkinter.ttk as ttk
 import sys, os
 import time
+import json
 
 # Import der aufzurufenden Skripte
 import Karte
@@ -22,6 +23,12 @@ class Anwendung(Frame):
         self.master = master
         # Fixieren des Fensters
         self.master.resizable(width=False, height=False)
+
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.aktualisierungszeit = json_daten["GUI"]["data_updateinterval"]
 
         # Definieren eines Randabstandes des Fensters
         randabstand = 10
@@ -211,7 +218,7 @@ class Anwendung(Frame):
 
     def boot_stopp(self):
         # TODO: Aktivieren des Loiter-Modus im Pixhawk. Veranlasst den aktuellen Punkt zu halten
-        self.boot.boot_lebt = False
+        self.boot.Boot_stoppen()
 
     def boot_trennen(self):
         self.boot.Trennen() #TODO: das hier muss beim Verlassen unbedingt aufgerufen werden!!!
@@ -266,17 +273,16 @@ class Anwendung(Frame):
                             else:
                                 self.con_qual_gnss1.config(bg="yellow")
                         if self.karte_window!= None:
-                            #try:
+                            try:
                                 kanten = self.boot.KantenPlotten()
                                 streifen = self.boot.StreifenPlotten()
                                 trackingmodus = str(self.boot.tracking_mode)
                                 self.karte_window.karte_updaten(gnss_north, gnss_east, gnss_heading, self.t, kanten,streifen,trackingmodus)
 
-                            #except Exception as e:
-                             #   x = e
-                              #  exc_type, exc_obj, exc_tb = sys.exc_info()
-                               # print(e,exc_type, exc_tb.tb_lineno)
-                                #print("Karte kann nicht aktualisiert werden.")
+                            except Exception as e:
+                                exc_type, exc_obj, exc_tb = sys.exc_info()
+                                print(e,exc_type, exc_tb.tb_lineno)
+                                print("Karte kann nicht aktualisiert werden.")
 
                     except Exception as e:
                         if not gnss.simulation:
@@ -293,7 +299,6 @@ class Anwendung(Frame):
                 index = self.boot.Sensornamen.index("GNSS2")
                 gnss2 = self.boot.Sensorliste[index]
                 if gnss2.verbindung_hergestellt:  # TODO: Was, wenn nur eine GNSS??
-                #if self.datenlesen_initialisiert == True:
                     try:
                         gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4]
                         if gnss_qual_indikator==4:
@@ -371,9 +376,8 @@ class Anwendung(Frame):
                 else:
                     self.con_qual_dimetix.config(bg="red")
 
-        schlafen = int(max(0, 100 - (time.time() - t)))
-        #print(time.time())
-        self.after(schlafen, self.status_und_daten_aktualisieren) # Alle 1 Sekunden wird Befehl ausgeführt
+        schlafen = int(max(0, self.aktualisierungszeit - (time.time() - t)))
+        self.after(schlafen, self.status_und_daten_aktualisieren) # Alle 0.1 Sekunden wird Befehl ausgeführt
 
     def alles_schliessen(self):
         if self.verbindung_initialisiert == True: self.boot_trennen()

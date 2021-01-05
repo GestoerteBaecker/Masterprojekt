@@ -477,6 +477,12 @@ class Boot:
 
             print("Gefahrene Strecke:", self.gefahreneStrecke)
 
+            # Verdichtungsfahrten nach der Streifenweise Aufnahme (Falls nicht gewünscht auskommentieren)
+
+            #TODO: topo-Punkte und Profile einbinden
+
+            self.VerdichtendeFahrten()
+
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)

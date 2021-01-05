@@ -315,6 +315,7 @@ class TIN:
 
                 kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
 
+                #print("L_kante: %8.2f, W_kante: %1.2f, Entfernung: %8.2f, Pl: %1.3f, Pw: %1.3f, Pe: %1.3f, Pges: %1.3f" % (kante.laenge(),kante.winkel(),(kante.mitte().Abstand(bootsposition)),kantenlaengenanteil,kantenwinkelanteil,abstandsgewicht,kante.gewicht))
 
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht and (kantenlaengenanteil > abstandsgewicht or kantenwinkelanteil > abstandsgewicht):
@@ -1164,8 +1165,8 @@ class Profil:
                     überdeckung = konvexe_hülle.volume
                     return (überdeckung / fläche) > toleranz
                 except Exception as e:
-                    print("Die konvexe Hülle der Überdeckung der Profile konnte nicht gebildet werden.", e)
-                    return True # macht keinen Sinn, aber so wird das Profil wenigstens nicht abgefahren
+                    print("Die konvexe Hülle der Überdeckung der Profile konnte nicht gebildet werden.")
+                    return False # macht keinen Sinn, aber so wird das Profil wenigstens nicht abgelehnt
             else:
                 return False
         else:
@@ -1439,12 +1440,25 @@ class Uferpunktquadtree:
         return None # == False
 
     # Testet, ob zumindest der Startpunkt anfahrbar ist; falls nicht wird der Endpunkt geprüft und ggf. beide Punkte getauscht
-    def TestPunkteAnfahrbar(self, profil):
+    def TestPunkteAnfahrbar(self, profil): # TODO !!!!!!! Profile werden deutlich zu leicht abgelehnt, da das Ufer im Quadtree nicht gut bestimmt ist
+        """
         pkt_ausserhalb_quadtree = self.zelle.mittelpunkt + Punkt(0, self.zelle.h)
         temp_profil = Profil.ProfilAusZweiPunkten(profil.startpunkt, pkt_ausserhalb_quadtree)
         if not self.linienabfrage(temp_profil): # beide Punkte müssen bei hinreichend gut erfasstem Ufer außerhalb des Sees liegen; Startpunkt ist nicht erreichbar
             temp_profil = Profil.ProfilAusZweiPunkten(profil.endpunkt, pkt_ausserhalb_quadtree)
             if not self.linienabfrage(temp_profil): # auch der Endpunkt ist nicht erreichbar
+                return False
+            else:
+                profil.Flip() # Jetzt ist der Startpunkt (vormals Endpunkt) erreichbar
+                return True
+        else:
+            return True
+        """
+        # Methode umgeschrieben, sodass nur bei ermittelten Punkten ein Ufer erkannt wird
+        temp_profil = Profil.ProfilAusZweiPunkten(profil.startpunkt, self.zelle.mittelpunkt)
+        if self.linienabfrage(temp_profil): # beide Punkte müssen bei hinreichend gut erfasstem Ufer außerhalb des Sees liegen; Startpunkt ist nicht erreichbar
+            temp_profil = Profil.ProfilAusZweiPunkten(profil.endpunkt, self.zelle.mittelpunkt)
+            if self.linienabfrage(temp_profil): # auch der Endpunkt ist nicht erreichbar
                 return False
             else:
                 profil.Flip() # Jetzt ist der Startpunkt (vormals Endpunkt) erreichbar
@@ -1554,24 +1568,29 @@ class Messgebiet:
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
+            profilzaeler = 0
             for kante in kanten:
                 profil = Profil.VerdichtendesProfil(kante)
                 bestehendeProfile = self.profile + self.nichtbefahrbareProfile
+                profilzaeler += 1
                 for existierendesProfil in bestehendeProfile:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
-
                     existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Profiltoleranz, lambda_intervall=[profil.start_lambda, profil.end_lambda])
                     liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, self.profilbreite/2)
                     existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Verbindungsprofiltoleranz, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
                     if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
+                        print("Profil bereits vorhanden", profilzaeler,"/",len(kanten))
                         break
+
                 else:
                     anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                     startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)
                     if startpunkt_in_see and anfahrbar is None:  # wenn die Lage des Profils nicht innerhalb des Ufers liegen könnte anfahrbar is None and
                         naechstesProfil = profil
                         break
+                    else:
+                        print("Profil nicht anfahrbar", profilzaeler, "/", len(kanten), "anfahrbar:",anfahrbar,"startpunktinsee",startpunkt_in_see)
 
             if naechstesProfil is None: # keine zu messenden Profile mehr gefunden bzw. alle Profile fallen außerhalb des Sees
                 punkt = None

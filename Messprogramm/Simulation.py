@@ -36,28 +36,30 @@ class Boot_Simulation(Boot.Boot):
 
         # EINLESEN DES MODELLS ALS QUADTREE
 
-        # Unterscheidung Daten mit und ohne Berg
-        #testdaten = open("Testdaten_DHM_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
-        testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        # Unterscheidung Daten mit und ohne Berg, bzw. mit und ohne Dünen
+        testdaten = open("Referenz_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        mit_Duenen = True
 
-
+        #testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")
         id_testdaten = []
         x_testdaten = []
         y_testdaten = []
         tiefe_testdaten = []
 
-
         # Unterscheidung Daten mit und ohne Berg
-        """
+
         # Lesen der Datei Für nicht manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[0]))
             x_testdaten.append(float(line[1]))
             y_testdaten.append(float(line[2]))
-            tiefe_testdaten.append(float(line[3]))
+            if mit_Duenen:
+                tiefe_testdaten.append(float(line[4]))
+            else:
+                tiefe_testdaten.append(float(line[3]))
         testdaten.close()
-        """ 
+        """
         # Lesen der Datei für manipulierte Datei
         for line in lines:
             id_testdaten.append(int(line[1]))
@@ -65,7 +67,7 @@ class Boot_Simulation(Boot.Boot):
             y_testdaten.append(float(line[3]))
             tiefe_testdaten.append(float(line[4]))
         testdaten.close()
-
+        """
         testdaten_xmin = min(x_testdaten) - 10
         testdaten_xmax = max(x_testdaten) + 10
         testdaten_ymin = min(y_testdaten) - 10

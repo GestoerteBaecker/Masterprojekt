@@ -1143,14 +1143,23 @@ class Profil:
                     schnittpunkt = schneide_geraden(test_richtung, eckpunkt, pruef_richtung, pruef_eckpunkt, test_intervall, pruef_intervall)
                     if schnittpunkt is not None:
                         if not test_profil_unendlich and self.PruefPunktInProfil(pruef_eckpunkt, profilbreite, mit_längspuffer=False):
-                            x.append(pruef_eckpunkt[0])
-                            y.append(pruef_eckpunkt[1])
-                        x.append(schnittpunkt[0])
-                        y.append(schnittpunkt[1])
+                            for p in x:
+                                if p == pruef_eckpunkt[0]: break
+                            else:
+                                x.append(pruef_eckpunkt[0])
+                                y.append(pruef_eckpunkt[1])
+                        for p in x:
+                            if p == schnittpunkt[0]: break
+                        else:
+                            x.append(schnittpunkt[0])
+                            y.append(schnittpunkt[1])
                     naechster_eckpunkt = eckpunkte[(i + 1) % 4]
                     if pruef_eckpunkt_in_neuem_profil(naechster_eckpunkt, test_profil_unendlich, pruef_richtung_fix, pruef_stuetz):
-                        x.append(naechster_eckpunkt[0])
-                        y.append(naechster_eckpunkt[1])
+                        for p in x:
+                            if p == naechster_eckpunkt[0]: break
+                        else:
+                            x.append(naechster_eckpunkt[0])
+                            y.append(naechster_eckpunkt[1])
                     if not test_profil_unendlich:
                         pruef_richtung = numpy.array([pruef_richtung[1], -pruef_richtung[0]])
                 test_richtung = numpy.array([test_richtung[1], -test_richtung[0]])
@@ -1165,8 +1174,9 @@ class Profil:
                     überdeckung = konvexe_hülle.volume
                     return (überdeckung / fläche) > toleranz
                 except Exception as e:
+                    print(Punktliste_array)
                     print("Die konvexe Hülle der Überdeckung der Profile konnte nicht gebildet werden.")
-                    return False # macht keinen Sinn, aber so wird das Profil wenigstens nicht abgelehnt
+                    return False # Die Konvexe Hülle kann nicht gebildet werden, wenn das Punkteliste_arry nur zwei Punkte enthält
             else:
                 return False
         else:

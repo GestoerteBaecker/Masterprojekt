@@ -431,6 +431,18 @@ class Stern:
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
+    # Leere Sterne (= ohne Profile) aus einer Punktliste erstellen
+    @classmethod
+    def SterneBilden(cls, punktliste):
+        stern = cls(punktliste[0], 0, initial=True, ebene=0)
+        stern_temp = stern
+        for i in range(1, len(punktliste)):
+            stern_doppel_temp = cls(punktliste[i], 0, initial=True, ebene=0)
+            stern_temp.weitere_sterne.append(stern_doppel_temp)
+            stern_temp = stern_doppel_temp
+        return stern
+
+
     # fügt weitere Profile in gegebenen Winkelinkrementen ein, die anschließend befahren werden
     def SternFuellen(self):
         stern = self.aktueller_stern
@@ -1638,6 +1650,11 @@ class Messgebiet:
             self.profile.append(profil)
             self.aktuelles_profil += 1
 
+    # liest die topographisch bedeutsamen Punkte aus den Profilen und fügt sie in der entsprechenden Liste ein
+    def TopoPunkteExtrahieren(self):
+        for profil in self.profile:
+            self.PunkteEinlesen(profil.topographisch_bedeutsame_punkte)
+        return self.topographische_punkte
 
     # liest die angegebenen Punkte in die Liste der topographisch bedeutsamen Punkte ein
     # nur innerhalb dieser Klasse nutzen! Von außen sollten nur die Profile beendet werden

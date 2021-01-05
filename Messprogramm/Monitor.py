@@ -50,7 +50,7 @@ class Anwendung(Frame):
         self.__om_variable_mode.set("Vollautomatisch")
 
         # OptionMenu zur Auswahl der Simulation und Erkundungsmethode
-        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautomatisch", "Teilautomatisch"], command=self.modusabfrage)
+        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautomatisch", "Teilautomatisch", "Hybrid"], command=self.modusabfrage)
         self.om.grid(row=1, column=2,padx=10,sticky="ew")
         self.om = OptionMenu(self, self.__om_variable_sim, *["Simulation", "Reale Daten"], command=self.simulationsabfrage)
         self.om.grid(row=1, column=3,padx=10,sticky="ew")
@@ -215,6 +215,14 @@ class Anwendung(Frame):
                 grenzpolygon_y = self.karte_window.grenzpolygon_y
 
                 self.boot.Erkunden_Streifenweise(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y)
+        elif self.__om_variable_mode.get() == "Hybrid":
+            if self.karte_window.richtungslinie_x is not None:
+                richtungslinie_x = self.karte_window.richtungslinie_x
+                richtungslinie_y = self.karte_window.richtungslinie_y
+                grenzpolygon_x = self.karte_window.grenzpolygon_x
+                grenzpolygon_y = self.karte_window.grenzpolygon_y
+
+                self.boot.Erkunden_Streifenweise(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, verdichtung=True)
 
     def boot_stopp(self):
         # TODO: Aktivieren des Loiter-Modus im Pixhawk. Veranlasst den aktuellen Punkt zu halten

@@ -77,12 +77,12 @@ class Boot:
         self.alle_bodenpunkte = []
         self.gefahreneStrecke = 0
         self.db_mode = json_daten["Boot"]["DB_mode"]
-        self.sicherheitsabstand = json_daten["Boot"]["sicherheitsabstand"]   # für teilautomatischen Ansatz
         self.streifenabstand = json_daten["Boot"]["streifenabstand"]   # für teilautomatischen Ansatz
         self.grenzwert_entfernung_UK2 = json_daten["Boot"]["grenzwert_entfernung_UK2"]
         self.grenzwert_entfernung_UK3 = json_daten["Boot"]["grenzwert_entfernung_UK3"]
         self.grenzwert_tiefe_UK2 = json_daten["Boot"]["grenzwert_tiefe_UK2"]
         self.grenzwert_tiefe_UK3 = json_daten["Boot"]["grenzwert_tiefe_UK3"]
+        self.sicherheitsabstand = self.grenzwert_entfernung_UK3
 
         self.streifenprofile= None
         self.aktuelles_Profil= None
@@ -402,7 +402,7 @@ class Boot:
         thread = threading.Thread(target=ufererkennung_thread, args=(self, ), daemon=True)
         thread.start()
 
-    def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y):
+    def Erkunden_Streifenweise(self, grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, verdichtung=False):
 
         streifenprofile = Messgebiet.Profilstreifenerzeugung(grenzpolygon_x, grenzpolygon_y, richtungslinie_x, richtungslinie_y, self.sicherheitsabstand, self.streifenabstand, self.telemetriereichweite)
         self.streifenprofile = streifenprofile.gespeicherte_profile
@@ -421,11 +421,22 @@ class Boot:
         if index != 0:
             self.streifenprofile.reverse()
 
+        if verdichtung:
+            # Anlegen eines Messgebiets für Sicherung der befahrenen Profile für das Verdichten
+            self.erkundung_gestartet = True
+            self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
+            self.messgebiet.ProfileEinlesen(self.streifenprofile)
+            punktliste = []
+            for i in range(len(richtungslinie_x)):
+                punktliste.append(Messgebiet.Punkt(richtungslinie_x[i], richtungslinie_y[i]))
+            self.stern = Messgebiet.Stern.SterneBilden(punktliste)
+            self.messgebiet.stern = self.stern
+
         # Streifen abfahren
 
         def Streifen_abfahren(self):
             profilindex = 0
-            punktzaehler = 0
+            punktzaehler = 0 # 0 == Startpunkt, 1 == Endpunkt
             while self.boot_lebt:
                 abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
                 if abbruch_durch_ufer or not self.punkt_anfahren:
@@ -472,20 +483,34 @@ class Boot:
                             self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
                             self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
                             punktzaehler = 1
+
+                    self.aktuelles_Profil.ProfilAbschliessenUndTopoPunkteFinden(self.position)
+                    self.messgebiet.ProfileEinlesen(self.aktuelles_Profil)
                     time.sleep(self.akt_takt*10)
                 time.sleep(self.akt_takt / 2)
 
-            print("Gefahrene Strecke:", self.gefahreneStrecke)
+            print("Gefahrene Strecke (nach streifenweisem Befahren):", self.gefahreneStrecke)
 
-            # Verdichtungsfahrten nach der Streifenweise Aufnahme (Falls nicht gewünscht auskommentieren)
+            # TODO: Uferpolygon mitberücksichtigen (in Ufererkennung und Abfrage, ob Profil anfahrbar)
+            # Verdichtungsfahrten nach der Streifenweise Aufnahme (falls erwünscht)
+            if verdichtung:
 
-            #TODO: topo-Punkte und Profile einbinden
+                # Definition der Profile und topographisch bedeutsamer Punkte
+                self.messgebiet.TopoPunkteExtrahieren()
+                self.messgebiet.TIN_berechnen()
 
-            self.VerdichtendeFahrten()
+                # der Name sagts
+                self.VerdichtendeFahrten()
+
+                self.fortlaufende_aktualisierung = False
+                self.boot_lebt = False
+
+                print("Gefahrene Strecke nach Verdichtung:", self.gefahreneStrecke)
 
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
+            self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
         threading.Thread(target=Streifen_abfahren, args=(self,), daemon=True).start()
 
     # Automatisches Erkunden und Verdichten
@@ -518,7 +543,6 @@ class Boot:
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
 
-            self.messgebiet.profile = self.stern.Profile()
         threading.Thread(target=erkunden_extern, args=(self, ), daemon=True).start()
 
     def VerdichtendeFahrten(self):

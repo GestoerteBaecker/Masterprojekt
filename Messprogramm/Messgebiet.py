@@ -285,8 +285,8 @@ class TIN:
                 self.Dreieckliste.append(dreieckobjekt)
 
     # Gibt eine Liste mit den abzufahrenden Kantenobjekten wieder.
-    def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht,längengewicht,winkelgewicht):
-
+    def Anzufahrende_Kanten(self,Anz,bootsposition,entfernungsgewicht,längengewicht,winkelgewicht, abbruch_kantenwinkel, abbruch_kantenlaenge):
+        abbruch_kantenwinkel *= numpy.pi/200
         anzufahrende_Kanten = []
         kanten_größtes_absolutes_gewicht = None
         max_gewicht = 0
@@ -303,20 +303,23 @@ class TIN:
         for kante in self.Kantenliste:
 
             if kante.gewicht == 0:
-                #Kantenlängen normieren(mit max Kantenlaenge)
-                laenge_norm = kante.laenge()/self.max_Kantenlaenge
-                kante_norm = kante.winkel()/max_winkel
-                if laenge_norm*kante.winkel() > max_gewicht:
-                    max_gewicht = laenge_norm*kante.winkel()
-                    kanten_größtes_absolutes_gewicht = kante
-                abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** entfernungsgewicht)
-                kantenlaengenanteil= laenge_norm**längengewicht
-                kantenwinkelanteil= kante_norm**winkelgewicht
+                # die Kanten müssen zeitgleich groß genug und einen genügend großen Winkel haben, um berücksichtigt zu werden
+                if kante.winkel() > abbruch_kantenwinkel and kante.laenge() > abbruch_kantenlaenge:
+                    #Kantenlängen normieren(mit max Kantenlaenge)
+                    laenge_norm = kante.laenge()/self.max_Kantenlaenge
+                    kante_norm = kante.winkel()/max_winkel
+                    if laenge_norm*kante.winkel() > max_gewicht:
+                        max_gewicht = laenge_norm*kante.winkel()
+                        kanten_größtes_absolutes_gewicht = kante
+                    abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** entfernungsgewicht)
+                    kantenlaengenanteil= laenge_norm**längengewicht
+                    kantenwinkelanteil= kante_norm**winkelgewicht
 
-                kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
+                    kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
 
-                #print("L_kante: %8.2f, W_kante: %1.2f, Entfernung: %8.2f, Pl: %1.3f, Pw: %1.3f, Pe: %1.3f, Pges: %1.3f" % (kante.laenge(),kante.winkel(),(kante.mitte().Abstand(bootsposition)),kantenlaengenanteil,kantenwinkelanteil,abstandsgewicht,kante.gewicht))
+                    print("L_kante: %8.2f, W_kante: %1.2f, Entfernung: %8.2f, Pl: %1.3f, Pw: %1.3f, Pe: %1.3f, Pges: %1.3f" % (kante.laenge(),kante.winkel(),(kante.mitte().Abstand(bootsposition)),kantenlaengenanteil,kantenwinkelanteil,abstandsgewicht,kante.gewicht))
 
+            # Sortiert die Kanten nach Gewicht
             for i,kante_i in enumerate(anzufahrende_Kanten):
                 if kante.gewicht > kante_i.gewicht and (kantenlaengenanteil > abstandsgewicht or kantenwinkelanteil > abstandsgewicht):
                     anzufahrende_Kanten.insert(i,kante)
@@ -326,8 +329,6 @@ class TIN:
 
             if len(anzufahrende_Kanten) < Anz-1 and kante not in anzufahrende_Kanten:
                 anzufahrende_Kanten.append(kante)
-
-
 
             if anzufahrende_Kanten == []:              # nur für ersten Durchgang benötigt
                 anzufahrende_Kanten.append(kante)
@@ -1540,9 +1541,11 @@ class Messgebiet:
         json_daten = json.load(datei)
         datei.close()
 
-        self.profilbreite = json_daten["Boot"]["Profilbreite_zum_pruefen"]
+        self.profilbreite = json_daten["Boot"]["abbruchkriterium_min_kantenlaenge"] # == abbruch_kantenlaenge, da gegen Ende der Iterationen die sehr kleinen Profile (=abbruch_kantenlaenge) nicht eine übermäßige, nicht der Länge angepasste Breite haben sollen
         self.Profiltoleranz = json_daten["Boot"]["Toleranz_fuer_Profilexistenzpruefung"]
         self.Verbindungsprofiltoleranz = json_daten["Boot"]["Toleranz_fuer_Verbindungsexistenzpruefung"]
+        self.abbruch_kantenlaenge = json_daten["Boot"]["abbruchkriterium_min_kantenlaenge"]
+        self.abbruch_kantenwinkel = json_daten["Boot"]["abbruchkriterium_min_kantenwinkel"]
 
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
@@ -1586,7 +1589,7 @@ class Messgebiet:
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
                 pass # da das Profil bereits zuvor beendet worden ist
             self.TIN_berechnen()
-            kanten = self.tin.Anzufahrende_Kanten(anzahl_anzufahrende_kanten,position,entfernungsgewicht,längengewicht,winkelgewicht)
+            kanten = self.tin.Anzufahrende_Kanten(anzahl_anzufahrende_kanten,position,entfernungsgewicht,längengewicht,winkelgewicht, self.abbruch_kantenwinkel, self.abbruch_kantenlaenge)
             self.anzufahrende_kanten = copy.deepcopy(kanten)
             naechstesProfil = None
             verbindungsprofil = None
@@ -1599,12 +1602,11 @@ class Messgebiet:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
                     verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
                     existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Profiltoleranz, lambda_intervall=[profil.start_lambda, profil.end_lambda])
-                    liegt_profilpunkt_in_existierendem_profil = existierendesProfil.PruefPunktInProfil(profil.startpunkt, self.profilbreite/2)
+                    liegt_profilpunkt_in_existierendem_profil = False#existierendesProfil.PruefPunktInProfil(profil.startpunkt, self.profilbreite/2)
                     existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Verbindungsprofiltoleranz, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])
                     if existiert_profil or liegt_profilpunkt_in_existierendem_profil or existiert_verbindungsprofil:
-                        print("Profil bereits vorhanden", profilzaeler,"/",len(kanten))
+                        print("Profil bereits vorhanden", profilzaeler,"/",len(kanten), "existiert profil", existiert_profil, "liegt_profilpunkt_in_existierendem_profil", liegt_profilpunkt_in_existierendem_profil, "existiert_verbindungsprofil", existiert_verbindungsprofil)
                         break
-
                 else:
                     anfahrbar = self.Uferquadtree.linienabfrage(verbindungsprofil)  # Punkt, an dem Ufer erreicht oder None, falls kein Ufer dazwischen liegt
                     startpunkt_in_see = self.Uferquadtree.TestPunkteAnfahrbar(profil)

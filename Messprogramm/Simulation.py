@@ -31,43 +31,31 @@ class Boot_Simulation(Boot.Boot):
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
+        datengrundlage = json_daten["Boot"]["Datengrundlage"] # "normal", "duene", "container"
 
         self.PixHawk.verbindungsversuch = False
 
         # EINLESEN DES MODELLS ALS QUADTREE
-
-        # Unterscheidung Daten mit und ohne Berg, bzw. mit und ohne Dünen
-        testdaten = open("Referenz_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
-        mit_Duenen = True
-
-        #testdaten = open("Testdaten_DHM_mit_Insel_Tweelbaeke.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
+        testdaten = open("Referenz_Tweel_ges.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")
-        id_testdaten = []
         x_testdaten = []
         y_testdaten = []
         tiefe_testdaten = []
+        z_id = 2
+        if datengrundlage == "normal":
+            z_id = 2
+        elif datengrundlage == "duene":
+            z_id = 3
+        elif datengrundlage == "container":
+            z_id = 4
 
-        # Unterscheidung Daten mit und ohne Berg
-
-        # Lesen der Datei Für nicht manipulierte Datei
-        for line in lines:
-            id_testdaten.append(int(line[0]))
-            x_testdaten.append(float(line[1]))
-            y_testdaten.append(float(line[2]))
-            if mit_Duenen:
-                tiefe_testdaten.append(float(line[4]))
-            else:
-                tiefe_testdaten.append(float(line[3]))
-        testdaten.close()
-        """
         # Lesen der Datei für manipulierte Datei
         for line in lines:
-            id_testdaten.append(int(line[1]))
-            x_testdaten.append(float(line[2]))
-            y_testdaten.append(float(line[3]))
-            tiefe_testdaten.append(float(line[4]))
+            x_testdaten.append(float(line[0]))
+            y_testdaten.append(float(line[1]))
+            tiefe_testdaten.append(float(line[z_id]))
         testdaten.close()
-        """
+
         testdaten_xmin = min(x_testdaten) - 10
         testdaten_xmax = max(x_testdaten) + 10
         testdaten_ymin = min(y_testdaten) - 10

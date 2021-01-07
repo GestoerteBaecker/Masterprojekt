@@ -1,9 +1,9 @@
 {
   "Boot":
     {
-	"simulation_start_x": 451880,
-	"simulation_start_y": 5884978,
-	"simulation_start_heading": 100,
+	"simulation_start_x": 452066,
+	"simulation_start_y": 5884960,
+	"simulation_start_heading": 310,
 	"simulation_suchbereich": 3,
 	"simulation_aktualisierungstakt": 1,
 	"Simulationsgeschwindigkeit": 3.5,
@@ -27,9 +27,9 @@
 	"offset_achsen_distometer_gnss": 0,
 	"offset_gnss_disto": 0.5,
 	"Anzahl_an_Bodenpunkte_zur_Medianberechnung": 10,
-	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.3,
-	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 0.5,
-	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 2,
+	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.5,
+	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 3,
+	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 0,
     "abbruchkriterium_min_kantenlaenge": 5,
     "abbruchkriterium_min_kantenwinkel": 5,
 	"Anzahl_berechneter_TIN_Kanten": 15,

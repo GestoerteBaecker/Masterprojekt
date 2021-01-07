@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import csv
-import Messprogramm.Messgebiet as Messgebiet
+import Masterprojekt.Messprogramm.Messgebiet as Messgebiet
 
 Testdaten_txt = open("Test_DHM.txt","r")
 Datenzeile = Testdaten_txt.readline().replace("\n","").split(";")

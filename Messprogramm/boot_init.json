@@ -26,7 +26,7 @@
 	"offset_gnss_echolot": 0,
 	"offset_achsen_distometer_gnss": 0,
 	"offset_gnss_disto": 0.5,
-	"Anzahl_an_Bodenpunkte_zur_Medianberechnung": 1,
+	"Anzahl_an_Bodenpunkte_zur_Medianberechnung": 10,
 	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.5,
 	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 0.5,
 	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 2,

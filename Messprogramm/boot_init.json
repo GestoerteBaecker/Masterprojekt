@@ -1,8 +1,8 @@
 {
   "Boot":
     {
-	"simulation_start_x": 452066,
-	"simulation_start_y": 5884960,
+	"simulation_start_x": 452000,
+	"simulation_start_y": 5884870,
 	"simulation_start_heading": 310,
 	"simulation_suchbereich": 3,
 	"simulation_aktualisierungstakt": 1,
@@ -16,7 +16,7 @@
 	"stern_grzw_seitenlaenge": 500,
 	"min_Sternabstand": 30,
 	"anfahrtoleranz_von_punkten": 3,
-	"Medianfaktor_zur_Profilbildung_im_Stern": 5,
+	"Medianfaktor_zur_Profilbildung_im_Stern": 2,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,
 	"profil_grzw_neigungen_topographischer_punkte": 10,
 	"Toleranz_fuer_Profilexistenzpruefung": 0.3,
@@ -26,10 +26,10 @@
 	"offset_gnss_echolot": 0,
 	"offset_achsen_distometer_gnss": 0,
 	"offset_gnss_disto": 0.5,
-	"Anzahl_an_Bodenpunkte_zur_Medianberechnung": 10,
+	"Anzahl_an_Bodenpunkte_zur_Medianberechnung": 1,
 	"Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil": 0.5,
-	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 3,
-	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 0,
+	"Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil": 0.5,
+	"Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil": 2,
     "abbruchkriterium_min_kantenlaenge": 5,
     "abbruchkriterium_min_kantenwinkel": 5,
 	"Anzahl_berechneter_TIN_Kanten": 15,

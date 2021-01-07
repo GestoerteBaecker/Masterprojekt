@@ -22,6 +22,10 @@ class Boot_Simulation(Boot.Boot):
         ################################# S I M U L A T I O N ##########################################################
         #SIMULATIONSPARAMETER
         # Einlesen der Parameter aus JSON Datei
+
+        self.akt_takt = self.akt_takt / self.Faktor #Faktor zum Beschleunigen oder verlangsamen der Simulation ... Bei echter messung auf 1 setzten
+        self.db_takt = self.akt_takt
+
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
@@ -239,7 +243,7 @@ class Boot_Simulation(Boot.Boot):
         distanz = self.position.Abstand(punkt)
         testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
-        profilpunkte = testprofil.BerechneZwischenpunkte(0.5)    #(geschw*(self.akt_takt*self.Faktor))
+        profilpunkte = testprofil.BerechneZwischenpunkte(0.25)    #(geschw*(self.akt_takt*self.Faktor))
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
             while self.punkt_anfahren and self.boot_lebt:

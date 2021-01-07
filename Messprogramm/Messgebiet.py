@@ -806,8 +806,8 @@ class Profilstreifenerzeugung:
             schnittpunkte_r2 = self.grenzpoly_shape.intersection(strahl_r2)
             schnitt_r2, abstand_r2 = naechster_schnittpunkt(p2, schnittpunkte_r2)
 
-            startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=self.sicherheitsabstand)
-            endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=self.sicherheitsabstand)
+            startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=self.sicherheitsabstand*1.25)
+            endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=self.sicherheitsabstand*1.25)
 
             self.richtungslinien.append([startpunkt, endpunkt])
 
@@ -1579,7 +1579,7 @@ class Messgebiet:
                 self.aktuelles_profil += 1
                 #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
                 #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
-                punkt = self.profile[-1].endpunkt #profile[0].endpunkt
+                punkt = self.profile[-2].endpunkt #profile[0].endpunkt
                 methode = Verdichtungsmode.KANTEN #Verdichtungsmode.WEGFÜHRUNG
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil

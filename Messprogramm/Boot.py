@@ -57,6 +57,7 @@ class Boot:
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
         self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
         self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"] # je größer, desto eher werden nah liegende Kanten berücksichtigt
+        # Das Längengewicht wird beim Hybriden Ansatz automatisch auf 0 gesetzt
         self.längengewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil"] # je größer, desto eher werden längere Kanten angefahren
         self.winkelgewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil"] # je größer, desto eher werden die Winkel berücksichtigt
         self.anzahl_anzufahrende_kanten = json_daten["Boot"]["Anzahl_berechneter_TIN_Kanten"]
@@ -107,8 +108,7 @@ class Boot:
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [False]
         self.db_takt = min(*takt)
-        self.akt_takt = (self.db_takt)/ self.Faktor #Faktor zum Beschleunigen oder verlangsamen der Simulation ... Bei echter messung auf 1 setzten
-
+        self.akt_takt = self.db_takt
 
     # muss einmalig angestoßen werden und verbleibt im Messzustand, bis self.auslesen auf False gesetzt wird
     def Sensorwerte_auslesen(self):
@@ -421,10 +421,11 @@ class Boot:
         if index != 0:
             self.streifenprofile.reverse()
 
+        self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1],self.messgebiet_ausdehnung[0])
+
         if verdichtung:
             # Anlegen eines Messgebiets für Sicherung der befahrenen Profile für das Verdichten
             self.erkundung_gestartet = True
-            self.messgebiet = Messgebiet.Messgebiet(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1], self.messgebiet_ausdehnung[1], self.messgebiet_ausdehnung[0])
             self.messgebiet.ProfileEinlesen(self.streifenprofile)
             punktliste = []
             for i in range(len(richtungslinie_x)):
@@ -494,12 +495,13 @@ class Boot:
             # TODO: Uferpolygon mitberücksichtigen (in Ufererkennung und Abfrage, ob Profil anfahrbar)
             # Verdichtungsfahrten nach der Streifenweise Aufnahme (falls erwünscht)
             if verdichtung:
-
+                self.längengewicht = 0
                 # Definition der Profile und topographisch bedeutsamer Punkte
                 self.messgebiet.TopoPunkteExtrahieren()
                 self.messgebiet.TIN_berechnen()
 
                 # der Name sagts
+                # Bei verdichtenden Fahrten im Hybriden Ansatz empfiehlt es sich das Längengewicht auf 0 zu setzen
                 self.VerdichtendeFahrten()
 
                 self.fortlaufende_aktualisierung = False

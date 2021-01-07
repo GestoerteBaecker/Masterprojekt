@@ -311,7 +311,7 @@ class TIN:
                     if laenge_norm*kante.winkel() > max_gewicht:
                         max_gewicht = laenge_norm*kante.winkel()
                         kanten_größtes_absolutes_gewicht = kante
-                    abstandsgewicht = numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** entfernungsgewicht)
+                    abstandsgewicht = -((1-entfernungsgewicht)/max_entfernung)*kante.mitte().Abstand(bootsposition)+1  #numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** )
                     kantenlaengenanteil= laenge_norm**längengewicht
                     kantenwinkelanteil= kante_norm**winkelgewicht
 
@@ -1577,10 +1577,10 @@ class Messgebiet:
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
                 soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
                 self.aktuelles_profil += 1
-                profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
-                self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
-                punkt = profile[0].endpunkt
-                methode = Verdichtungsmode.WEGFÜHRUNG
+                #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
+                #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
+                punkt = self.profile[-1].endpunkt #profile[0].endpunkt
+                methode = Verdichtungsmode.KANTEN #Verdichtungsmode.WEGFÜHRUNG
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt

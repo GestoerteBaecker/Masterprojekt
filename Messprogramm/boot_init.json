@@ -14,7 +14,7 @@
 	"grenzwert_tiefe_UK3": 2,
 	"stern_winkelinkrement": 50,
 	"stern_grzw_seitenlaenge": 500,
-	"min_Sternabstand": 30,
+	"min_Sternabstand": 50,
 	"anfahrtoleranz_von_punkten": 3,
 	"Medianfaktor_zur_Profilbildung_im_Stern": 2,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,

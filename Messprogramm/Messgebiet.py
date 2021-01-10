@@ -436,9 +436,14 @@ class Stern:
     @classmethod
     def SterneBilden(cls, punktliste):
         stern = cls(punktliste[0], 0, initial=True, ebene=0)
+        stern.stern_beendet = True
+        stern.aktueller_stern = None
         stern_temp = stern
         for i in range(1, len(punktliste)):
-            stern_doppel_temp = cls(punktliste[i], 0, initial=True, ebene=0)
+            stern_doppel_temp = cls(punktliste[i], 0, initial=False, ebene=i)
+            stern_doppel_temp.initialstern = stern
+            stern_doppel_temp.stern_beendet = True
+            stern_doppel_temp.aktueller_stern = None
             stern_temp.weitere_sterne.append(stern_doppel_temp)
             stern_temp = stern_doppel_temp
         return stern
@@ -582,7 +587,7 @@ class Stern:
 
         def berechne_mitte(stern, profil, entfernung_vom_startpunkt):
             neue_mitte = profil.BerechneNeuenKurspunkt(entfernung_vom_startpunkt, punkt_objekt=True)
-            # Sternmittelpunkt muss mind. 30 m von allen anderen Mittelpunkten entfernt sein!
+            # Sternmittelpunkt muss mind. self.min_sternabstand m von allen anderen Mittelpunkten entfernt sein!
             sterne = self.Sterne()
             stern_isoliert = True
             for akt_stern in sterne:
@@ -619,7 +624,6 @@ class Stern:
             stern.median = statistics.median(laengen)
             for i, laenge in enumerate(laengen):
                 if laenge >= self.grzw_seitenlaenge or laenge >= self.medianfaktor*stern.median:
-                    neue_messung = True
                     if i >= len(stern.profile): # dann liegt das neue Sternzentrum zwischen Mitte und Endpunkt
                         entfernung = laengen[i%len(stern.profile)] + laenge/2
                     else: # so liegt das neue Zentrum zwischen STart und Mitte
@@ -627,6 +631,7 @@ class Stern:
                     neuer_stern = berechne_mitte(stern, stern.profile[i%len(stern.profile)], entfernung)
                     if neuer_stern is not None:
                         stern.weitere_sterne.append(neuer_stern)
+                        neue_messung = True
             return neue_messung
 
     # sucht den aktuellen Stern (möglicherweise rekursiv, falls mehrere Sterne vorhanden sind)
@@ -646,7 +651,6 @@ class Stern:
             self.aktueller_stern = sterne[0]
         else:
             self.aktueller_stern = None # alle Sterne sind gemessen
-
         return self.aktueller_stern is not None # falls es keine Sterne mehr gibt, wird False ausgegeben
 
     # durchläuft alle Profile des aktuellen Sterns und gibt das aktuelle Profil aus (None, falls keins gefunden wurde)
@@ -676,7 +680,6 @@ class Stern:
                 return stern.mittelpunkt # alten Sternmittelpunkt anfahren! (nicht MittelpunktAnfahren, da jetzt der neue Stern angefahren würde (Zeile drüber))
             else:
                 self.AktuellerStern()
-
             if self.aktueller_stern == None:
                 return None
         stern.aktuelles_profil += 1

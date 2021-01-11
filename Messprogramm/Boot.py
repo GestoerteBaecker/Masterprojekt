@@ -181,6 +181,7 @@ class Boot:
                     schlafen = max(0, self.db_takt - (time.time() - t))
                     time.sleep(schlafen)
                 else:
+                    print("Daten abspeichern")
                     with open("Alle_Bodenpunkte.txt", "w+") as datei:
                         for punkt in self.alle_bodenpunkte:
                             datei.write(";".join([str(punkt.x), str(punkt.y), str(punkt.z)]) + "\n")
@@ -504,12 +505,13 @@ class Boot:
                 # Bei verdichtenden Fahrten im Hybriden Ansatz empfiehlt es sich das Längengewicht auf 0 zu setzen
                 self.VerdichtendeFahrten()
 
-                self.fortlaufende_aktualisierung = False
-                self.boot_lebt = False
-
                 print("Gefahrene Strecke nach Verdichtung:", self.gefahreneStrecke)
 
+            self.fortlaufende_aktualisierung = False
+            self.boot_lebt = False
+
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
+            self.messgebiet.TIN_berechnen()
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
@@ -533,7 +535,7 @@ class Boot:
             # Definition der Profile und topographisch bedeutsamer Punkte
             self.messgebiet.ProfileEinlesen(self.stern.Profile())
             self.messgebiet.TIN_berechnen()
-
+            self.messgebiet.tin.mesh.save("gemessenePunktwolke_nachStern.ply")
             # der Name sagts
             self.VerdichtendeFahrten()
 

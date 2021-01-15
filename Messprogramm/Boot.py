@@ -547,6 +547,7 @@ class Boot:
             
             print("Gefahrene Strecke:", self.gefahreneStrecke)
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
+            self.messgebiet.tin.mesh.plot(show_edges=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
 
@@ -567,9 +568,12 @@ class Boot:
 
                 # Medianpunkte ins aktuelle Profil einlesen, um daraus (auch in diesem Schritt) die topographisch bedeutsamen Punkte zu ermitteln
                 if mode_alt == Messgebiet.TrackingMode.PROFIL or mode_alt == Messgebiet.TrackingMode.VERBINDUNG:
-                    if abbruch_durch_ufer and self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
-                        self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil])  #Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
-                        self.messgebiet.nichtbefahrbareProfile.append(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1])
+                    if abbruch_durch_ufer:   # Vor Kürzung der Profile die Profile als nicht befahrbar abspeichern
+                        if self.messgebiet.verdichtungsmethode == Messgebiet.Verdichtungsmode.VERBINDUNG:
+                            kantenprofil = Messgebiet.Profil.ProfilKopieren(self.messgebiet.profile[self.messgebiet.aktuelles_profil+1]) # dann auch gleichzeitig das Kantenprofil nicht anfahrbar
+                            self.messgebiet.nichtbefahrbareProfile.append(kantenprofil)
+                        verb_oder_kantenprofil = Messgebiet.Profil.ProfilKopieren(self.messgebiet.profile[self.messgebiet.aktuelles_profil])
+                        self.messgebiet.nichtbefahrbareProfile.append(verb_oder_kantenprofil)
                     self.messgebiet.AktuellesProfilBeenden(self.position, self.median_punkte)
                     self.median_punkte = []
 

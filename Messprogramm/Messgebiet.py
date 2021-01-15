@@ -78,6 +78,13 @@ class Punkt:
             punkt = numpy.array([self.x, self.y])
         return punkt
 
+    @classmethod
+    def PunktAusNumpy(cls, punkt):
+        if punkt.size == 2:
+            return cls(punkt[0], punkt[1])
+        elif punkt.size == 3:
+            return cls(punkt[0], punkt[1], punkt[2])
+
     # Stringfunktion
     def __str__(self):
         return "\"Punkt: " + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "\""
@@ -977,7 +984,20 @@ class Profil:
         profil = cls(heading, p1, stuetz_ist_start=True, start_lambda=0, end_lambda=abstand, grzw_dichte_topo_pkt=grzw_dichte_topo_pkt, grzw_neigungen=grzw_neigungen, grzw_max_abstand=grzw_max_abstand)
         return profil
 
-    # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
+    # kopiert das eingegebene Profil und gibt ein neues Objekt zurück
+    @classmethod
+    def ProfilKopieren(cls, profil):
+        neues_profil = cls(profil.heading, Punkt.PunktAusNumpy(profil.stuetzpunkt), start_lambda=profil.start_lambda, end_lambda=profil.end_lambda, grzw_dichte_topo_pkt=profil.grzw_dichte_topo_pkt, grzw_neigungen=profil.grzw_neigungen, grzw_max_abstand=profil.grzw_max_abstand)
+        neues_profil.ist_definiert = profil.ist_definiert
+        neues_profil.startpunkt = profil.startpunkt
+        neues_profil.endpunkt = profil.endpunkt
+        neues_profil.lamb = profil.lamb
+        neues_profil.gemessenes_profil = profil.gemessenes_profil
+        neues_profil.median_punkte = profil.median_punkte
+        neues_profil.topographisch_bedeutsame_punkte = profil.topographisch_bedeutsame_punkte
+        return neues_profil
+
+        # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
     def ProfilBeginnen(self, punkt):
         if self.ist_definiert == Profil.Definition.NUR_RICHTUNG:
             # Projektion des neuen Stuetzvektors (punkt) auf die vorhandene Gerade
@@ -1585,7 +1605,7 @@ class Messgebiet:
                 self.aktuelles_profil += 1
                 #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
                 #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
-                punkt = self.profile[-2].endpunkt #profile[0].endpunkt
+                punkt = self.profile[-3].startpunkt #profile[0].endpunkt
                 methode = Verdichtungsmode.KANTEN #Verdichtungsmode.WEGFÜHRUNG
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
@@ -1655,10 +1675,11 @@ class Messgebiet:
     # beendet das aktuelle Profil und bestimmt die topographisch bedeutsamen Punkte und liest diese ins Messgebiet ein
     def AktuellesProfilBeenden(self, position, median_punkte):
         profil = self.profile[self.aktuelles_profil]
-        profil.NeuerEndpunkt(position)
-        profil.MedianPunkteEinfuegen(median_punkte)
-        profil.ProfilAbschliessenUndTopoPunkteFinden() # finden der topographisch bedeutsamen Punkte
-        self.PunkteEinlesen(profil.topographisch_bedeutsame_punkte)
+        if not profil.gemessenes_profil:
+            profil.NeuerEndpunkt(position)
+            profil.MedianPunkteEinfuegen(median_punkte)
+            profil.ProfilAbschliessenUndTopoPunkteFinden() # finden der topographisch bedeutsamen Punkte
+            self.PunkteEinlesen(profil.topographisch_bedeutsame_punkte)
 
     # Einfügen von Profilen, die bereits gemessen wurden!
     def ProfileEinlesen(self, profile):

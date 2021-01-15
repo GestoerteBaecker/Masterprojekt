@@ -484,10 +484,11 @@ class Boot:
                             self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
                             punktzaehler = 1
 
-                    self.aktuelles_Profil.MedianPunkteEinfuegen(self.median_punkte)
-                    self.aktuelles_Profil.ProfilAbschliessenUndTopoPunkteFinden(self.position)
-                    self.messgebiet.ProfileEinlesen(self.aktuelles_Profil)
-                    self.median_punkte = []
+                    if len(self.median_punkte) > 0:
+                        self.aktuelles_Profil.MedianPunkteEinfuegen(self.median_punkte)
+                        self.aktuelles_Profil.ProfilAbschliessenUndTopoPunkteFinden(self.position)
+                        self.messgebiet.ProfileEinlesen(self.aktuelles_Profil)
+                        self.median_punkte = []
 
                     time.sleep(self.akt_takt*10)
                 time.sleep(self.akt_takt / 2)
@@ -513,6 +514,7 @@ class Boot:
 
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             self.messgebiet.TIN_berechnen()
+            self.messgebiet.tin.mesh.plot(show_edges=True)
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")

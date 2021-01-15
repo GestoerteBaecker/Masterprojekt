@@ -2,11 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d484fff9-5253-47ed-bbd7-8e240af0eae9" name="Default Changelist" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gemessenePunktwolke.ply" afterPath="$PROJECT_DIR$/gemessenePunktwolke.ply" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Alle_Bodenpunkte.txt" afterPath="$PROJECT_DIR$/Alle_Bodenpunkte.txt" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Boot.py" afterPath="$PROJECT_DIR$/Boot.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Messgebiet.py" afterPath="$PROJECT_DIR$/Messgebiet.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Profilpruefung.py" afterPath="$PROJECT_DIR$/Profilpruefung.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/boot_init.json" afterPath="$PROJECT_DIR$/boot_init.json" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -22,7 +22,7 @@
     <favorites_list name="Sensoren" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.4970344">
+    <splitter split-orientation="horizontal" split-proportion="0.60379595">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file leaf-file-name="Simulation.py" pinned="false" current-in-tab="false">
@@ -74,8 +74,8 @@
           <file leaf-file-name="Messgebiet.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/Messgebiet.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="150">
-                  <caret line="1235" column="124" lean-forward="false" selection-start-line="1235" selection-start-column="124" selection-end-line="1235" selection-end-column="124" />
+                <state relative-caret-position="472">
+                  <caret line="1234" column="63" lean-forward="true" selection-start-line="1234" selection-start-column="63" selection-end-line="1234" selection-end-column="63" />
                   <folding>
                     <element signature="e#0#11#0" expanded="true" />
                   </folding>
@@ -87,17 +87,17 @@
       </split-first>
       <split-second>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file leaf-file-name="boot_init.json" pinned="false" current-in-tab="false">
+          <file leaf-file-name="boot_init.json" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/boot_init.json">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="34">
-                  <caret line="2" column="5" lean-forward="true" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
+                <state relative-caret-position="510">
+                  <caret line="33" column="43" lean-forward="true" selection-start-line="33" selection-start-column="43" selection-end-line="33" selection-end-column="43" />
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="Profilpruefung.py" pinned="false" current-in-tab="true">
+          <file leaf-file-name="Profilpruefung.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Profilpruefung.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="399">
@@ -112,8 +112,8 @@
           <file leaf-file-name="Boot.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Boot.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="242">
-                  <caret line="32" column="21" lean-forward="true" selection-start-line="32" selection-start-column="21" selection-end-line="32" selection-end-column="21" />
+                <state relative-caret-position="336">
+                  <caret line="486" column="12" lean-forward="false" selection-start-line="486" selection-start-column="12" selection-end-line="486" selection-end-column="51" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
                   </folding>
@@ -185,8 +185,8 @@
         <option value="$PROJECT_DIR$/Monitor.py" />
         <option value="$PROJECT_DIR$/Simulation.py" />
         <option value="$PROJECT_DIR$/boot_init.json" />
-        <option value="$PROJECT_DIR$/Boot.py" />
         <option value="$PROJECT_DIR$/Profilpruefung.py" />
+        <option value="$PROJECT_DIR$/Boot.py" />
         <option value="$PROJECT_DIR$/Messgebiet.py" />
       </list>
     </option>
@@ -421,7 +421,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29347825" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20869565" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.10127932" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -857,24 +857,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Boot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="32" column="21" lean-forward="true" selection-start-line="32" selection-start-column="21" selection-end-line="32" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/boot_init.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="5" lean-forward="true" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Profilpruefung.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="399">
@@ -885,10 +867,28 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Boot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="336">
+          <caret line="486" column="12" lean-forward="false" selection-start-line="486" selection-start-column="12" selection-end-line="486" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/boot_init.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="33" column="43" lean-forward="true" selection-start-line="33" selection-start-column="43" selection-end-line="33" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Messgebiet.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="1235" column="124" lean-forward="false" selection-start-line="1235" selection-start-column="124" selection-end-line="1235" selection-end-column="124" />
+        <state relative-caret-position="472">
+          <caret line="1234" column="63" lean-forward="true" selection-start-line="1234" selection-start-column="63" selection-end-line="1234" selection-end-column="63" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

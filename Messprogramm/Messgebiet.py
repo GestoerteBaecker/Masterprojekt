@@ -407,6 +407,7 @@ class Stern:
         self.grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"]  # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
         self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
         self.anfahrtoleranz = json_daten["Boot"]["anfahrtoleranz_von_punkten"]
         self.min_sternabstand = json_daten['Boot']['min_Sternabstand']
         self.medianfaktor = json_daten['Boot']['Medianfaktor_zur_Profilbildung_im_Stern']
@@ -428,7 +429,7 @@ class Stern:
 
     # muss zwingend nach der Initialisierung aufgerufen werden!
     def InitProfil(self):
-        profil = Profil(self.heading, self.startpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen)
+        profil = Profil(self.heading, self.startpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
@@ -466,7 +467,7 @@ class Stern:
                     if profil.PruefProfilExistiert(winkel,mitte, 10, 0.8):
                         existiert = True
             if not existiert:
-                profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen)
+                profil = Profil(winkel, mitte, stuetz_ist_start=False, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=stern.profil_grzw_dichte_topo_pkt, grzw_neigungen=stern.profil_grzw_neigungen, grzw_max_abstand=stern.profil_grzw_max_abstand)
                 stern.profile.append(profil)
             winkel += stern.winkelinkrement
 
@@ -575,10 +576,10 @@ class Stern:
             for i in range(len(sterne)-1):
                 stern1 = sterne[i]
                 stern2 = sterne[i+1]
-                profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt)
+                profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
                 weitere_profile.append(profil)
 
-        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt)
+        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
         profile = [anfang, *weitere_profile]
         return profile
 
@@ -745,6 +746,15 @@ class Profilstreifenerzeugung:
         self.max_dist = max_dist
         self.richtungslinien = []
         self.gespeicherte_profile = []
+
+        datei = open("boot_init.json", "r")
+        json_daten = json.load(datei)
+        datei.close()
+
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
+
         testdaten = []
         # Lesen der Datei
         for i in range(len(self.grenzpolygon_x)):
@@ -765,7 +775,7 @@ class Profilstreifenerzeugung:
             dist = p1.Abstand(p2)
 
             # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
-            hilfsprofil = Profil(heading, p1, True, 0, dist)
+            hilfsprofil = Profil(heading, p1, True, 0, dist, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
             hilfsprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
             hilfsprofilpunkte = hilfsprofil.BerechneZwischenpunkte(self.streifenabstand)
 
@@ -823,7 +833,7 @@ class Profilstreifenerzeugung:
             heading = Headingberechnung(None, linienende, linienstart)
 
             # Anlegen eines temporären Profils zur Berechnung der Zwischenpunkte im gewählten Streifenabstand
-            linienprofil = Profil(heading, linienstart, True, 0, distanz)
+            linienprofil = Profil(heading, linienstart, True, 0, distanz, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
             linienprofil.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
             linienprofilpunkte = linienprofil.BerechneZwischenpunkte(self.streifenabstand)
 
@@ -860,7 +870,7 @@ class Profilstreifenerzeugung:
                         if i == 0:
                             if str(startpunkt) != str(endpunkt):
                                 gespeicherte_streifen[i].append(streifen)
-                                self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
+                                self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand))
 
                     # Abbruch, sobald eine andere Linie in der Nähe ist
                     else:
@@ -870,7 +880,7 @@ class Profilstreifenerzeugung:
                                 endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
 
                             gespeicherte_streifen[i].append(streifen)
-                            self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
+                            self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand))
                         break
 
                 # Prüfung, ob andere Streifen bereits im Gebiet sind
@@ -900,7 +910,7 @@ class Profilstreifenerzeugung:
 
                     if str(startpunkt) != str(endpunkt):
                         streifen = shp.LineString([(startpunkt.x, startpunkt.y), (endpunkt.x, endpunkt.y)])
-                        self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt))
+                        self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand))
                         gespeicherte_streifen[i].append(streifen)
 
 class Profil:
@@ -915,7 +925,7 @@ class Profil:
     # startpunkt als Punkt-Objekt
     # end_lmbda ist bei den verdichtenden Profilen gegeben
     # grzw_dichte_topo_pkt: Soll-Punktdichte je Meter Profil; grzw_neigungen: grenzwert in gon, ab wann aufeinander folgende Gefälle einen topographisch bedeutsamenm Punkt verursachen
-    def __init__(self, richtung, stuetzpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+    def __init__(self, richtung, stuetzpunkt, stuetz_ist_start=True, start_lambda=0, end_lambda=None, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50, grzw_max_abstand=0.5):
         self.heading = richtung
         self.richtung = numpy.array([numpy.sin(richtung*numpy.pi/200), numpy.cos(richtung*numpy.pi/200)]) # 2D Richtungsvektor in Soll-Fahrtrichtung
         self.stuetzpunkt = stuetzpunkt.ZuNumpyPunkt(zwei_dim=True) # Anfangspunkt, von dem die Profilmessung startet, wenn start_lambda=0
@@ -929,6 +939,7 @@ class Profil:
         self.topographisch_bedeutsame_punkte = []
         self.grzw_dichte_topo_pkt = grzw_dichte_topo_pkt # Mindestanzahl der topographisch interessanten Punkte pro Meter!
         self.grzw_neigungen = grzw_neigungen # Winkel in gon, die die nachfolgend zu betrachtende Seite von der aktuellen abweichen darf, um noch als Gerade betrachtet zu werden
+        self.grzw_max_abstand = grzw_max_abstand # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         # Bestimmung der Profildefinition
         if stuetz_ist_start:
@@ -948,22 +959,22 @@ class Profil:
             return "Richtung: " + str(self.heading) + ", Stützpunkt: " + str(self.stuetzpunkt)
 
     @classmethod
-    def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+    def VerdichtendesProfil(cls, dreieckskante, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50, grzw_max_abstand=0.5):
         p1 = dreieckskante.Anfangspunkt
         p2 = dreieckskante.Endpunkt
-        temp_profil = cls.ProfilAusZweiPunkten(p1, p2)
+        temp_profil = cls.ProfilAusZweiPunkten(p1, p2, grzw_dichte_topo_pkt, grzw_neigungen, grzw_max_abstand)
         abstand = temp_profil.Profillaenge(akt_laenge=False)/2
         start = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=-abstand, punkt_objekt=True)
         end = temp_profil.BerechneNeuenKurspunkt(abstand, quer_entfernung=abstand, punkt_objekt=True)
-        profil = cls.ProfilAusZweiPunkten(start, end, grzw_dichte_topo_pkt, grzw_neigungen)
+        profil = cls.ProfilAusZweiPunkten(start, end, grzw_dichte_topo_pkt, grzw_neigungen, grzw_max_abstand)
         return profil
 
     # definiert ein Profil aus 2 Puntken
     @classmethod
-    def ProfilAusZweiPunkten(cls, p1, p2, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50):
+    def ProfilAusZweiPunkten(cls, p1, p2, grzw_dichte_topo_pkt=0.1, grzw_neigungen=50, grzw_max_abstand=0.5):
         heading = Headingberechnung(None, p2, p1)
         abstand = p1.Abstand(p2)
-        profil = cls(heading, p1, stuetz_ist_start=True, start_lambda=0, end_lambda=abstand, grzw_dichte_topo_pkt=grzw_dichte_topo_pkt, grzw_neigungen=grzw_neigungen)
+        profil = cls(heading, p1, stuetz_ist_start=True, start_lambda=0, end_lambda=abstand, grzw_dichte_topo_pkt=grzw_dichte_topo_pkt, grzw_neigungen=grzw_neigungen, grzw_max_abstand=grzw_max_abstand)
         return profil
 
     # wenn das Boot im Stern von der Mitte am Ufer ankommt und mit der Messung entlang des Profils beginnen soll (punkt ist der gefundene Punkt am Ufer)
@@ -1031,6 +1042,7 @@ class Profil:
         if position is None:
             raise Exception("Es muss ein Endpunkt des Profils angegeben werden.")
         self.end_lambda = self.BerechneLambda(position.ZuNumpyPunkt(zwei_dim=True))
+        #self.lamb = self.end_lambda
         self.endpunkt = self.BerechneNeuenKurspunkt(self.end_lambda, punkt_objekt=True)
         self.ist_definiert = Profil.Definition.START_UND_ENDPUNKT
 
@@ -1206,62 +1218,57 @@ class Profil:
                 self.NeuerEndpunkt(end_punkt)
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
-            mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(), 0))
-            if mind_anzahl_topo_punkte < 3:
-                self.topographisch_bedeutsame_punkte = self.median_punkte
-                return
+            mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(False), 0))
             grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
-            if len(self.median_punkte) > mind_anzahl_topo_punkte:
-                index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
-                steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
-                for i in range(1, len(self.median_punkte) - 1):
-                    p1 = self.median_punkte[i]
-                    p2 = self.median_punkte[i+1]
-                    steigung_vor = numpy.arctan(p1.NeigungBerechnen(p2, zurueck=False))
-                    winkel = steigung_vor - steigung_zurück
-                    if abs(winkel) >= grzw_winkel_rad:
-                        index_zugefügter_medianpunkte.append(i)
-                    steigung_zurück = steigung_vor
+            größter_abstand = 1
+            index_zugefügter_medianpunkte = []  # hier stehen die Indizes der Medianpunkte (bezogen auf self.median_punkte) drin, die als topographisch bedeutsam gefunden wurden
+            steigung_zurück = numpy.arctan(self.median_punkte[1].NeigungBerechnen(self.median_punkte[0]))
+            for i in range(1, len(self.median_punkte) - 1):
+                p1 = self.median_punkte[i]
+                p2 = self.median_punkte[i+1]
+                steigung_vor = numpy.arctan(p1.NeigungBerechnen(p2, zurueck=False))
+                winkel = steigung_vor - steigung_zurück
+                if abs(winkel) >= grzw_winkel_rad:
+                    index_zugefügter_medianpunkte.append(i)
+                steigung_zurück = steigung_vor
 
-                # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
-                while len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte:
-                    größter_abstand = -1
-                    index = None
-                    # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
-                    test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
-                    for i in range(len(test_indizes)-1):
-                        median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
-                        median_index_ende = test_indizes[i+1]
-                        stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=True)
-                        richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=True) - stuetz
-                        richtung = richtung / numpy.linalg.norm(richtung)
-                        # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
-                        for median_index in range(median_index_start+1, median_index_ende):
-                            abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=True)))
+            # weitere Punkte einfügen, falls nicht genügend Median Punkte gefunden wurden
+            while (len(index_zugefügter_medianpunkte) < mind_anzahl_topo_punkte or größter_abstand > self.grzw_max_abstand):
+                größter_abstand = -1
+                index = None
+                # durchlaufen aller "Geraden", die durch zwei der bereits gefundenen topographisch bedeutsamen Punkte gebildet werden
+                test_indizes = [0, *index_zugefügter_medianpunkte, len(self.median_punkte)-1] # damit die "Geraden", die vom Start und zum Endpunkt gehen mit berücksichtigt werden
+                for i in range(len(test_indizes)-1):
+                    median_index_start = test_indizes[i] # index, die auch in index_zugefügter_medianpunkte drin stehen
+                    median_index_ende = test_indizes[i+1]
+                    stuetz = self.median_punkte[median_index_start].ZuNumpyPunkt(zwei_dim=False)
+                    richtung = self.median_punkte[median_index_ende].ZuNumpyPunkt(zwei_dim=False) - stuetz
+                    richtung = richtung / numpy.linalg.norm(richtung)
+                    # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
+                    for median_index in range(median_index_start+1, median_index_ende):
+                        abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=False)))
 
-                            if größter_abstand <= abstand:
-                                größter_abstand = abstand
-                                index = median_index
-                    if index != None:
-                        index_zugefügter_medianpunkte.append(index)
-                        break
-                    index_zugefügter_medianpunkte.sort()
+                        if größter_abstand <= abstand:
+                            größter_abstand = abstand
+                            index = median_index
+                if index != None:
+                    index_zugefügter_medianpunkte.append(index)
+                index_zugefügter_medianpunkte.sort()
 
-                # hinzufügen aller so gefundenen Punkte als topographisch bedeutsame Punkte
-                for index in index_zugefügter_medianpunkte:
-                    self.topographisch_bedeutsame_punkte.append(self.median_punkte[index])
-            else:
-                self.topographisch_bedeutsame_punkte = self.median_punkte
+            # hinzufügen aller so gefundenen Punkte als topographisch bedeutsame Punkte
+            for index in index_zugefügter_medianpunkte:
+                self.topographisch_bedeutsame_punkte.append(self.median_punkte[index])
 
 # richtung und stuetz sind jeweils die 2D Vektoren der Geraden, und punkt der zu testende Punkt
 # richtung muss normiert sein!!
 def abstand_punkt_gerade(richtung, stuetz, punkt):
     if richtung.shape[0] == 2: # falls die Vektoren 2D sind
         richtung = numpy.array([richtung[1], -richtung[0]])
+        return numpy.dot(richtung, (punkt - stuetz))
     else: # falls die Vektoren 3D sind
-        richtung = punkt - numpy.dot(punkt, richtung) * richtung
-        richtung = richtung / numpy.linalg.norm(richtung)
-    return numpy.dot(richtung, (punkt - stuetz))
+        #richtung = punkt - numpy.dot(punkt, richtung) * richtung
+        #richtung = richtung / numpy.linalg.norm(richtung)
+        return numpy.linalg.norm(numpy.cross((punkt - stuetz), richtung))
 
 # Gerade 1 sollte bei Verwendung innerhalb der Klasse Profil die Kante des self Profils sein
 def schneide_geraden(richtung1, stuetz1, richtung2, stuetz2, lamb_intervall_1=None, lamb_intervall_2=None):
@@ -1382,6 +1389,9 @@ class Uferpunktquadtree:
         json_daten = json.load(datei)
         datei.close()
         max_ebenen = json_daten["Boot"]["Quadtreeebenen_fuer_Messgebiet"]
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         self.zelle = zelle                                  # Rechteck, was das den Umfang des Quadtreeelements definiert
         self.max_punkte_pro_zelle = max_punkte_pro_zelle    # Maximale Anzahl der Punkte pro Zelle
@@ -1467,23 +1477,10 @@ class Uferpunktquadtree:
 
     # Testet, ob zumindest der Startpunkt anfahrbar ist; falls nicht wird der Endpunkt geprüft und ggf. beide Punkte getauscht
     def TestPunkteAnfahrbar(self, profil): # TODO !!!!!!! Profile werden deutlich zu leicht abgelehnt, da das Ufer im Quadtree nicht gut bestimmt ist
-        """
-        pkt_ausserhalb_quadtree = self.zelle.mittelpunkt + Punkt(0, self.zelle.h)
-        temp_profil = Profil.ProfilAusZweiPunkten(profil.startpunkt, pkt_ausserhalb_quadtree)
-        if not self.linienabfrage(temp_profil): # beide Punkte müssen bei hinreichend gut erfasstem Ufer außerhalb des Sees liegen; Startpunkt ist nicht erreichbar
-            temp_profil = Profil.ProfilAusZweiPunkten(profil.endpunkt, pkt_ausserhalb_quadtree)
-            if not self.linienabfrage(temp_profil): # auch der Endpunkt ist nicht erreichbar
-                return False
-            else:
-                profil.Flip() # Jetzt ist der Startpunkt (vormals Endpunkt) erreichbar
-                return True
-        else:
-            return True
-        """
         # Methode umgeschrieben, sodass nur bei ermittelten Punkten ein Ufer erkannt wird
-        temp_profil = Profil.ProfilAusZweiPunkten(profil.startpunkt, self.zelle.mittelpunkt)
+        temp_profil = Profil.ProfilAusZweiPunkten(profil.startpunkt, self.zelle.mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
         if self.linienabfrage(temp_profil): # beide Punkte müssen bei hinreichend gut erfasstem Ufer außerhalb des Sees liegen; Startpunkt ist nicht erreichbar
-            temp_profil = Profil.ProfilAusZweiPunkten(profil.endpunkt, self.zelle.mittelpunkt)
+            temp_profil = Profil.ProfilAusZweiPunkten(profil.endpunkt, self.zelle.mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
             if self.linienabfrage(temp_profil): # auch der Endpunkt ist nicht erreichbar
                 return False
             else:
@@ -1549,6 +1546,9 @@ class Messgebiet:
         self.Verbindungsprofiltoleranz = json_daten["Boot"]["Toleranz_fuer_Verbindungsexistenzpruefung"]
         self.abbruch_kantenlaenge = json_daten["Boot"]["abbruchkriterium_min_kantenlaenge"]
         self.abbruch_kantenwinkel = json_daten["Boot"]["abbruchkriterium_min_kantenwinkel"]
+        self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
@@ -1578,7 +1578,7 @@ class Messgebiet:
     def NaechsterPunkt(self, position, ufer, entfernungsgewicht, längengewicht, winkelgewicht, anzahl_anzufahrende_kanten):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
+                #soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
                 self.aktuelles_profil += 1
                 #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
                 #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
@@ -1598,12 +1598,12 @@ class Messgebiet:
             verbindungsprofil = None
             profilzaeler = 0
             for kante in kanten:
-                profil = Profil.VerdichtendesProfil(kante)
+                profil = Profil.VerdichtendesProfil(kante, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topographischer_punkte, grzw_neigungen=self.profil_grzw_neigungen_topographischer_punkte, grzw_max_abstand=self.profil_grzw_max_abstand)
                 bestehendeProfile = self.profile + self.nichtbefahrbareProfile
                 profilzaeler += 1
                 for existierendesProfil in bestehendeProfile:
                     # je höher die Toleranz, desto mehr Profile werden gefahren
-                    verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
+                    verbindungsprofil = Profil.ProfilAusZweiPunkten(position,profil.startpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topographischer_punkte, grzw_neigungen=self.profil_grzw_neigungen_topographischer_punkte, grzw_max_abstand=self.profil_grzw_max_abstand)  # das Verbindungsprofil zum Anfahren des verdichtenden Sollprofils
                     existiert_profil = existierendesProfil.PruefProfilExistiert(profil.heading, profil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Profiltoleranz, lambda_intervall=[profil.start_lambda, profil.end_lambda])
                     liegt_profilpunkt_in_existierendem_profil = False#existierendesProfil.PruefPunktInProfil(profil.startpunkt, self.profilbreite/2)
                     existiert_verbindungsprofil = existierendesProfil.PruefProfilExistiert(verbindungsprofil.heading, verbindungsprofil.stuetzpunkt, profilbreite=self.profilbreite, toleranz=self.Verbindungsprofiltoleranz, lambda_intervall=[verbindungsprofil.start_lambda, verbindungsprofil.end_lambda])

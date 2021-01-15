@@ -34,8 +34,6 @@ class Boot:
 
         self.stern_winkelinkrement = json_daten["Boot"]["stern_winkelinkrement"] # Winkel der konvergenten Strahlen des Sterns
         self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
-        self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"] # Solldichte in Punkte / m längs eines Profil
-        self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"] # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
         self.telemetriereichweite = json_daten["Boot"]["Telemetriereichweite"]
         self.messgebiet_ausdehnung = [self.telemetriereichweite,self.telemetriereichweite] # Breite und Höhe in m
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
@@ -486,8 +484,11 @@ class Boot:
                             self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
                             punktzaehler = 1
 
+                    self.aktuelles_Profil.MedianPunkteEinfuegen(self.median_punkte)
                     self.aktuelles_Profil.ProfilAbschliessenUndTopoPunkteFinden(self.position)
                     self.messgebiet.ProfileEinlesen(self.aktuelles_Profil)
+                    self.median_punkte = []
+
                     time.sleep(self.akt_takt*10)
                 time.sleep(self.akt_takt / 2)
 

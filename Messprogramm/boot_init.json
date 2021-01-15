@@ -19,6 +19,7 @@
 	"Medianfaktor_zur_Profilbildung_im_Stern": 2,
 	"profil_grzw_dichte_topographischer_punkte": 0.1,
 	"profil_grzw_neigungen_topographischer_punkte": 10,
+	"profil_grzw_max_abstand": 0.5,
 	"Toleranz_fuer_Profilexistenzpruefung": 0.3,
 	"Toleranz_fuer_Verbindungsexistenzpruefung": 0.5,
 	"Telemetriereichweite": 2000,

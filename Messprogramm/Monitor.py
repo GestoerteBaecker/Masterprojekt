@@ -47,10 +47,10 @@ class Anwendung(Frame):
         # OptionMenu, ob Vorwissen existiert
         # Einführen einer Variablen für ein OptionMenu
         self.__om_variable_mode = StringVar(self)
-        self.__om_variable_mode.set("Vollautomatisch")
+        self.__om_variable_mode.set("Vollautonom")
 
         # OptionMenu zur Auswahl der Simulation und Erkundungsmethode
-        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautomatisch", "Teilautomatisch", "Hybrid"], command=self.modusabfrage)
+        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautonom", "Teilautonom", "Hybrid"], command=self.modusabfrage)
         self.om.grid(row=1, column=2,padx=10,sticky="ew")
         self.om = OptionMenu(self, self.__om_variable_sim, *["Simulation", "Reale Daten"], command=self.simulationsabfrage)
         self.om.grid(row=1, column=3,padx=10,sticky="ew")
@@ -205,9 +205,9 @@ class Anwendung(Frame):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
-        if self.__om_variable_mode.get() == "Vollautomatisch":
+        if self.__om_variable_mode.get() == "Vollautonom":
             self.boot.Erkunden()
-        elif self.__om_variable_mode.get() == "Teilautomatisch":
+        elif self.__om_variable_mode.get() == "Teilautonom":
             if self.karte_window.richtungslinie_x is not None:
                 richtungslinie_x = self.karte_window.richtungslinie_x
                 richtungslinie_y = self.karte_window.richtungslinie_y

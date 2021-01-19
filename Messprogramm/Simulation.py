@@ -221,6 +221,7 @@ class Boot_Simulation(Boot.Boot):
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
                             self.median_punkte.append(Bodenpunkt)
+                            self.median_punkte_alle.append(Bodenpunkt)
 
                 schlafen = max(0, (self.akt_takt - (time.time() - t)))
                 time.sleep(schlafen)

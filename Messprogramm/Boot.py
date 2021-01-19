@@ -33,8 +33,8 @@ class Boot:
         datei.close()
 
         self.stern_winkelinkrement = json_daten["Boot"]["stern_winkelinkrement"] # Winkel der konvergenten Strahlen des Sterns
-        self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
-        self.telemetriereichweite = json_daten["Boot"]["Telemetriereichweite"]
+        self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_max_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
+        self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
         self.messgebiet_ausdehnung = [self.telemetriereichweite,self.telemetriereichweite] # Breite und Höhe in m
         self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
         self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
@@ -49,16 +49,16 @@ class Boot:
         self.db_database = None
         self.db_table = None
         self.heading = None
-        self.anz_Bodenpunkte = json_daten["Boot"]["Anzahl_an_Bodenpunkte_zur_Medianberechnung"]
+        self.anz_Bodenpunkte = json_daten["Boot"]["bodenpunkte_medianberechnung"]
         self.anfahrtoleranz = json_daten["Boot"]["anfahrtoleranz_von_punkten"]
         self.Offset_GNSSmitte_Disto = json_daten["Boot"]["offset_gnss_disto"]   # TODO: Tatsächliches Offset messen und ergänzen
         self.Winkeloffset_dist = json_daten["Boot"]["offset_achsen_distometer_gnss"]          # TODO: Winkeloffset kalibrieren und angeben IN GON !!
-        self.Faktor = json_daten["Boot"]["Simulationsgeschwindigkeit"]
-        self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["Gewichtungsfaktor_fuer_Bootsentfernung_zu_Verdichtungsprofil"] # je größer, desto eher werden nah liegende Kanten berücksichtigt
+        self.Faktor = json_daten["Boot"]["simulationsgeschwindigkeit"]
+        self.Entfernungsfaktor_fuer_Verdichtung = json_daten["Boot"]["gewichtungsfaktor_entfernung"] # je größer, desto eher werden nah liegende Kanten berücksichtigt
         # Das Längengewicht wird beim Hybriden Ansatz automatisch auf 0 gesetzt
-        self.längengewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenlaenge_zu_Verdichtungsprofil"] # je größer, desto eher werden längere Kanten angefahren
-        self.winkelgewicht = json_daten["Boot"]["Gewichtungsfaktor_fuer_TIN_Kantenwinkel_zu_Verdichtungsprofil"] # je größer, desto eher werden die Winkel berücksichtigt
-        self.anzahl_anzufahrende_kanten = json_daten["Boot"]["Anzahl_berechneter_TIN_Kanten"]
+        self.längengewicht = json_daten["Boot"]["gewichtungsfaktor_kantenlaenge"] # je größer, desto eher werden längere Kanten angefahren
+        self.winkelgewicht = json_daten["Boot"]["gewichtungsfaktor_kantenwinkel"] # je größer, desto eher werden die Winkel berücksichtigt
+        self.anzahl_anzufahrende_kanten = json_daten["Boot"]["beruecksichtigte_kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
         self.Offset_GNSS_Echo = json_daten["Boot"]["offset_gnss_echolot"]       # TODO: Höhenoffset zwischen GNSS und Echolot bestimmen (wichtig für absolute Vergleiche)

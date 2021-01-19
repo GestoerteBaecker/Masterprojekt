@@ -35,7 +35,7 @@ class Boot_Simulation(Boot.Boot):
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
-        datengrundlage = json_daten["Boot"]["Datengrundlage"] # "normal", "duene", "container"
+        datengrundlage = json_daten["Boot"]["referenzmodell"] # "original", "transportkoerper", "container"
 
         self.PixHawk.verbindungsversuch = False
 
@@ -46,9 +46,9 @@ class Boot_Simulation(Boot.Boot):
         y_testdaten = []
         tiefe_testdaten = []
         z_id = 2
-        if datengrundlage == "normal":
+        if datengrundlage == "original":
             z_id = 2
-        elif datengrundlage == "duene":
+        elif datengrundlage == "transportkoerper":
             z_id = 3
         elif datengrundlage == "container":
             z_id = 4

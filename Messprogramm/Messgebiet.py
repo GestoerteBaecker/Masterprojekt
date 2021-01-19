@@ -411,14 +411,14 @@ class Stern:
         datei.close()
 
         self.winkelinkrement = json_daten["Boot"]["stern_winkelinkrement"]  # Winkel der konvergenten Strahlen des Sterns
-        self.grzw_seitenlaenge = json_daten["Boot"]["stern_grzw_seitenlaenge"]  # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
-        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
-        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
-        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
+        self.grzw_seitenlaenge = json_daten["Boot"]["stern_max_seitenlaenge"]  # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
         self.anfahrtoleranz = json_daten["Boot"]["anfahrtoleranz_von_punkten"]
-        self.min_sternabstand = json_daten['Boot']['min_Sternabstand']
-        self.medianfaktor = json_daten['Boot']['Medianfaktor_zur_Profilbildung_im_Stern']
-        self.telemetriereichweite = json_daten["Boot"]["Telemetriereichweite"]
+        self.min_sternabstand = json_daten['Boot']['stern_min_abstand']
+        self.medianfaktor = json_daten['Boot']['medianfaktor_sternerzeugung']
+        self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
 
         self.profile = []
         self.aktuelles_profil = 0 # Index des aktuellen Profils bezogen auf self.aktueller_stern
@@ -758,9 +758,9 @@ class Profilstreifenerzeugung:
         json_daten = json.load(datei)
         datei.close()
 
-        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
-        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
-        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         testdaten = []
         # Lesen der Datei
@@ -1420,10 +1420,10 @@ class Uferpunktquadtree:
         datei = open("boot_init.json", "r")
         json_daten = json.load(datei)
         datei.close()
-        max_ebenen = json_daten["Boot"]["Quadtreeebenen_fuer_Messgebiet"]
-        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
-        self.profil_grzw_neigungen = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
-        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
+        max_ebenen = json_daten["Boot"]["quadtreeebenen"]
+        self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         self.zelle = zelle                                  # Rechteck, was das den Umfang des Quadtreeelements definiert
         self.max_punkte_pro_zelle = max_punkte_pro_zelle    # Maximale Anzahl der Punkte pro Zelle
@@ -1573,14 +1573,14 @@ class Messgebiet:
         json_daten = json.load(datei)
         datei.close()
 
-        self.profilbreite = json_daten["Boot"]["abbruchkriterium_min_kantenlaenge"] # == abbruch_kantenlaenge, da gegen Ende der Iterationen die sehr kleinen Profile (=abbruch_kantenlaenge) nicht eine übermäßige, nicht der Länge angepasste Breite haben sollen
-        self.Profiltoleranz = json_daten["Boot"]["Toleranz_fuer_Profilexistenzpruefung"]
-        self.Verbindungsprofiltoleranz = json_daten["Boot"]["Toleranz_fuer_Verbindungsexistenzpruefung"]
-        self.abbruch_kantenlaenge = json_daten["Boot"]["abbruchkriterium_min_kantenlaenge"]
-        self.abbruch_kantenwinkel = json_daten["Boot"]["abbruchkriterium_min_kantenwinkel"]
-        self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["profil_grzw_dichte_topographischer_punkte"]  # Solldichte in Punkte / m längs eines Profil
-        self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["profil_grzw_neigungen_topographischer_punkte"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
-        self.profil_grzw_max_abstand = json_daten["Boot"]["profil_grzw_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
+        self.profilbreite = json_daten["Boot"]["abbruchkriterium_kantenlaenge"] # == abbruch_kantenlaenge, da gegen Ende der Iterationen die sehr kleinen Profile (=abbruch_kantenlaenge) nicht eine übermäßige, nicht der Länge angepasste Breite haben sollen
+        self.Profiltoleranz = json_daten["Boot"]["toleranz_existenzpruefung_profil"]
+        self.Verbindungsprofiltoleranz = json_daten["Boot"]["toleranz_existenzpruefung_verbindung"]
+        self.abbruch_kantenlaenge = json_daten["Boot"]["abbruchkriterium_kantenlaenge"]
+        self.abbruch_kantenwinkel = json_daten["Boot"]["abbruchkriterium_kantenwinkel"]
+        self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
+        self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
+        self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
 
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)

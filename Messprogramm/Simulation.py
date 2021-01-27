@@ -33,6 +33,7 @@ class Boot_Simulation(Boot.Boot):
         xpos1_start_sim = json_daten["Boot"]["simulation_start_x"]
         ypos1_start_sim = json_daten["Boot"]["simulation_start_y"]
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
+        self.position_sim = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
         datengrundlage = json_daten["Boot"]["Datengrundlage"] # "normal", "duene", "container"
@@ -120,7 +121,7 @@ class Boot_Simulation(Boot.Boot):
                 t = time.time()
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
-                    position = self.position
+                    position = self.position_sim
                     heading = self.heading
                 suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
@@ -250,7 +251,7 @@ class Boot_Simulation(Boot.Boot):
             while self.punkt_anfahren and self.boot_lebt:
                 alte_position = self.position
                 with Messgebiet.schloss:
-                    self.position = profilpunkte[index]
+                    self.position_sim = profilpunkte[index]
                     index += 1
                     entfernung = self.position.Abstand(alte_position)
                     self.gefahreneStrecke += entfernung

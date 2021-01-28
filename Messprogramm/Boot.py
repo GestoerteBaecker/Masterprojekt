@@ -61,6 +61,7 @@ class Boot:
         self.anzahl_anzufahrende_kanten = json_daten["Boot"]["beruecksichtigte_kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
+        self.median_punkte_alle = []
         self.Offset_GNSS_Echo = json_daten["Boot"]["offset_gnss_echolot"]       # TODO: Höhenoffset zwischen GNSS und Echolot bestimmen (wichtig für absolute Vergleiche)
         self.db_id = 0
         self.messgebiet = None
@@ -279,6 +280,7 @@ class Boot:
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
+                            self.median_punkte_alle.append(Bodenpunkt)
                         Letzte_Bodenpunkte = []
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
@@ -514,7 +516,7 @@ class Boot:
 
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             self.messgebiet.TIN_berechnen()
-            self.messgebiet.tin.mesh.plot(show_edges=True)
+            #self.messgebiet.tin.mesh.plot(show_edges=True)
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
@@ -558,6 +560,7 @@ class Boot:
         self.messgebiet.Verdichtungsmode(Messgebiet.Verdichtungsmode.KANTEN)
         self.punkt_anfahren = False
         print("///////////////////////////////////////////////")
+        nummer = 0
         while self.boot_lebt:
             abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
             if abbruch_durch_ufer or not self.punkt_anfahren:
@@ -588,6 +591,10 @@ class Boot:
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_punkt)
                 time.sleep(self.akt_takt * 10)  # beide Sleeps sind identisch mit denen in SternAbfahren()
+                # aktuelles mesh speichern
+                #string = "TIN" + str(nummer) + ".ply"
+                #self.messgebiet.tin.mesh.save(string)
+                nummer += 1
             time.sleep(self.akt_takt/2)
 
     # gibt alle weiteren anzufahrenden Kanten aus

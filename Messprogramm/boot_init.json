@@ -3,9 +3,8 @@
     {
 	"simulation_start_x": 452000,
 	"simulation_start_y": 5884870,
-	"simulation_start_heading": 320,
+	"simulation_start_heading": 380,
 	"simulation_suchbereich": 3,
-	"simulation_aktualisierungstakt": 1,
 	"simulationsgeschwindigkeit": 3.5,
 	"referenzmodell": "container",
 	"grenzwert_entfernung_UK2": 50,

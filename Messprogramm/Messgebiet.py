@@ -922,11 +922,8 @@ class Profilstreifenerzeugung:
                         self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand))
                         gespeicherte_streifen[i].append(streifen)
 
-                else:
-                    self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt,
-                                                                                 grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt,
-                                                                                 grzw_neigungen=self.profil_grzw_neigungen,
-                                                                                 grzw_max_abstand=self.profil_grzw_max_abstand))
+                if len(self.richtungslinien) == 1:
+                    self.gespeicherte_profile.append(Profil.ProfilAusZweiPunkten(startpunkt, endpunkt,grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt,grzw_neigungen=self.profil_grzw_neigungen,grzw_max_abstand=self.profil_grzw_max_abstand))
                     gespeicherte_streifen[i].append(streifen)
 
 class Profil:
@@ -1248,7 +1245,7 @@ class Profil:
 
             # ab hier berechnen der topographisch bedeutsamen Punkte (der allererste und -letzte Medianpunkt werden nach jetztigem Schema nie eingefügt)
             mind_anzahl_topo_punkte = int(round(self.grzw_dichte_topo_pkt * self.Profillaenge(False), 0))
-            if len(self.median_punkte) <= max(2, mind_anzahl_topo_punkte):
+            if len(self.median_punkte)-2 <= max(2, mind_anzahl_topo_punkte):
                 self.topographisch_bedeutsame_punkte = self.median_punkte
             else:
                 grzw_winkel_rad = self.grzw_neigungen/200*numpy.pi
@@ -1279,7 +1276,6 @@ class Profil:
                         # durchlaufen aller Punkte zwischen den beiden "Geraden"-definierenden Punkten
                         for median_index in range(median_index_start+1, median_index_ende):
                             abstand = abs(abstand_punkt_gerade(richtung, stuetz, self.median_punkte[median_index].ZuNumpyPunkt(zwei_dim=False)))
-
                             if größter_abstand <= abstand:
                                 größter_abstand = abstand
                                 index = median_index

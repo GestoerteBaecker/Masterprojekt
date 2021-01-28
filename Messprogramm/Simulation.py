@@ -33,7 +33,9 @@ class Boot_Simulation(Boot.Boot):
         xpos1_start_sim = json_daten["Boot"]["simulation_start_x"]
         ypos1_start_sim = json_daten["Boot"]["simulation_start_y"]
         self.position = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
+        self.position_sim = Messgebiet.Punkt(xpos1_start_sim, ypos1_start_sim)
         self.heading = json_daten["Boot"]["simulation_start_heading"]
+        self.heading_sim = json_daten["Boot"]["simulation_start_heading"]
         self.suchbereich = json_daten["Boot"]["simulation_suchbereich"]
         datengrundlage = json_daten["Boot"]["referenzmodell"] # "original", "transportkoerper", "container"
 
@@ -120,8 +122,8 @@ class Boot_Simulation(Boot.Boot):
                 t = time.time()
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
-                    position = self.position
-                    heading = self.heading
+                    position = self.position_sim
+                    heading = self.heading_sim
                 suchgebiet = Messgebiet.Zelle(position.x, position.y, self.suchbereich, self.suchbereich)
                 tiefenpunkte = self.Testdaten_quadtree.abfrage(suchgebiet)
                 tiefe = statistics.mean([pkt.z for pkt in tiefenpunkte])
@@ -207,6 +209,11 @@ class Boot_Simulation(Boot.Boot):
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
                         Letzte_Bodenpunkte = []
 
+                # aktuelles Heading berechnen und zum Boot abspeichern
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
+                    self.heading = self.Headingberechnung()
+
+
                 # setzen der geteilten Variablen
                 with Messgebiet.schloss:
 
@@ -221,6 +228,7 @@ class Boot_Simulation(Boot.Boot):
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
                             self.median_punkte.append(Bodenpunkt)
+                            self.median_punkte_alle.append(Bodenpunkt)
 
                 schlafen = max(0, (self.akt_takt - (time.time() - t)))
                 time.sleep(schlafen)
@@ -238,10 +246,10 @@ class Boot_Simulation(Boot.Boot):
     def Punkt_anfahren(self, punkt, geschw=5.0):  # Utm-Koordinaten und Gechwindigkeit setzen
         self.punkt_anfahren = True
         with Messgebiet.schloss:
-            self.heading = self.Headingberechnung(punkt)
+            self.heading_sim = self.Headingberechnung(punkt)
 
         distanz = self.position.Abstand(punkt)
-        testprofil = Messgebiet.Profil(self.heading, self.position, True, 0, distanz+10)
+        testprofil = Messgebiet.Profil(self.heading_sim, self.position, True, 0, distanz+10)
         testprofil.ist_definiert = Messgebiet.Profil.Definition.START_UND_ENDPUNKT
         profilpunkte = testprofil.BerechneZwischenpunkte(0.25)    #(geschw*(self.akt_takt*self.Faktor))
 
@@ -249,9 +257,9 @@ class Boot_Simulation(Boot.Boot):
             while self.punkt_anfahren and self.boot_lebt:
                 alte_position = self.position
                 with Messgebiet.schloss:
-                    self.position = profilpunkte[index]
+                    self.position_sim = profilpunkte[index]
                     index += 1
-                    entfernung = self.position.Abstand(alte_position)
+                    entfernung = self.position_sim.Abstand(alte_position)
                     self.gefahreneStrecke += entfernung
                 time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()

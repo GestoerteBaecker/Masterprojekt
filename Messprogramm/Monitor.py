@@ -63,9 +63,9 @@ class Anwendung(Frame):
         button_verbinden=Button(self, text="Verbinden", command=lambda: self.boot_verbinden(),width=14,font='Helvetica 9 bold')
         button_verbinden.grid(row=2, column=0, columnspan=2, sticky="we", padx=(10,10), pady=(20,10))
         button_daten_lesen=Button(self, text="Auslesen", command=lambda: self.boot_daten_lesen(),width=14)
-        button_daten_lesen.grid(row=2, column=2, sticky="we", padx=10, pady=(10,10))
-        button_db_starten=Button(self, text="in DB schreiben", command=lambda: self.boot_db_starten(),width=14)
-        button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=(10,10))
+        button_daten_lesen.grid(row=2, column=2, sticky="we", padx=10, pady=(20,10))
+        button_db_starten=Button(self, text="Aufzeichnen", command=lambda: self.boot_db_starten(),width=14)
+        button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=(20,10))
         button_erkunden=Button(self, text="Erkunden", command=lambda: self.boot_erkunden(),width=14,font='Helvetica 9 bold')
         button_erkunden.grid(row=3, column=0, columnspan=2, sticky="we", padx=(10,10), pady=10)
 
@@ -129,17 +129,12 @@ class Anwendung(Frame):
         self.current_px4.grid(row=9, column=2, padx=(0,10), ipady=8)
 
         # Verbindung, Erkundung und Vermessung
-        button_latestDB=Button(self, text="Letzter DB-Eintrag", command=lambda: self.boot_letzter_Eintrag(),width=14)
-        button_latestDB.grid(row=11, column=0, columnspan=2, sticky="we", padx=(30,10), pady=20)
-        button_rtl=Button(self, text="RTL", command=lambda: self.Boot_RTL(),width=14)
-        button_rtl.grid(row=11, column=2, sticky="we", padx=10, pady=20)
-        button_stopp=Button(self, text="NOT-STOPP", command=lambda: self.boot_stopp(), width=14,bg="darkred",fg="white",font="Helvetica 10 bold")
-        button_stopp.grid(row=11, column=3, sticky="we", padx=10, pady=20)
-
+        Button(self, text="RTL", command=lambda: self.Boot_RTL(),width=14).grid(row=11, column=0, columnspan=2, sticky="we", padx=(10,10), pady=20)
+        Button(self, text="NOT-STOPP", command=lambda: self.boot_stopp(), width=14,bg="darkred",fg="white",font="Helvetica 10 bold").grid(row=11, column=2, sticky="we", padx=10, pady=20)
 
         # Button zum Schließen des Programms
         Button(self, text="Beenden", command=lambda: self.alles_schliessen(), bg="light grey").grid(row=12, column=2,pady=5, padx=10, sticky=W + E)
-        Button(self, text="Trennen", command=lambda: self.boot_trennen(),width=14).grid(row=12, column=0, columnspan=2,pady=5, padx=(30,10), sticky=W + E)
+        Button(self, text="Trennen", command=lambda: self.boot_trennen(),width=14).grid(row=11, column=3, columnspan=2,pady=5, padx=(10,10), sticky=W + E)
 
 
         # Einfügen von Separatoren zur besseren Lesbarkeit zwischen den Zeilen

@@ -47,27 +47,27 @@ class Anwendung(Frame):
         # OptionMenu, ob Vorwissen existiert
         # Einführen einer Variablen für ein OptionMenu
         self.__om_variable_mode = StringVar(self)
-        self.__om_variable_mode.set("Vollautomatisch")
+        self.__om_variable_mode.set("Vollautonom")
 
         # OptionMenu zur Auswahl der Simulation und Erkundungsmethode
-        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautomatisch", "Teilautomatisch", "Hybrid"], command=self.modusabfrage)
-        self.om.grid(row=1, column=2,padx=10,sticky="ew")
+        self.om = OptionMenu(self, self.__om_variable_mode, *["Vollautonom", "Teilautonom", "Hybrid"], command=self.modusabfrage)
+        self.om.grid(row=1, column=0, columnspan=2,padx=10,sticky="ew")
         self.om = OptionMenu(self, self.__om_variable_sim, *["Simulation", "Reale Daten"], command=self.simulationsabfrage)
-        self.om.grid(row=1, column=3,padx=10,sticky="ew")
+        self.om.grid(row=1, column=2,padx=10,sticky="ew")
 
         # Button zum Öffnen der Karte
-        button_open_map=Button(self, text="Karte öffnen...", command=lambda: self.karte_laden())
-        button_open_map.grid(row=1, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
+        button_open_map=Button(self, text="Karte öffnen...", command=lambda: self.karte_laden(), width=14)
+        button_open_map.grid(row=1, column=3, sticky="we", padx=10, pady=10)
 
         # Verbindung, Erkundung und Vermessung
         button_verbinden=Button(self, text="Verbinden", command=lambda: self.boot_verbinden(),width=14,font='Helvetica 9 bold')
-        button_verbinden.grid(row=2, column=0, columnspan=2, sticky="we", padx=(30,10), pady=(20,10))
+        button_verbinden.grid(row=2, column=0, columnspan=2, sticky="we", padx=(10,10), pady=(20,10))
         button_daten_lesen=Button(self, text="Auslesen", command=lambda: self.boot_daten_lesen(),width=14)
-        button_daten_lesen.grid(row=2, column=2, sticky="we", padx=10, pady=(20,10))
+        button_daten_lesen.grid(row=2, column=2, sticky="we", padx=10, pady=(10,10))
         button_db_starten=Button(self, text="in DB schreiben", command=lambda: self.boot_db_starten(),width=14)
-        button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=(20,10))
+        button_db_starten.grid(row=2, column=3,sticky="we", padx=10, pady=(10,10))
         button_erkunden=Button(self, text="Erkunden", command=lambda: self.boot_erkunden(),width=14,font='Helvetica 9 bold')
-        button_erkunden.grid(row=3, column=0, columnspan=2, sticky="we", padx=(30,10), pady=10)
+        button_erkunden.grid(row=3, column=0, columnspan=2, sticky="we", padx=(10,10), pady=10)
 
         # Label der Verbindungsqualität
         Label(self,text="Status").grid(row=4,column=0,pady=(10,0))
@@ -145,8 +145,8 @@ class Anwendung(Frame):
         # Einfügen von Separatoren zur besseren Lesbarkeit zwischen den Zeilen
         self.line_style = ttk.Style()
         self.line_style.configure("Line.TSeparator", background="#000000")
-        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=1, columnspan=2, sticky='ns',pady=5,padx=(0,40))
-        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=2, columnspan=2, sticky='ns',pady=5, padx=(10,0))
+        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=1, columnspan=2, sticky='ns',pady=5,padx=(0,20))
+        ttk.Separator(self, orient=VERTICAL).grid(row=1, column=2, columnspan=2, sticky='ns',pady=5, padx=(0,10))
         ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=1, column=0, columnspan=4, rowspan=2, sticky='ew')
         ttk.Separator(self, orient=HORIZONTAL,style="Line.TSeparator").grid(row=3, column=0, columnspan=4, rowspan=2, sticky='ew',pady=(15,0))
         ttk.Separator(self, orient=HORIZONTAL).grid(row=5, column=0, columnspan=3, rowspan=2, sticky='ew')
@@ -205,9 +205,9 @@ class Anwendung(Frame):
         self.boot.Datenbank_beschreiben()
 
     def boot_erkunden(self):
-        if self.__om_variable_mode.get() == "Vollautomatisch":
+        if self.__om_variable_mode.get() == "Vollautonom":
             self.boot.Erkunden()
-        elif self.__om_variable_mode.get() == "Teilautomatisch":
+        elif self.__om_variable_mode.get() == "Teilautonom":
             if self.karte_window.richtungslinie_x is not None:
                 richtungslinie_x = self.karte_window.richtungslinie_x
                 richtungslinie_y = self.karte_window.richtungslinie_y

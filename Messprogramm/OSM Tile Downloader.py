@@ -19,6 +19,8 @@ import os
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# Code entlehnt aus https://stackoverflow.com/questions/28476117/easy-openstreetmap-tile-displaying-for-python
+
 class Anwendung_Download(Frame):
     # Konstruktor  der GUI der Hauptanwendung zum Öffnen aller weiteren GUIs
     def __init__(self, master):

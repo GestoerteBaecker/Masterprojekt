@@ -834,7 +834,6 @@ class Profilstreifenerzeugung:
     def profilstreifen_anlegen(self):
         gespeicherte_streifen = [[] for _ in range(len(self.richtungslinien))]
         for i in range(len(self.richtungslinien)):
-            print(i)
             linienstart = self.richtungslinien[i][0]
             linienende = self.richtungslinien[i][1]
             distanz = linienstart.Abstand(linienende)
@@ -847,7 +846,6 @@ class Profilstreifenerzeugung:
 
             # Liste über alle Zwischenpunkte des temporären Profils
             for linienpunkt in linienprofilpunkte:
-                print(linienpunkt)
                 # Schnittpunkte mit Polygon in 1. Richtung
                 endpunkt_r1 = Simulation.PolaresAnhaengen(linienpunkt, heading + 100, dist=self.max_dist)
                 strahl_r1 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r1.x, endpunkt_r1.y)])
@@ -893,7 +891,6 @@ class Profilstreifenerzeugung:
 
                 # Prüfung, ob andere Streifen bereits im Gebiet sind
                 if i != 0:
-                    print("i not 0")
                     min_abstand_r1 = abstand_r1
                     min_abstand_r2 = abstand_r2
 

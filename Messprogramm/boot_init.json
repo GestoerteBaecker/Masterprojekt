@@ -5,7 +5,6 @@
 	"simulation_start_y": 5884870,
 	"simulation_start_heading": 380,
 	"simulation_suchbereich": 3,
-	"simulation_aktualisierungstakt": 1,
 	"Simulationsgeschwindigkeit": 3.5,
     "Datengrundlage": "container",
 	"grenzwert_entfernung_UK2": 50,

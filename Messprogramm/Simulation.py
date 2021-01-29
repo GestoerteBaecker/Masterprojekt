@@ -103,8 +103,6 @@ class Boot_Simulation(Boot.Boot):
         testdaten_path.close()
         self.ufer_polygon = shp.LinearRing(testdaten)
         self.umrandung = shp.Polygon(testdaten)
-        ### TEST ###
-        self.test = 0
 
         ################################################################################################################
         ################################################################################################################
@@ -112,8 +110,7 @@ class Boot_Simulation(Boot.Boot):
     # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
 
-        if not self.auslesen:
-            self.Sensorwerte_auslesen()
+        self.Sensorwerte_auslesen()
 
         self.fortlaufende_aktualisierung = True
 
@@ -227,7 +224,6 @@ class Boot_Simulation(Boot.Boot):
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if track_mode < 2:
                             self.median_punkte.append(Bodenpunkt)
-                            self.median_punkte_alle.append(Bodenpunkt)
 
                 schlafen = max(0, (self.akt_takt - (time.time() - t)))
                 time.sleep(schlafen)

@@ -19,7 +19,7 @@ class UferPosition(enum.Enum):
     AM_UFER = 2
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
-# self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
+# self.auslesen > self.datenbankbeschreiben
 # -> d.h. damit zB self. datenbankbeschreiben True ist müssen mind. die anderen beiden auch True sein
 class Boot:
 
@@ -36,8 +36,7 @@ class Boot:
         self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_max_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
         self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
         self.messgebiet_ausdehnung = [self.telemetriereichweite,self.telemetriereichweite] # Breite und Höhe in m
-        self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
-        self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
+        self.auslesen = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
         self.Sensorliste = []                           # hier sind die Sensor-Objekte drin
         self.AktuelleSensordaten = []                   # hier stehen die Daten-Objekte drin
@@ -61,13 +60,11 @@ class Boot:
         self.anzahl_anzufahrende_kanten = json_daten["Boot"]["beruecksichtigte_kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
-        self.median_punkte_alle = []
         self.Offset_GNSS_Echo = json_daten["Boot"]["offset_gnss_echolot"]       # TODO: Höhenoffset zwischen GNSS und Echolot bestimmen (wichtig für absolute Vergleiche)
         self.db_id = 0
         self.messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
-        self.stern_beendet = False
         self.max_geschwindigkeit = 2 # in km/h für spätere Steuerung der PixHawk-Maximalgeschwindigkeit
         self.tracking_mode = Messgebiet.TrackingMode.BLINDFAHRT
         self.punkt_anfahren = False
@@ -128,7 +125,7 @@ class Boot:
         """
         self.Verbinden_mit_DB()
 
-        if not self.fortlaufende_aktualisierung:
+        if not self.auslesen:
             self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
 
         if self.db_mode == 0:
@@ -231,15 +228,14 @@ class Boot:
     # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
 
-        if not self.auslesen:
-            self.Sensorwerte_auslesen()
+        self.Sensorwerte_auslesen()
 
-        self.fortlaufende_aktualisierung = True
+        self.auslesen = True
 
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
-            while self.fortlaufende_aktualisierung and self.boot_lebt:
+            while self.auslesen and self.boot_lebt:
                 t = time.time()
 
                 position_vor_Aktualisierung = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
@@ -295,7 +291,6 @@ class Boot:
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
-                            self.median_punkte_alle.append(Bodenpunkt)
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
                 time.sleep(schlafen)
@@ -675,7 +670,6 @@ class Boot:
                 self.Punkt_anfahren(neuer_kurspunkt)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
-        self.stern_beendet = True
         self.median_punkte = []
 
     def Boot_stoppen(self):
@@ -691,6 +685,7 @@ class Boot:
         time.sleep(self.akt_takt)
         for sensor in self.Sensorliste:
             sensor.kill()
+        self.auslesen = False
         self.datenbankbeschreiben = False
         time.sleep(0.2)
         if self.db_verbindung:
@@ -702,11 +697,14 @@ class Boot:
         self.boot_lebt = True
 
     def RTL(self):
-
         self.PixHawk.Return_to_launch()
 
     def Kalibrierung(self):
         pass
+
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # gibt ein Dict mit Wahrheitswerten zurück, je nachdem, ob der Sensor aktiv ist oder nicht, Schlüsselwert ist der Name des jeweiligen Sensors (echter Name, nicht Klassenname!)
     def Lebenzeichen(self):
@@ -715,8 +713,9 @@ class Boot:
             aktiv[self.Sensornamen[i]] = sensor.verbindung_hergestellt
         return aktiv
 
-    def postprocessing(self):
-        pass #Auswertung der gemessenen Daten findet ausßerhalb des Programms statt
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # Berechnet das Gefälle unterhalb des Bootes
     # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
@@ -827,6 +826,10 @@ class Boot:
             s0 = numpy.linalg.norm(v) / (numpy.sqrt(len(punkte[0])) - 3)
         return [max_steigung, flächenhaft, s0]
 
+
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab
     # ST_Distance ist nicht sargable! (kann nicht zusammen mithilfe eines Index beschleunigt werden)

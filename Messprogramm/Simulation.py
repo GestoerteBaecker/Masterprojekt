@@ -178,7 +178,6 @@ class Boot_Simulation(Boot.Boot):
             Letzte_Bodenpunkte = []
             while self.fortlaufende_aktualisierung and self.boot_lebt:
                 t = time.time()
-                self.test += 1
 
                 # auslesen der geteilten Variablen
                 with Messgebiet.schloss:
@@ -255,11 +254,11 @@ class Boot_Simulation(Boot.Boot):
 
         def inkrementelles_anfahren(self, profilpunkte, index=0):
             while self.punkt_anfahren and self.boot_lebt:
-                alte_position = self.position
+                alte_position_sim = self.position_sim
                 with Messgebiet.schloss:
                     self.position_sim = profilpunkte[index]
                     index += 1
-                    entfernung = self.position_sim.Abstand(alte_position)
+                    entfernung = self.position_sim.Abstand(alte_position_sim)
                     self.gefahreneStrecke += entfernung
                 time.sleep(self.akt_takt/2)
         threading.Thread(target=inkrementelles_anfahren, args=(self, profilpunkte), daemon=True).start()

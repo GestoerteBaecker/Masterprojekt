@@ -244,28 +244,33 @@ class Boot:
 
                 position_vor_Aktualisierung = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
 
-                # Aktualisierung des Attributs self.AktuelleSensordaten
-                for i in range(0, len(self.Sensorliste)):
-                    if self.Sensorliste[i]:
-                        sensor = self.Sensorliste[i]
-                        if sensor.aktdaten:
-                            self.AktuelleSensordaten[i] = sensor.aktdaten
-
-                aktuelle_Position = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
-                entfernung = aktuelle_Position.Abstand(position_vor_Aktualisierung)
-                self.gefahreneStrecke += entfernung
+                # auslesen der geteilten Variablen
+                with Messgebiet.schloss:
+                    # Aktualisierung des Attributs self.AktuelleSensordaten
+                    for i in range(len(self.Sensorliste)):
+                        if self.Sensorliste[i]:
+                            sensor = self.Sensorliste[i]
+                            if sensor.aktdaten:
+                                self.AktuelleSensordaten[i] = sensor.aktdaten
 
                 # Abgeleitete Daten berechnen und überschreiben
+                position = None
+                Bodenpunkt = None
 
-                # aktuelles Heading berechnen und zum Boot abspeichern
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
-                    self.heading = self.Headingberechnung()
+                # aktuelle Position und aktuelles Heading berechnen und zum Boot abspeichern
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:
+                    # Position und Streckenzähler aktualisieren
+                    position = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
+                    entfernung = position.Abstand(position_vor_Aktualisierung)
+                    self.gefahreneStrecke += entfernung
 
-                # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
-                    uferpunkt = self.Uferpunktberechnung()
-                    if self.messgebiet != None:
-                        self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
+                    self.heading = self.Headingberechnung() # Headingberechnung
+
+                    # wenn zusätzlich ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
+                    if self.AktuelleSensordaten[3]:     #Uferpunktberechnung
+                        uferpunkt = self.Uferpunktberechnung()
+                        if self.messgebiet != None:
+                            self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -274,6 +279,16 @@ class Boot:
 
                     if len(Letzte_Bodenpunkte) > self.anz_Bodenpunkte:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
+                        Letzte_Bodenpunkte = []
+
+                # setzen der geteilten Variablen
+                with Messgebiet.schloss:
+
+                    if position is not None:
+                        self.position = position
+
+                    # Letzte zwei Bodenpunkte zur Extrapolation zur Ufererkennung
+                    if Bodenpunkt is not None:
                         self.Bodenpunkte.append(Bodenpunkt)
                         if len(self.Bodenpunkte) > 2:
                             self.Bodenpunkte.pop(0)
@@ -281,7 +296,6 @@ class Boot:
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
                             self.median_punkte_alle.append(Bodenpunkt)
-                        Letzte_Bodenpunkte = []
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
                 time.sleep(schlafen)

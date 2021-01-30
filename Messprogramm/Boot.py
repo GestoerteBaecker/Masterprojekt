@@ -234,8 +234,6 @@ class Boot:
 
         self.Sensorwerte_auslesen()
 
-        self.auslesen = True
-
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
@@ -381,7 +379,7 @@ class Boot:
         self.ufererkennung_aktiv = True
 
         def ufererkennung_thread(self):
-            while not abs(sollheading-self.heading) < 20: # Boot soll sich zumindest in Richtung des neuen Punkts drehen
+            while not (abs(sollheading-self.heading) < 20 or abs(sollheading-self.heading) > 380): # Boot soll sich zumindest in Richtung des neuen Punkts drehen
                 time.sleep(self.akt_takt/10)
             while self.boot_lebt and self.ufererkennung_aktiv:
                 t = time.time()
@@ -445,8 +443,6 @@ class Boot:
             for i in range(len(richtungslinie_x)):
                 punktliste.append(Messgebiet.Punkt(richtungslinie_x[i], richtungslinie_y[i]))
 
-        # Streifen abfahren
-
         def Streifen_abfahren(self):
             profilindex = 0
             punktzaehler = 0 # 0 == Startpunkt, 1 == Endpunkt
@@ -457,45 +453,29 @@ class Boot:
                     self.ufererkennung_aktiv = False
                     time.sleep(self.akt_takt)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
 
-                    if not abbruch_durch_ufer:
-                        if punktzaehler == 0:
-                            if profilindex == len(self.streifenprofile):
-                                break
-                            self.aktuelles_Profil = self.streifenprofile[profilindex]
-                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
-                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
-                            profilindex += 1
+                    if punktzaehler == 0: # gerade ein Streifenprofil abgefahren
+                        if profilindex == len(self.streifenprofile):
+                            break
+                        self.aktuelles_Profil = self.streifenprofile[profilindex]
+                        e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
+                        e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
+                        profilindex += 1
 
-                            if e_start > e_end:
-                                self.aktuelles_Profil.Flip()
+                        if e_start > e_end:
+                            self.aktuelles_Profil.Flip()
 
-                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
-                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-                            punktzaehler = 1
+                        self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+                        self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
+                        punktzaehler = 1
 
-                        elif punktzaehler == 1:
+                    elif punktzaehler == 1: # gerade ein Verbindungsprofil abgefahren
+                        if not abbruch_durch_ufer:
                             self.tracking_mode = Messgebiet.TrackingMode.PROFIL
                             self.Punkt_anfahren(self.aktuelles_Profil.endpunkt)
                             punktzaehler = 0
-                    else:
-                        if punktzaehler == 1:
+                        else:
                             self.aktuelles_Profil.Flip()
                             self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-
-                        elif punktzaehler == 0:
-                            if profilindex == len(self.streifenprofile):
-                                break
-                            self.aktuelles_Profil = self.streifenprofile[profilindex]
-                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
-                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
-                            profilindex += 1
-
-                            if e_start > e_end:
-                                self.aktuelles_Profil.Flip()
-
-                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
-                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-                            punktzaehler = 1
 
                     if len(self.median_punkte) > 0:
                         self.aktuelles_Profil.MedianPunkteEinfuegen(self.median_punkte)
@@ -527,7 +507,6 @@ class Boot:
 
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             self.messgebiet.TIN_berechnen()
-            #self.messgebiet.tin.mesh.plot(show_edges=True)
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
@@ -570,7 +549,6 @@ class Boot:
         self.messgebiet.Verdichtungsmode(Messgebiet.Verdichtungsmode.KANTEN)
         self.punkt_anfahren = False
         print("///////////////////////////////////////////////")
-        nummer = 0
         while self.boot_lebt:
             abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
             if abbruch_durch_ufer or not self.punkt_anfahren:
@@ -597,14 +575,9 @@ class Boot:
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
                 if neuer_punkt is None:
                     break
-                #self.messgebiet.aktuellesprofil anlegen
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_punkt)
                 time.sleep(self.akt_takt * 10)  # beide Sleeps sind identisch mit denen in SternAbfahren()
-                # aktuelles mesh speichern
-                #string = "TIN" + str(nummer) + ".ply"
-                #self.messgebiet.tin.mesh.save(string)
-                nummer += 1
             time.sleep(self.akt_takt/2)
 
     # gibt alle weiteren anzufahrenden Kanten aus
@@ -634,18 +607,16 @@ class Boot:
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y,  self.anfahrtoleranz,  self.anfahrtoleranz)
         sollheading = self.Headingberechnung(punkt)
 
-        # Testet bei jedem Schleifendurchgang ob der Punkt erreicht wurde (hohe Frequnez wichtig)
+        # Testet bei jedem Schleifendurchgang ob der Punkt erreicht wurde (hohe Frequenz wichtig)
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
                 self.Ufererkennung(sollheading)
             self.punkt_anfahren = True
             while self.punkt_anfahren and self.boot_lebt:
-                t = time.time()
                 test = punkt_box.enthaelt_punkt(self.position)
                 if test:
                     self.punkt_anfahren = False
-                schlafen = max(0, (self.akt_takt / 2) - (time.time() - t))
-                time.sleep(schlafen)
+                time.sleep(self.akt_takt / 20)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
@@ -657,7 +628,6 @@ class Boot:
         self.Punkt_anfahren(punkt)
         while self.boot_lebt:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
-                print("Abbruch durch ufer", self.ist_am_ufer, "oder durch Punkt", self.punkt_anfahren)
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
@@ -670,7 +640,6 @@ class Boot:
                     break
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_kurspunkt)
-                print("Fahre Punkt an", neuer_kurspunkt)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.median_punkte = []

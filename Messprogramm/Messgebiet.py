@@ -1,6 +1,5 @@
 import copy
 import enum
-import itertools
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import numpy
@@ -175,9 +174,7 @@ class TIN_Kante:
         y = (self.Anfangspunkt.y + self.Endpunkt.y) / 2
         z = (self.Anfangspunkt.z + self.Endpunkt.z) / 2
 
-        mitte = Punkt(x,y,z)
-
-        return (mitte)
+        return Punkt(x,y,z)
 
     def winkel(self): # TODO: Winkelberechnung überprüfen
 
@@ -187,7 +184,7 @@ class TIN_Kante:
         n1 = numpy.array([n1_list[0], n1_list[1], n1_list[2]])
         n2 = numpy.array([n2_list[0], n2_list[1], n2_list[2]])
 
-        if numpy.array_equal(n1,n2):  # Normalenvekroten sind paralel zueinander und arccos kann nicht berechnet werden
+        if numpy.array_equal(n1,n2):  # Normalenvektoren sind parallel zueinander und arccos kann nicht berechnet werden
             alpha = 0
         else:
             alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
@@ -316,11 +313,11 @@ class TIN:
                     if laenge_norm*kante.winkel() > max_gewicht:
                         max_gewicht = laenge_norm*kante.winkel()
                         kanten_größtes_absolutes_gewicht = kante
-                    abstandsgewicht = -((1-entfernungsgewicht)/max_entfernung)*kante.mitte().Abstand(bootsposition)+1  #numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** )
+                    abstandsgewicht = -((1-entfernungsgewicht)/max_entfernung)*kante.mitte().Abstand(bootsposition)+1
                     kantenlaengenanteil= laenge_norm**längengewicht
                     kantenwinkelanteil= kante_norm**winkelgewicht
 
-                    kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
+                    kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht
 
                     print("L_kante: %8.2f, W_kante: %1.2f, Entfernung: %8.2f, Pl: %1.3f, Pw: %1.3f, Pe: %1.3f, Pges: %1.3f" % (kante.laenge(),kante.winkel(),(kante.mitte().Abstand(bootsposition)),kantenlaengenanteil,kantenwinkelanteil,abstandsgewicht,kante.gewicht))
 
@@ -667,6 +664,7 @@ class Profilstreifenerzeugung:
     # Ermitteln der mittleren Streifenbreite je Richtungslinie
     # wird benötigt, um Profilerzeugung bei hohe Nähe benachbarter Streifen abzubrechen
     def mittlerer_abstand_richtungslinie(self):
+
         for i in range(len(self.richtungslinie_x) - 1):
             p1 = Punkt(self.richtungslinie_x[i], self.richtungslinie_y[i])
             p2 = Punkt(self.richtungslinie_x[i + 1], self.richtungslinie_y[i + 1])
@@ -682,20 +680,10 @@ class Profilstreifenerzeugung:
             # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
             for punkt in hilfsprofilpunkte:
                 # Berechnung von Endpunkt und Strahl zur 1. Richtung
-                endpunkt = Simulation.PolaresAnhaengen(punkt, heading + 100, dist=self.max_dist)
-                strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-                # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
-                schnittpunkte = self.grenzpoly_shape.intersection(strahl)
-                schnitt_r1, abstand_r1 = naechster_schnittpunkt(punkt, schnittpunkte)
+                abstand_r1 = self.schnittpunkt_eingabepolygon(punkt, heading + 100)[1]
 
                 # Berechnung von Endpunkt und Strahl zur 2. Richtung
-                endpunkt = Simulation.PolaresAnhaengen(punkt, heading - 100, dist=self.max_dist)
-                strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-                # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
-                schnittpunkte = self.grenzpoly_shape.intersection(strahl)
-                schnitt_r2, abstand_r2 = naechster_schnittpunkt(punkt, schnittpunkte)
+                abstand_r2 = self.schnittpunkt_eingabepolygon(punkt, heading - 100)[1]
 
                 self.mittlerer_abstand[i] += abstand_r1 + abstand_r2
 
@@ -708,20 +696,28 @@ class Profilstreifenerzeugung:
             p2 = Punkt(self.richtungslinie_x[i + 1], self.richtungslinie_y[i + 1])
             heading = Headingberechnung(None, p1, p2)
 
-            endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=self.max_dist)
-            strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
-            schnittpunkte_r1 = self.grenzpoly_shape.intersection(strahl_r1)
-            schnitt_r1, abstand_r1 = naechster_schnittpunkt(p1, schnittpunkte_r1)
+            schnitt_r1, abstand_r1 = self.schnittpunkt_eingabepolygon(p1, heading)[0:2]
 
-            endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading + 200, dist=self.max_dist)
-            strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
-            schnittpunkte_r2 = self.grenzpoly_shape.intersection(strahl_r2)
-            schnitt_r2, abstand_r2 = naechster_schnittpunkt(p2, schnittpunkte_r2)
+            schnitt_r2, abstand_r2 = self.schnittpunkt_eingabepolygon(p2, heading + 200)[0:2]
 
             startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=self.sicherheitsabstand*1.25)
             endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=self.sicherheitsabstand*1.25)
 
             self.richtungslinien.append([startpunkt, endpunkt])
+
+    # Berechnet Schnittpunkt und Entfernung der Kurspeilung vom Boot
+    def schnittpunkt_eingabepolygon(self, punkt, heading, puffer=False):
+        # Berechnung von Endpunkt und Strahl zur n. Richtung
+        endpunkt = Simulation.PolaresAnhaengen(punkt, heading, dist=self.max_dist)
+        strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+
+        # Berechnung der Schnittpunkte mit dem Grenzpolygon in n. Richtung
+        if puffer:
+            schnittpunkte = strahl.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
+        else:
+            schnittpunkte = self.grenzpoly_shape.intersection(strahl)
+        schnitt, abstand = naechster_schnittpunkt(punkt, schnittpunkte)
+        return (schnitt, abstand, strahl)
 
     def profilstreifen_anlegen(self):
         gespeicherte_streifen = [[] for _ in range(len(self.richtungslinien))]
@@ -739,16 +735,10 @@ class Profilstreifenerzeugung:
             # Liste über alle Zwischenpunkte des temporären Profils
             for linienpunkt in linienprofilpunkte:
                 # Schnittpunkte mit Polygon in 1. Richtung
-                endpunkt_r1 = Simulation.PolaresAnhaengen(linienpunkt, heading + 100, dist=self.max_dist)
-                strahl_r1 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r1.x, endpunkt_r1.y)])
-                schnittpunkte_r1 = strahl_r1.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
-                schnitt_r1, abstand_r1 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r1)
+                schnitt_r1, abstand_r1, strahl_r1 = self.schnittpunkt_eingabepolygon(linienpunkt, heading + 100, puffer=True)
 
                 # Schnittpunkte mit Polygon in 2. Richtung
-                endpunkt_r2 = Simulation.PolaresAnhaengen(linienpunkt, heading - 100, dist=self.max_dist)
-                strahl_r2 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r2.x, endpunkt_r2.y)])
-                schnittpunkte_r2 = strahl_r2.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
-                schnitt_r2, abstand_r2 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r2)
+                schnitt_r2, abstand_r2, strahl_r2 = self.schnittpunkt_eingabepolygon(linienpunkt, heading - 100, puffer=True)
 
                 startpunkt = Punkt(schnitt_r1.x, schnitt_r1.y)
                 endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
@@ -1183,8 +1173,6 @@ def abstand_punkt_gerade(richtung, stuetz, punkt):
         richtung = numpy.array([richtung[1], -richtung[0]])
         return numpy.dot(richtung, (punkt - stuetz))
     else: # falls die Vektoren 3D sind
-        #richtung = punkt - numpy.dot(punkt, richtung) * richtung
-        #richtung = richtung / numpy.linalg.norm(richtung)
         return numpy.linalg.norm(numpy.cross((punkt - stuetz), richtung))
 
 # Gerade 1 sollte bei Verwendung innerhalb der Klasse Profil die Kante des self Profils sein

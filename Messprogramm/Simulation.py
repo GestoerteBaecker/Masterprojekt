@@ -117,12 +117,10 @@ class Boot_Simulation(Boot.Boot):
     # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
 
-        self.Sensorwerte_auslesen()
-
-        self.fortlaufende_aktualisierung = True
+        self.auslesen = True
 
         def simulation(self):
-            while self.fortlaufende_aktualisierung and self.boot_lebt:
+            while self.auslesen and self.boot_lebt:
                 t = time.time()
                 ########## S I M U L A T I O N #############################################################
                 with Messgebiet.schloss:
@@ -137,7 +135,6 @@ class Boot_Simulation(Boot.Boot):
                 p1, p2 = numpy.array([position.x, position.y]), numpy.array([kurs.x, kurs.y])
                 strahl = shp.LineString([(position.x, position.y), (kurs.x, kurs.y)])
                 # Prüfen ob Punkt in Umringspolygon liegt
-                #impolygon = shp.Point(self.position.x,self.position.y).within(self.umrandung)
 
                 schnitt = self.ufer_polygon.intersection(strahl)
 
@@ -180,7 +177,7 @@ class Boot_Simulation(Boot.Boot):
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
-            while self.fortlaufende_aktualisierung and self.boot_lebt:
+            while self.auslesen and self.boot_lebt:
                 t = time.time()
 
                 # auslesen der geteilten Variablen
@@ -270,7 +267,7 @@ class Boot_Simulation(Boot.Boot):
 
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
-                self.Ufererkennung(self.heading)
+                self.Ufererkennung(self.heading_sim)
             self.punkt_anfahren = True
             while self.punkt_anfahren and self.boot_lebt:
                 test = punkt_box.enthaelt_punkt(self.position)

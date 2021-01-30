@@ -366,7 +366,7 @@ if __name__ == "__main__":
     dist = Distanzmesser("COM12",19200,0,1)
     dist.connect_to_db()
     dist.read_datastream()
-    ist.start_pushing_db()
+    dist.start_pushing_db()
     
     echo = Echolot("COM1",19200,0,0.2)
     echo.connect_to_db()

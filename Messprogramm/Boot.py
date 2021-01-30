@@ -382,7 +382,7 @@ class Boot:
 
         def ufererkennung_thread(self):
             while not abs(sollheading-self.heading) < 20: # Boot soll sich zumindest in Richtung des neuen Punkts drehen
-                time.sleep(self.akt_takt)
+                time.sleep(self.akt_takt/10)
             while self.boot_lebt and self.ufererkennung_aktiv:
                 t = time.time()
                 time.sleep(self.akt_takt)
@@ -444,8 +444,6 @@ class Boot:
             punktliste = []
             for i in range(len(richtungslinie_x)):
                 punktliste.append(Messgebiet.Punkt(richtungslinie_x[i], richtungslinie_y[i]))
-            self.stern = Messgebiet.Stern.SterneBilden(punktliste)
-            self.messgebiet.stern = self.stern
 
         # Streifen abfahren
 
@@ -547,7 +545,6 @@ class Boot:
             # Anlegen eines Sterns mit zeitgleicher Messung (Funktion "Erkunden" ist für die Dauer der Messung gefroren)
             self.SternAbfahren(self.position, self.heading, initial=True)
             print("Gefahrene Strecke:", self.gefahreneStrecke,"m nach Sternen")
-            self.messgebiet.stern = self.stern
             self.messgebiet.topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
 
             # Definition der Profile und topographisch bedeutsamer Punkte
@@ -660,6 +657,7 @@ class Boot:
         self.Punkt_anfahren(punkt)
         while self.boot_lebt:
             if (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1] and self.tracking_mode.value <= 10) or not self.punkt_anfahren:
+                print("Abbruch durch ufer", self.ist_am_ufer, "oder durch Punkt", self.punkt_anfahren)
                 self.punkt_anfahren = False # falls das Boot am Ufer angekommen ist, soll das Boot nicht weiter fahren
                 self.ufererkennung_aktiv = False
                 time.sleep(self.akt_takt) # warten, bis der Thread zum Ansteuern eines Punktes terminiert
@@ -672,6 +670,7 @@ class Boot:
                     break
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_kurspunkt)
+                print("Fahre Punkt an", neuer_kurspunkt)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
         self.median_punkte = []
@@ -687,8 +686,9 @@ class Boot:
     def Trennen(self):
         self.boot_lebt = False
         time.sleep(self.akt_takt)
-        for sensor in self.Sensorliste:
-            sensor.kill()
+        if type(self).__name__ == "Boot":
+            for sensor in self.Sensorliste:
+                sensor.kill()
         self.auslesen = False
         self.datenbankbeschreiben = False
         time.sleep(0.2)

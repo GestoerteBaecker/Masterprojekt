@@ -37,8 +37,6 @@ class Verdichtungsmode(enum.Enum):
     KANTEN = 0
     # Abfahren zwischen den Endpunkt eines Profils und dem Startpunkt des folgenden Profils
     VERBINDUNG = 1
-    # Falls das Boot während einer Verbindungsfahrt ans Ufer gerät, soll es anderweitig über kleinere Umwege zu dem abzufahrenden Profil geführt werden
-    WEGFÜHRUNG = 2
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -440,23 +438,6 @@ class Stern:
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
-    # Leere Sterne (= ohne Profile) aus einer Punktliste erstellen
-    @classmethod
-    def SterneBilden(cls, punktliste):
-        stern = cls(punktliste[0], 0, initial=True, ebene=0)
-        stern.stern_beendet = True
-        stern.aktueller_stern = None
-        stern_temp = stern
-        for i in range(1, len(punktliste)):
-            stern_doppel_temp = cls(punktliste[i], 0, initial=False, ebene=i)
-            stern_doppel_temp.initialstern = stern
-            stern_doppel_temp.stern_beendet = True
-            stern_doppel_temp.aktueller_stern = None
-            stern_temp.weitere_sterne.append(stern_doppel_temp)
-            stern_temp = stern_doppel_temp
-        return stern
-
-
     # fügt weitere Profile in gegebenen Winkelinkrementen ein, die anschließend befahren werden
     def SternFuellen(self):
         stern = self.aktueller_stern
@@ -500,95 +481,6 @@ class Stern:
                 sterne_durchlaufen(gesch_stern, sterne)
         sterne_durchlaufen(self.initialstern, sterne)
         return sterne
-
-    def Medianberechnung(self):
-        sterne = self.initialstern.Sterne()
-        laengen_ges = []
-
-        def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
-            gesamtlänge = profil.Profillaenge(akt_laenge=False)
-            profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
-            seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True)  # Anfang bis Mitte
-            seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte  # Mitte bis Ende
-            liste_laengen[profilindex] = seitenlänge_vor_mitte
-            liste_laengen[profilindex + len(stern.profile)] = seitenlänge_nach_mitte
-            return liste_laengen
-
-        for stern in sterne:
-            laengen = [0] * (2 * len(stern.profile))
-            for i, profil in enumerate(stern.profile):
-                laengen_ges.extend(profillaenge_von_mitte(stern, profil, i, laengen))
-
-        return statistics.mean(laengen_ges)
-
-    # findet eine geschlossene Verbindung zusammenhängener Profile zwischen position und soll_endpunkt und gibt es als Liste zurück
-    # wird von Initialstern aufgerufen
-    def FindeVerbindung(self, position, soll_endpunkt):
-
-        def verbindung_test(stern1, stern2):
-            return abs(stern1.ebene - stern2.ebene) == 1
-
-        alle_sterne = self.Sterne()
-        weitere_profile = []
-        if len(alle_sterne) < 2:
-            sterne = alle_sterne
-        else: # finde die zusammengehörenden Sterne und verbinde diese mit Profilen
-            # finden der Sterne, die am nächsten an die zwei eingegebenen/anzufahrenden Punkte sind (größte Wahrscheinlichkeit, dass diese direkt ohne Ufer anfahrbar sind)
-            dist_pos_test = numpy.inf
-            start_stern = None
-            dist_end_test = numpy.inf
-            end_stern = None
-            for stern in alle_sterne:
-                dist_pos = position.Abstand(stern.mittelpunkt)
-                dist_end = soll_endpunkt.Abstand(stern.mittelpunkt)
-                if dist_pos < dist_pos_test:
-                    dist_pos_test = dist_pos
-                    start_stern = stern
-                if dist_end < dist_end_test:
-                    dist_end_test = dist_end
-                    end_stern = stern
-            if start_stern != end_stern:
-                sterne = [start_stern, end_stern]
-            else:
-                sterne = [start_stern]
-                alle_sterne = sterne
-
-            # Test und Hinzufügen weiterer Sterne, sodass eine verbundene Strecke zwischen den Sternen vorliegt
-            for i in range(len(alle_sterne)-2): # i ist die Anzahl zwischen Start- und Endstern einzufügender Sterne
-                # Hinzufügen weiterer Sterne
-                # Kartesisches Mengenprodukt über alle Sterne
-                liste = []
-                for _ in range(i):
-                    liste.append(alle_sterne)
-                for sterne_komb in itertools.product(*liste): # sterne_komb ist zunächst eine beliebige Kombination von i-Sternen aller existierenden Sterne
-                    sterne_temp = copy.deepcopy(sterne) # wird kopiert, da getestet wird, ob die Kombination hinzugefügter Sterne auch alle verbunden sind
-                    einzig = True
-                    for stern in sterne_komb:
-                        einzig = einzig and sterne_komb.count(stern) == 1 and not stern in sterne_temp # sagt aus, ob die einzufügenden Sterne jeweils einzeln vorkommen und nicht bereits Start- und Endstern sind
-                    if einzig:
-                        sterne_temp[1:1] = sterne_komb # ... nur dann sollen diese Sterne zwischen Start- und Endstern eingefügt werden
-
-                        # Test, ob die Sterne untereinander verbunden sind
-                        verbunden = False
-                        for j in range(len(sterne_temp) - 1):  # hier wird getestet, ob die Sterne verbunden sind
-                            verbunden = verbunden or verbindung_test(sterne[j], sterne[j + 1])
-                        if verbunden: # wenn alle Sterne verbunden sind, sollen die Schleifen abgebrochen werden
-                            sterne = sterne_temp
-                            break
-                else:
-                    continue
-                break
-
-            # sobald die Sterne verbunden sind, sollen die zugehörigen verbindenden Profile ermittelt werden
-            for i in range(len(sterne)-1):
-                stern1 = sterne[i]
-                stern2 = sterne[i+1]
-                profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
-                weitere_profile.append(profil)
-
-        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
-        profile = [anfang, *weitere_profile]
-        return profile
 
     # test der Überschreitung des Grenzwerts der Länge eines Profils
     def TestVerdichten(self):
@@ -1323,7 +1215,9 @@ def naechster_schnittpunkt(punkt, schnittpunkte,min_abstand=numpy.Inf):
                 min_abstand = abstand
                 naechster_schnitt = schnitt
 
-    elif type(schnittpunkte).__name__ == "MultiLineString":
+    elif type(schnittpunkte).__name__ == "MultiLineString" or type(schnittpunkte).__name__ == "LineString":
+        if type(schnittpunkte).__name__ == "LineString":
+            schnittpunkte = [schnittpunkte]
         for linestring in schnittpunkte:
             linestring_schnitt1 = shp.Point(linestring.coords[0])
             linestring_schnitt2 = shp.Point(linestring.coords[1])
@@ -1337,23 +1231,6 @@ def naechster_schnittpunkt(punkt, schnittpunkte,min_abstand=numpy.Inf):
             if linestring_abstand2 < min_abstand:
                 min_abstand = linestring_abstand2
                 naechster_schnitt = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "LineString":
-        linestring_schnitt1 = shp.Point(schnittpunkte.coords[0])
-        linestring_schnitt2 = shp.Point(schnittpunkte.coords[1])
-        linestring_abstand1 = punkt.Abstand(linestring_schnitt1)
-        linestring_abstand2 = punkt.Abstand(linestring_schnitt2)
-        if linestring_abstand1 < min_abstand:
-            min_abstand = linestring_abstand1
-            naechster_schnitt = linestring_schnitt1
-
-        if linestring_abstand2 < min_abstand:
-            min_abstand = linestring_abstand2
-            naechster_schnitt = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "Point":
-        naechster_schnitt = schnittpunkte
-        min_abstand = punkt.Abstand(schnittpunkte)
 
     else:
         min_abstand = punkt.Abstand(schnittpunkte)
@@ -1580,12 +1457,11 @@ class Messgebiet:
         self.topographische_punkte = []
         self.tin = None
         self.profile = []
-        self.stern = None
         self.aktuelles_profil = -1
         self.verdichtungsmethode = Verdichtungsmode.AUS
         self.punkt_ausserhalb = Punkt(initale_position_x, initale_position_y + hoehe) # dieser Punkt soll sicher außerhalb des Sees liegen
         self.anzufahrende_kanten = [] # nur zum Plotten auf der Karte
-        self.nichtbefahrbareProfile=[]
+        self.nichtbefahrbareProfile = []
 
     # Punkte in das TIN einfügen
     def TIN_berechnen(self, punkte=None):
@@ -1603,12 +1479,9 @@ class Messgebiet:
     def NaechsterPunkt(self, position, ufer, entfernungsgewicht, längengewicht, winkelgewicht, anzahl_anzufahrende_kanten):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                #soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
                 self.aktuelles_profil += 1
-                #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
-                #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
-                punkt = self.profile[-3].startpunkt #profile[0].endpunkt
-                methode = Verdichtungsmode.KANTEN #Verdichtungsmode.WEGFÜHRUNG
+                punkt = self.profile[-3].startpunkt
+                methode = Verdichtungsmode.KANTEN
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt
@@ -1657,19 +1530,11 @@ class Messgebiet:
                 self.profile.append(naechstesProfil)
                 self.aktuelles_profil += 1 # Index liegt zunächst auf dem Verbindungsprofil
             methode = Verdichtungsmode.VERBINDUNG
-        else: # verbindungsmethode == WEGFÜHRUNG; Boot soll über Umwege zum verdichtenden Profil geführt werden
-            # kein Test auf Ufer, da das nicht vorkommen sollte (es werden nur Profile befahren, die bereits befahren wurden)
-            self.aktuelles_profil += 1
-            punkt = self.profile[self.aktuelles_profil].endpunkt
-            if self.aktuelles_profil == len(self.profile)-1:
-                methode = Verdichtungsmode.KANTEN
-            else:
-                methode = Verdichtungsmode.WEGFÜHRUNG
         self.verdichtungsmethode = methode
         return punkt
 
     def HoleTrackingMode(self):
-        if self.verdichtungsmethode == Verdichtungsmode.WEGFÜHRUNG or self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG:
+        if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG:
             return TrackingMode.VERBINDUNG
         else:
             return TrackingMode.PROFIL

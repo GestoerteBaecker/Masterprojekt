@@ -251,30 +251,21 @@ class Anwendung(Frame):
             if "GNSS1" in self.boot.Sensornamen:
                 index = self.boot.Sensornamen.index("GNSS1")
                 gnss = self.boot.Sensorliste[index]
-                if gnss.verbindung_hergestellt:
+                if gnss is None or gnss.verbindung_hergestellt: # bei Simulation oder Verbindung
                     try:
                         gnss_qual_indikator = self.boot.AktuelleSensordaten[0].daten[4]
                         gnss_north,gnss_east = self.boot.AktuelleSensordaten[0].daten[0],self.boot.AktuelleSensordaten[0].daten[1]
                         gnss_heading = self.boot.heading
 
                         if gnss_qual_indikator==4:
-                            if not gnss.simulation:
-                                self.con_qual_gnss1.config(bg="green")
-                            else:
-                                self.con_qual_gnss1.config(bg="green")
+                            self.con_qual_gnss1.config(bg="green")
                             self.var_current_state1.set("RTK fix")
                         elif gnss_qual_indikator==5:
-                            if not gnss.simulation:
-                                self.con_qual_gnss1.config(bg="yellow")
-                            else:
-                                self.con_qual_gnss1.config(bg="yellow")
+                            self.con_qual_gnss1.config(bg="yellow")
                             self.var_current_state1.set(str(gnss_qual_indikator)+": RTK float")
                         else:
                             self.var_current_state1.set(str(gnss_qual_indikator)+": kein RTK")
-                            if not gnss.simulation:
-                                self.con_qual_gnss1.config(bg="yellow")
-                            else:
-                                self.con_qual_gnss1.config(bg="yellow")
+                            self.con_qual_gnss1.config(bg="yellow")
                         if self.karte_window!= None:
                             try:
                                 kanten = self.boot.KantenPlotten()
@@ -288,9 +279,10 @@ class Anwendung(Frame):
                                 print("Karte kann nicht aktualisiert werden.")
 
                     except Exception as e:
-                        if not gnss.simulation:
+                        if gnss is not None:
                             self.con_qual_gnss1.config(bg="orange")
-                            if self.karte_window: self.karte_window.karte_updaten(None, None, None, None, None, None, None)
+                            if self.karte_window:
+                                self.karte_window.karte_updaten(None, None, None, None, None, None, None)
                         else:
                             self.con_qual_gnss1.config(bg="orange")
                 else:
@@ -301,29 +293,20 @@ class Anwendung(Frame):
             if "GNSS2" in self.boot.Sensornamen:
                 index = self.boot.Sensornamen.index("GNSS2")
                 gnss2 = self.boot.Sensorliste[index]
-                if gnss2.verbindung_hergestellt:  # TODO: Was, wenn nur eine GNSS??
+                if gnss2 is None or gnss2.verbindung_hergestellt:  # bei Simulation oder Verbindung # TODO: Was, wenn nur eine GNSS??
                     try:
                         gnss_qual_indikator=self.boot.AktuelleSensordaten[1].daten[4]
                         if gnss_qual_indikator==4:
-                            if not gnss2.simulation:
-                                self.con_qual_gnss2.config(bg="green")
-                            else:
-                                self.con_qual_gnss2.config(bg="green")
+                            self.con_qual_gnss2.config(bg="green")
                             self.var_current_state2.set("RTK fix")
                         elif gnss_qual_indikator==5:
-                            if not gnss2.simulation:
-                                self.con_qual_gnss2.config(bg="yellow")
-                            else:
-                                self.con_qual_gnss2.config(bg="yellow")
+                            self.con_qual_gnss2.config(bg="yellow")
                             self.var_current_state2.set(str(gnss_qual_indikator)+": RTK float")
                         else:
                             self.var_current_state2.set(str(gnss_qual_indikator)+": kein RTK")
-                            if not gnss2.simulation:
-                                self.con_qual_gnss2.config(bg="yellow")
-                            else:
-                                self.con_qual_gnss2.config(bg="yellow")
+                            self.con_qual_gnss2.config(bg="yellow")
                     except:
-                        if not gnss2.simulation:
+                        if gnss2 is not None:
                             self.con_qual_gnss2.config(bg="orange")
                         else:
                             self.con_qual_gnss2.config(bg="orange")
@@ -334,24 +317,15 @@ class Anwendung(Frame):
             if "Echolot" in self.boot.Sensornamen:
                 index = self.boot.Sensornamen.index("Echolot")
                 echolot = self.boot.Sensorliste[index]
-                if echolot.verbindung_hergestellt:
-                    if not echolot.simulation:
-                        self.con_qual_echolot.config(bg="orange")
-                    else:
-                        self.con_qual_echolot.config(bg="orange")
+                if echolot is None or echolot.verbindung_hergestellt: # bei Simulation oder Verbindung
+                    self.con_qual_echolot.config(bg="orange")
                     try:
                         t1 = round(float(self.boot.AktuelleSensordaten[2].daten[0]),2)
                         t2 = round(float(self.boot.AktuelleSensordaten[2].daten[1]),2)
-                        if not echolot.simulation:
-                            self.con_qual_echolot.config(bg="green")
-                        else:
-                            self.con_qual_echolot.config(bg="green")
+                        self.con_qual_echolot.config(bg="green")
                         self.var_current_depth.set(str(t1) + "  |  " + str(t2))
                     except:
-                        if not echolot.simulation:
-                            self.con_qual_echolot.config(bg="orange")
-                        else:
-                            self.con_qual_echolot.config(bg="orange")
+                        self.con_qual_echolot.config(bg="orange")
                 else:
                     self.con_qual_echolot.config(bg="red")
 
@@ -359,23 +333,17 @@ class Anwendung(Frame):
             if "Distanz" in self.boot.Sensornamen:
                 index = self.boot.Sensornamen.index("Distanz")
                 dimetix = self.boot.Sensorliste[index]
-                if dimetix.verbindung_hergestellt:
-                    if not dimetix.simulation:
-                        self.con_qual_dimetix.config(bg="orange")
-                    else:
-                        self.con_qual_dimetix.config(bg="orange")
+                if dimetix is None or dimetix.verbindung_hergestellt: # bei Simulation oder Verbindung
+                    self.con_qual_dimetix.config(bg="orange")
                     try:
                         d = self.boot.AktuelleSensordaten[3].daten
-                        if not dimetix.simulation:
+                        if dimetix is not None:
                             self.con_qual_dimetix.config(bg="green")
                         else:
                             self.con_qual_dimetix.config(bg="green")
                         self.var_current_distance.set(str(round(d,2)))
                     except:
-                        if not dimetix.simulation:
-                            self.con_qual_dimetix.config(bg="orange")
-                        else:
-                            self.con_qual_dimetix.config(bg="orange")
+                        self.con_qual_dimetix.config(bg="orange")
                 else:
                     self.con_qual_dimetix.config(bg="red")
 

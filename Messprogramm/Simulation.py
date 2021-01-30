@@ -41,6 +41,13 @@ class Boot_Simulation(Boot.Boot):
 
         self.PixHawk.verbindungsversuch = False
 
+        # Initiale Simulationsdaten eingeben (werden ab dem Auslesen überschrieben)
+        gnss2 = PolaresAnhaengen(self.position, self.heading, dist=1)
+        self.AktuelleSensordaten[0] = Sensoren.Daten(0, [self.position.x, self.position.y, 0, 0, 6], time.time())
+        self.AktuelleSensordaten[1] = Sensoren.Daten(0, [gnss2.x, gnss2.y, 0, 0, 6], time.time())
+        self.AktuelleSensordaten[2] = Sensoren.Daten(0, [0, 0], time.time())
+        self.AktuelleSensordaten[3] = Sensoren.Daten(0, 0, time.time())
+
         # EINLESEN DES MODELLS ALS QUADTREE
         testdaten = open("Referenz_Tweel_ges.txt", "r", encoding='utf-8-sig')  # ArcGIS Encoding XD
         lines = csv.reader(testdaten, delimiter=";")

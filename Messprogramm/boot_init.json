@@ -54,8 +54,7 @@
 	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
-	"parity": null,
-	"simulation":true
+	"parity": null
 	},
   "GNSS2":
     {
@@ -64,8 +63,7 @@
 	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
-	"parity": null,
-	"simulation":true
+	"parity": null
 	},
   "Echolot":
     {
@@ -74,8 +72,7 @@
 	"timeout": 1,
 	"takt": 0.2,
 	"bytesize": null,
-	"parity": null,
-	"simulation":true
+	"parity": null
 	},
   "Distanz":
     {
@@ -84,7 +81,6 @@
 	"timeout": 1,
 	"takt": 1,
 	"bytesize":7,
-	"parity":"E",
-	"simulation":true
+	"parity":"E"
 	}
 }

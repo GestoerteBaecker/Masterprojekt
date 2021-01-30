@@ -92,15 +92,19 @@ class Boot:
         for i, sensorname in enumerate(self.Sensornamen):
             if sensorname in json_daten:
                 takt.append(json_daten[sensorname]["takt"])
-                com = json_daten[sensorname]["COM"]
-                baud = json_daten[sensorname]["baud"]
-                timeout = json_daten[sensorname]["timeout"]
-                taktzeit = json_daten[sensorname]["takt"]
-                bytesize = json_daten[sensorname]["bytesize"]
-                parity = json_daten[sensorname]["parity"]
-                simulation = json_daten[sensorname]["simulation"]
-                sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity, simulation)
-                self.Sensorliste.append(sensor)
+
+                # Sensoren nur anlegen, falls ein echtes physisches Boot vorliegt (und keine Simulation)
+                if type(self).__name__ == "Boot":
+                    com = json_daten[sensorname]["COM"]
+                    baud = json_daten[sensorname]["baud"]
+                    timeout = json_daten[sensorname]["timeout"]
+                    taktzeit = json_daten[sensorname]["takt"]
+                    bytesize = json_daten[sensorname]["bytesize"]
+                    parity = json_daten[sensorname]["parity"]
+                    sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity)
+                    self.Sensorliste.append(sensor)
+                else:
+                    self.Sensorliste.append(None)
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [False]
         self.db_takt = min(*takt)

@@ -314,10 +314,14 @@ class Boot:
             y = self.AktuelleSensordaten[0].daten[1]
             heading = self.heading
 
-        strecke = dist + self.Offset_GNSSmitte_Disto
+        #strecke = dist + self.Offset_GNSSmitte_Disto
+        # Alter (nicht ganz sauberer) Ansatz zur Uferpunktberechnung
+        #e = x + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        #n = y + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
 
-        e = x + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
-        n = y + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        # Neuer Ansatz zur Uferpunktberechnung
+        e = (x + numpy.sin(heading / (200 / numpy.pi)) * self.Offset_GNSSmitte_Disto) + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * dist
+        n = (y + numpy.cos(heading / (200 / numpy.pi)) * self.Offset_GNSSmitte_Disto) + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * dist
 
         return Messgebiet.Uferpunkt(e, n)
 

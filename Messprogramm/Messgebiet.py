@@ -1282,12 +1282,13 @@ class Uferpunktquadtree:
         self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
         self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
-
+        self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
         self.zelle = zelle                                  # Rechteck, was das den Umfang des Quadtreeelements definiert
         self.max_punkte_pro_zelle = max_punkte_pro_zelle    # Maximale Anzahl der Punkte pro Zelle
         self.ebene = ebene                                  # Ferfeinerungsgrad des Quadtrees
         self.uferpunkte =[]
         self.max_ebenen= max_ebenen
+        self.kleinsteZelle_ausdehnung = self.telemetriereichweite/(2**max_ebenen)
         self.geteilt = False                                # Schalter der anzeigt, ob die Zelle geteilt wurde
 
     def teilen(self):                                       # Eine Zelle wird beim Überschreiten der Maximalpunktzahl in vier kleiner Zellen unterteilt
@@ -1354,7 +1355,7 @@ class Uferpunktquadtree:
     def linienabfrage(self, profil):
 
         max_ebene = self.max_ebenen #- 1
-        Pruefpunkte = profil.BerechneZwischenpunkte() #TODO: Anpassung der Auflösung nach kleinster Zelle
+        Pruefpunkte = profil.BerechneZwischenpunkte(self.kleinsteZelle_ausdehnung)
 
         for punkt in Pruefpunkte:
             ebene = self.ebene_von_punkt(punkt)
@@ -1439,7 +1440,6 @@ class Messgebiet:
         self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
         self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
-
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
         self.topographische_punkte = []

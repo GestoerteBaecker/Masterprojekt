@@ -1,12 +1,12 @@
 {
   "Boot":
     {
-	"simulation_start_x": 452000,
-	"simulation_start_y": 5884870,
-	"simulation_start_heading": 380,
+	"simulation_start_x": 451931.5,
+	"simulation_start_y": 5884839.5,
+	"simulation_start_heading": 30,
 	"simulation_suchbereich": 3,
 	"simulationsgeschwindigkeit": 3.5,
-	"referenzmodell": "container",
+	"referenzmodell": "transportkoerper",
 	"grenzwert_entfernung_UK2": 50,
 	"grenzwert_entfernung_UK3": 10,
 	"grenzwert_tiefe_UK2": 5,

@@ -1,6 +1,5 @@
 import copy
 import enum
-import itertools
 import matplotlib.pyplot as plt
 plt.ion() # Aktivieren eines dynamischen Plots
 import numpy
@@ -37,8 +36,6 @@ class Verdichtungsmode(enum.Enum):
     KANTEN = 0
     # Abfahren zwischen den Endpunkt eines Profils und dem Startpunkt des folgenden Profils
     VERBINDUNG = 1
-    # Falls das Boot während einer Verbindungsfahrt ans Ufer gerät, soll es anderweitig über kleinere Umwege zu dem abzufahrenden Profil geführt werden
-    WEGFÜHRUNG = 2
 
 # Berechnet die Fläche des angeg. Polygons
 # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -177,9 +174,7 @@ class TIN_Kante:
         y = (self.Anfangspunkt.y + self.Endpunkt.y) / 2
         z = (self.Anfangspunkt.z + self.Endpunkt.z) / 2
 
-        mitte = Punkt(x,y,z)
-
-        return (mitte)
+        return Punkt(x,y,z)
 
     def winkel(self): # TODO: Winkelberechnung überprüfen
 
@@ -189,7 +184,7 @@ class TIN_Kante:
         n1 = numpy.array([n1_list[0], n1_list[1], n1_list[2]])
         n2 = numpy.array([n2_list[0], n2_list[1], n2_list[2]])
 
-        if numpy.array_equal(n1,n2):  # Normalenvekroten sind paralel zueinander und arccos kann nicht berechnet werden
+        if numpy.array_equal(n1,n2):  # Normalenvektoren sind parallel zueinander und arccos kann nicht berechnet werden
             alpha = 0
         else:
             alpha = numpy.arccos((numpy.linalg.norm(numpy.dot(n1,n2)))/(numpy.linalg.norm(n1)*numpy.linalg.norm(n2)))
@@ -318,11 +313,11 @@ class TIN:
                     if laenge_norm*kante.winkel() > max_gewicht:
                         max_gewicht = laenge_norm*kante.winkel()
                         kanten_größtes_absolutes_gewicht = kante
-                    abstandsgewicht = -((1-entfernungsgewicht)/max_entfernung)*kante.mitte().Abstand(bootsposition)+1  #numpy.exp(-((kante.mitte().Abstand(bootsposition)) / max_entfernung) ** )
+                    abstandsgewicht = -((1-entfernungsgewicht)/max_entfernung)*kante.mitte().Abstand(bootsposition)+1
                     kantenlaengenanteil= laenge_norm**längengewicht
                     kantenwinkelanteil= kante_norm**winkelgewicht
 
-                    kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht #(1/(kante.mitte().Abstand(bootsposition)**(entfernungsgewicht)))
+                    kante.gewicht = laenge_norm**längengewicht*kante_norm**winkelgewicht*abstandsgewicht
 
                     print("L_kante: %8.2f, W_kante: %1.2f, Entfernung: %8.2f, Pl: %1.3f, Pw: %1.3f, Pe: %1.3f, Pges: %1.3f" % (kante.laenge(),kante.winkel(),(kante.mitte().Abstand(bootsposition)),kantenlaengenanteil,kantenwinkelanteil,abstandsgewicht,kante.gewicht))
 
@@ -440,23 +435,6 @@ class Stern:
         self.profile.append(profil)
         return profil.BerechneNeuenKurspunkt(2000, 0, punkt_objekt=True) # Punkt liegt in 2km Entfernung
 
-    # Leere Sterne (= ohne Profile) aus einer Punktliste erstellen
-    @classmethod
-    def SterneBilden(cls, punktliste):
-        stern = cls(punktliste[0], 0, initial=True, ebene=0)
-        stern.stern_beendet = True
-        stern.aktueller_stern = None
-        stern_temp = stern
-        for i in range(1, len(punktliste)):
-            stern_doppel_temp = cls(punktliste[i], 0, initial=False, ebene=i)
-            stern_doppel_temp.initialstern = stern
-            stern_doppel_temp.stern_beendet = True
-            stern_doppel_temp.aktueller_stern = None
-            stern_temp.weitere_sterne.append(stern_doppel_temp)
-            stern_temp = stern_doppel_temp
-        return stern
-
-
     # fügt weitere Profile in gegebenen Winkelinkrementen ein, die anschließend befahren werden
     def SternFuellen(self):
         stern = self.aktueller_stern
@@ -500,95 +478,6 @@ class Stern:
                 sterne_durchlaufen(gesch_stern, sterne)
         sterne_durchlaufen(self.initialstern, sterne)
         return sterne
-
-    def Medianberechnung(self):
-        sterne = self.initialstern.Sterne()
-        laengen_ges = []
-
-        def profillaenge_von_mitte(stern, profil, profilindex, liste_laengen):
-            gesamtlänge = profil.Profillaenge(akt_laenge=False)
-            profil.BerechneLambda(stern.mittelpunkt.ZuNumpyPunkt(zwei_dim=True))
-            seitenlänge_vor_mitte = profil.Profillaenge(akt_laenge=True)  # Anfang bis Mitte
-            seitenlänge_nach_mitte = gesamtlänge - seitenlänge_vor_mitte  # Mitte bis Ende
-            liste_laengen[profilindex] = seitenlänge_vor_mitte
-            liste_laengen[profilindex + len(stern.profile)] = seitenlänge_nach_mitte
-            return liste_laengen
-
-        for stern in sterne:
-            laengen = [0] * (2 * len(stern.profile))
-            for i, profil in enumerate(stern.profile):
-                laengen_ges.extend(profillaenge_von_mitte(stern, profil, i, laengen))
-
-        return statistics.mean(laengen_ges)
-
-    # findet eine geschlossene Verbindung zusammenhängener Profile zwischen position und soll_endpunkt und gibt es als Liste zurück
-    # wird von Initialstern aufgerufen
-    def FindeVerbindung(self, position, soll_endpunkt):
-
-        def verbindung_test(stern1, stern2):
-            return abs(stern1.ebene - stern2.ebene) == 1
-
-        alle_sterne = self.Sterne()
-        weitere_profile = []
-        if len(alle_sterne) < 2:
-            sterne = alle_sterne
-        else: # finde die zusammengehörenden Sterne und verbinde diese mit Profilen
-            # finden der Sterne, die am nächsten an die zwei eingegebenen/anzufahrenden Punkte sind (größte Wahrscheinlichkeit, dass diese direkt ohne Ufer anfahrbar sind)
-            dist_pos_test = numpy.inf
-            start_stern = None
-            dist_end_test = numpy.inf
-            end_stern = None
-            for stern in alle_sterne:
-                dist_pos = position.Abstand(stern.mittelpunkt)
-                dist_end = soll_endpunkt.Abstand(stern.mittelpunkt)
-                if dist_pos < dist_pos_test:
-                    dist_pos_test = dist_pos
-                    start_stern = stern
-                if dist_end < dist_end_test:
-                    dist_end_test = dist_end
-                    end_stern = stern
-            if start_stern != end_stern:
-                sterne = [start_stern, end_stern]
-            else:
-                sterne = [start_stern]
-                alle_sterne = sterne
-
-            # Test und Hinzufügen weiterer Sterne, sodass eine verbundene Strecke zwischen den Sternen vorliegt
-            for i in range(len(alle_sterne)-2): # i ist die Anzahl zwischen Start- und Endstern einzufügender Sterne
-                # Hinzufügen weiterer Sterne
-                # Kartesisches Mengenprodukt über alle Sterne
-                liste = []
-                for _ in range(i):
-                    liste.append(alle_sterne)
-                for sterne_komb in itertools.product(*liste): # sterne_komb ist zunächst eine beliebige Kombination von i-Sternen aller existierenden Sterne
-                    sterne_temp = copy.deepcopy(sterne) # wird kopiert, da getestet wird, ob die Kombination hinzugefügter Sterne auch alle verbunden sind
-                    einzig = True
-                    for stern in sterne_komb:
-                        einzig = einzig and sterne_komb.count(stern) == 1 and not stern in sterne_temp # sagt aus, ob die einzufügenden Sterne jeweils einzeln vorkommen und nicht bereits Start- und Endstern sind
-                    if einzig:
-                        sterne_temp[1:1] = sterne_komb # ... nur dann sollen diese Sterne zwischen Start- und Endstern eingefügt werden
-
-                        # Test, ob die Sterne untereinander verbunden sind
-                        verbunden = False
-                        for j in range(len(sterne_temp) - 1):  # hier wird getestet, ob die Sterne verbunden sind
-                            verbunden = verbunden or verbindung_test(sterne[j], sterne[j + 1])
-                        if verbunden: # wenn alle Sterne verbunden sind, sollen die Schleifen abgebrochen werden
-                            sterne = sterne_temp
-                            break
-                else:
-                    continue
-                break
-
-            # sobald die Sterne verbunden sind, sollen die zugehörigen verbindenden Profile ermittelt werden
-            for i in range(len(sterne)-1):
-                stern1 = sterne[i]
-                stern2 = sterne[i+1]
-                profil = Profil.ProfilAusZweiPunkten(stern1.mittelpunkt, stern2.mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
-                weitere_profile.append(profil)
-
-        anfang = Profil.ProfilAusZweiPunkten(position, alle_sterne[0].mittelpunkt, grzw_dichte_topo_pkt=self.profil_grzw_dichte_topo_pkt, grzw_neigungen=self.profil_grzw_neigungen, grzw_max_abstand=self.profil_grzw_max_abstand)
-        profile = [anfang, *weitere_profile]
-        return profile
 
     # test der Überschreitung des Grenzwerts der Länge eines Profils
     def TestVerdichten(self):
@@ -775,6 +664,7 @@ class Profilstreifenerzeugung:
     # Ermitteln der mittleren Streifenbreite je Richtungslinie
     # wird benötigt, um Profilerzeugung bei hohe Nähe benachbarter Streifen abzubrechen
     def mittlerer_abstand_richtungslinie(self):
+
         for i in range(len(self.richtungslinie_x) - 1):
             p1 = Punkt(self.richtungslinie_x[i], self.richtungslinie_y[i])
             p2 = Punkt(self.richtungslinie_x[i + 1], self.richtungslinie_y[i + 1])
@@ -790,20 +680,10 @@ class Profilstreifenerzeugung:
             # Hier erfolgt Anlegen aller (!) Streifen (überschneiden sich noch!)
             for punkt in hilfsprofilpunkte:
                 # Berechnung von Endpunkt und Strahl zur 1. Richtung
-                endpunkt = Simulation.PolaresAnhaengen(punkt, heading + 100, dist=self.max_dist)
-                strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-                # Berechnung der Schnittpunkte mit dem Grenzpolygon in 1. Richtung
-                schnittpunkte = self.grenzpoly_shape.intersection(strahl)
-                schnitt_r1, abstand_r1 = naechster_schnittpunkt(punkt, schnittpunkte)
+                abstand_r1 = self.schnittpunkt_eingabepolygon(punkt, heading + 100)[1]
 
                 # Berechnung von Endpunkt und Strahl zur 2. Richtung
-                endpunkt = Simulation.PolaresAnhaengen(punkt, heading - 100, dist=self.max_dist)
-                strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
-
-                # Berechnung der Schnittpunkte mit dem Grenzpolygon in 2. Richtung (entgegengesetzt zu Richtung 1)
-                schnittpunkte = self.grenzpoly_shape.intersection(strahl)
-                schnitt_r2, abstand_r2 = naechster_schnittpunkt(punkt, schnittpunkte)
+                abstand_r2 = self.schnittpunkt_eingabepolygon(punkt, heading - 100)[1]
 
                 self.mittlerer_abstand[i] += abstand_r1 + abstand_r2
 
@@ -816,20 +696,28 @@ class Profilstreifenerzeugung:
             p2 = Punkt(self.richtungslinie_x[i + 1], self.richtungslinie_y[i + 1])
             heading = Headingberechnung(None, p1, p2)
 
-            endpunkt_r1 = Simulation.PolaresAnhaengen(p1, heading, dist=self.max_dist)
-            strahl_r1 = shp.LineString([(p1.x, p1.y), (endpunkt_r1.x, endpunkt_r1.y)])
-            schnittpunkte_r1 = self.grenzpoly_shape.intersection(strahl_r1)
-            schnitt_r1, abstand_r1 = naechster_schnittpunkt(p1, schnittpunkte_r1)
+            schnitt_r1, abstand_r1 = self.schnittpunkt_eingabepolygon(p1, heading)[0:2]
 
-            endpunkt_r2 = Simulation.PolaresAnhaengen(p2, heading + 200, dist=self.max_dist)
-            strahl_r2 = shp.LineString([(p2.x, p2.y), (endpunkt_r2.x, endpunkt_r2.y)])
-            schnittpunkte_r2 = self.grenzpoly_shape.intersection(strahl_r2)
-            schnitt_r2, abstand_r2 = naechster_schnittpunkt(p2, schnittpunkte_r2)
+            schnitt_r2, abstand_r2 = self.schnittpunkt_eingabepolygon(p2, heading + 200)[0:2]
 
             startpunkt = Simulation.PolaresAnhaengen(schnitt_r1, heading + 200, dist=self.sicherheitsabstand*1.25)
             endpunkt = Simulation.PolaresAnhaengen(schnitt_r2, heading, dist=self.sicherheitsabstand*1.25)
 
             self.richtungslinien.append([startpunkt, endpunkt])
+
+    # Berechnet Schnittpunkt und Entfernung der Kurspeilung vom Boot
+    def schnittpunkt_eingabepolygon(self, punkt, heading, puffer=False):
+        # Berechnung von Endpunkt und Strahl zur n. Richtung
+        endpunkt = Simulation.PolaresAnhaengen(punkt, heading, dist=self.max_dist)
+        strahl = shp.LineString([(punkt.x, punkt.y), (endpunkt.x, endpunkt.y)])
+
+        # Berechnung der Schnittpunkte mit dem Grenzpolygon in n. Richtung
+        if puffer:
+            schnittpunkte = strahl.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
+        else:
+            schnittpunkte = self.grenzpoly_shape.intersection(strahl)
+        schnitt, abstand = naechster_schnittpunkt(punkt, schnittpunkte)
+        return (schnitt, abstand, strahl)
 
     def profilstreifen_anlegen(self):
         gespeicherte_streifen = [[] for _ in range(len(self.richtungslinien))]
@@ -847,16 +735,10 @@ class Profilstreifenerzeugung:
             # Liste über alle Zwischenpunkte des temporären Profils
             for linienpunkt in linienprofilpunkte:
                 # Schnittpunkte mit Polygon in 1. Richtung
-                endpunkt_r1 = Simulation.PolaresAnhaengen(linienpunkt, heading + 100, dist=self.max_dist)
-                strahl_r1 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r1.x, endpunkt_r1.y)])
-                schnittpunkte_r1 = strahl_r1.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
-                schnitt_r1, abstand_r1 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r1)
+                schnitt_r1, abstand_r1, strahl_r1 = self.schnittpunkt_eingabepolygon(linienpunkt, heading + 100, puffer=True)
 
                 # Schnittpunkte mit Polygon in 2. Richtung
-                endpunkt_r2 = Simulation.PolaresAnhaengen(linienpunkt, heading - 100, dist=self.max_dist)
-                strahl_r2 = shp.LineString([(linienpunkt.x, linienpunkt.y), (endpunkt_r2.x, endpunkt_r2.y)])
-                schnittpunkte_r2 = strahl_r2.intersection(self.grenzpoly_shape.buffer(self.sicherheitsabstand - 1))
-                schnitt_r2, abstand_r2 = naechster_schnittpunkt(linienpunkt, schnittpunkte_r2)
+                schnitt_r2, abstand_r2, strahl_r2 = self.schnittpunkt_eingabepolygon(linienpunkt, heading - 100, puffer=True)
 
                 startpunkt = Punkt(schnitt_r1.x, schnitt_r1.y)
                 endpunkt = Punkt(schnitt_r2.x, schnitt_r2.y)
@@ -1291,8 +1173,6 @@ def abstand_punkt_gerade(richtung, stuetz, punkt):
         richtung = numpy.array([richtung[1], -richtung[0]])
         return numpy.dot(richtung, (punkt - stuetz))
     else: # falls die Vektoren 3D sind
-        #richtung = punkt - numpy.dot(punkt, richtung) * richtung
-        #richtung = richtung / numpy.linalg.norm(richtung)
         return numpy.linalg.norm(numpy.cross((punkt - stuetz), richtung))
 
 # Gerade 1 sollte bei Verwendung innerhalb der Klasse Profil die Kante des self Profils sein
@@ -1323,7 +1203,9 @@ def naechster_schnittpunkt(punkt, schnittpunkte,min_abstand=numpy.Inf):
                 min_abstand = abstand
                 naechster_schnitt = schnitt
 
-    elif type(schnittpunkte).__name__ == "MultiLineString":
+    elif type(schnittpunkte).__name__ == "MultiLineString" or type(schnittpunkte).__name__ == "LineString":
+        if type(schnittpunkte).__name__ == "LineString":
+            schnittpunkte = [schnittpunkte]
         for linestring in schnittpunkte:
             linestring_schnitt1 = shp.Point(linestring.coords[0])
             linestring_schnitt2 = shp.Point(linestring.coords[1])
@@ -1337,23 +1219,6 @@ def naechster_schnittpunkt(punkt, schnittpunkte,min_abstand=numpy.Inf):
             if linestring_abstand2 < min_abstand:
                 min_abstand = linestring_abstand2
                 naechster_schnitt = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "LineString":
-        linestring_schnitt1 = shp.Point(schnittpunkte.coords[0])
-        linestring_schnitt2 = shp.Point(schnittpunkte.coords[1])
-        linestring_abstand1 = punkt.Abstand(linestring_schnitt1)
-        linestring_abstand2 = punkt.Abstand(linestring_schnitt2)
-        if linestring_abstand1 < min_abstand:
-            min_abstand = linestring_abstand1
-            naechster_schnitt = linestring_schnitt1
-
-        if linestring_abstand2 < min_abstand:
-            min_abstand = linestring_abstand2
-            naechster_schnitt = linestring_schnitt2
-
-    elif type(schnittpunkte).__name__ == "Point":
-        naechster_schnitt = schnittpunkte
-        min_abstand = punkt.Abstand(schnittpunkte)
 
     else:
         min_abstand = punkt.Abstand(schnittpunkte)
@@ -1417,12 +1282,13 @@ class Uferpunktquadtree:
         self.profil_grzw_dichte_topo_pkt = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
         self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
-
+        self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
         self.zelle = zelle                                  # Rechteck, was das den Umfang des Quadtreeelements definiert
         self.max_punkte_pro_zelle = max_punkte_pro_zelle    # Maximale Anzahl der Punkte pro Zelle
         self.ebene = ebene                                  # Ferfeinerungsgrad des Quadtrees
         self.uferpunkte =[]
         self.max_ebenen= max_ebenen
+        self.kleinsteZelle_ausdehnung = self.telemetriereichweite/(2**max_ebenen)
         self.geteilt = False                                # Schalter der anzeigt, ob die Zelle geteilt wurde
 
     def teilen(self):                                       # Eine Zelle wird beim Überschreiten der Maximalpunktzahl in vier kleiner Zellen unterteilt
@@ -1489,7 +1355,7 @@ class Uferpunktquadtree:
     def linienabfrage(self, profil):
 
         max_ebene = self.max_ebenen #- 1
-        Pruefpunkte = profil.BerechneZwischenpunkte() #TODO: Anpassung der Auflösung nach kleinster Zelle
+        Pruefpunkte = profil.BerechneZwischenpunkte(self.kleinsteZelle_ausdehnung)
 
         for punkt in Pruefpunkte:
             ebene = self.ebene_von_punkt(punkt)
@@ -1574,18 +1440,16 @@ class Messgebiet:
         self.profil_grzw_dichte_topographischer_punkte = json_daten["Boot"]["topographische_punkte_solldichte"]  # Solldichte in Punkte / m längs eines Profil
         self.profil_grzw_neigungen_topographischer_punkte = json_daten["Boot"]["topographische_punkte_min_neigung"]  # Neigung in gon aufeinander folgende Abschnitte entlang des Profils, sodass der dazwischen liegende Punkt als topographisch bedeutsam eingefügt wird
         self.profil_grzw_max_abstand = json_daten["Boot"]["topographische_punkte_max_abstand"]  # max. Abstand zwischen mediangefilterten Punkten und den Geraden, die über die topographisch bedeutsamen Punkte gelegt wird (ist Abstand überschritten, wird der betrachtete Punkt mit berücksichtigt)
-
         Initialrechteck = Zelle(initale_position_x, initale_position_y, hoehe, breite)
         self.Uferquadtree = Uferpunktquadtree(Initialrechteck)
         self.topographische_punkte = []
         self.tin = None
         self.profile = []
-        self.stern = None
         self.aktuelles_profil = -1
         self.verdichtungsmethode = Verdichtungsmode.AUS
         self.punkt_ausserhalb = Punkt(initale_position_x, initale_position_y + hoehe) # dieser Punkt soll sicher außerhalb des Sees liegen
         self.anzufahrende_kanten = [] # nur zum Plotten auf der Karte
-        self.nichtbefahrbareProfile=[]
+        self.nichtbefahrbareProfile = []
 
     # Punkte in das TIN einfügen
     def TIN_berechnen(self, punkte=None):
@@ -1603,12 +1467,9 @@ class Messgebiet:
     def NaechsterPunkt(self, position, ufer, entfernungsgewicht, längengewicht, winkelgewicht, anzahl_anzufahrende_kanten):
         if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG: # Boot ist gerade zum Startpunkt eines Profils gefahren
             if ufer: # Unterbrechung der Messung durch Auflaufen ans Ufer
-                #soll_endpunkt = self.profile[self.aktuelles_profil+1].endpunkt
                 self.aktuelles_profil += 1
-                #profile = self.stern.FindeVerbindung(position, soll_endpunkt) # hier stehen alle Profile drin, die das Boot abfahren muss, um über zu den verdichtenden Profil zu kommen
-                #self.profile[self.aktuelles_profil:self.aktuelles_profil] = profile
-                punkt = self.profile[-3].startpunkt #profile[0].endpunkt
-                methode = Verdichtungsmode.KANTEN #Verdichtungsmode.WEGFÜHRUNG
+                punkt = self.profile[-3].startpunkt
+                methode = Verdichtungsmode.KANTEN
             else:
                 self.aktuelles_profil += 1  # Index liegt jetzt auf dem endgültigen, verdichtenden Profil
                 punkt = self.profile[self.aktuelles_profil].endpunkt
@@ -1657,19 +1518,11 @@ class Messgebiet:
                 self.profile.append(naechstesProfil)
                 self.aktuelles_profil += 1 # Index liegt zunächst auf dem Verbindungsprofil
             methode = Verdichtungsmode.VERBINDUNG
-        else: # verbindungsmethode == WEGFÜHRUNG; Boot soll über Umwege zum verdichtenden Profil geführt werden
-            # kein Test auf Ufer, da das nicht vorkommen sollte (es werden nur Profile befahren, die bereits befahren wurden)
-            self.aktuelles_profil += 1
-            punkt = self.profile[self.aktuelles_profil].endpunkt
-            if self.aktuelles_profil == len(self.profile)-1:
-                methode = Verdichtungsmode.KANTEN
-            else:
-                methode = Verdichtungsmode.WEGFÜHRUNG
         self.verdichtungsmethode = methode
         return punkt
 
     def HoleTrackingMode(self):
-        if self.verdichtungsmethode == Verdichtungsmode.WEGFÜHRUNG or self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG:
+        if self.verdichtungsmethode == Verdichtungsmode.VERBINDUNG:
             return TrackingMode.VERBINDUNG
         else:
             return TrackingMode.PROFIL

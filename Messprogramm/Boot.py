@@ -19,7 +19,7 @@ class UferPosition(enum.Enum):
     AM_UFER = 2
 
 # Klasse, die alle Funktionalitäten des Bootes umfasst
-# self.auslesen > self.fortlaufende_aktualisierung > self.datenbankbeschreiben
+# self.auslesen > self.datenbankbeschreiben
 # -> d.h. damit zB self. datenbankbeschreiben True ist müssen mind. die anderen beiden auch True sein
 class Boot:
 
@@ -36,8 +36,7 @@ class Boot:
         self.stern_grzw_seitenlaenge = json_daten["Boot"]["stern_max_seitenlaenge"] # Länge einer Seite des Sterns, ab wann ein weiterer verdichtender Stern eingefügt wird
         self.telemetriereichweite = json_daten["Boot"]["telemetriereichweite"]
         self.messgebiet_ausdehnung = [self.telemetriereichweite,self.telemetriereichweite] # Breite und Höhe in m
-        self.auslesen = False                           # Schalter, ob die Sensoren dauerhaft ausgelesen werden
-        self.fortlaufende_aktualisierung = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
+        self.auslesen = False        # Schalter, ob das Dict mit den aktuellen Sensordaten permanent aktualisiert wird
         self.datenbankbeschreiben = False               # Schalter, ob die Datenbank mit Sensordaten beschrieben wird
         self.Sensorliste = []                           # hier sind die Sensor-Objekte drin
         self.AktuelleSensordaten = []                   # hier stehen die Daten-Objekte drin
@@ -61,13 +60,11 @@ class Boot:
         self.anzahl_anzufahrende_kanten = json_daten["Boot"]["beruecksichtigte_kanten"]
         self.Bodenpunkte = [] # hier stehen nur die letzten 2 Median gefilterten Punkte drin (für Extrapolation der Tiefe / Ufererkennung)
         self.median_punkte = [] # hier stehen die gesammelten Bodenpunkte während der gesamten Messdauer drin (Median gefiltert)
-        self.median_punkte_alle = []
         self.Offset_GNSS_Echo = json_daten["Boot"]["offset_gnss_echolot"]       # TODO: Höhenoffset zwischen GNSS und Echolot bestimmen (wichtig für absolute Vergleiche)
         self.db_id = 0
         self.messgebiet = None
         self.ist_am_ufer = [UferPosition.IM_WASSER, False] # für Index 1: False: Bewegun vom Ufer weg oder gleichbleibende Tiefe/Entfernung zum Ufer; True: Bewegung zum Ufer hin (Tiefe/Entfernung zum Ufer verringert sich)
         self.boot_lebt = True
-        self.stern_beendet = False
         self.max_geschwindigkeit = 2 # in km/h für spätere Steuerung der PixHawk-Maximalgeschwindigkeit
         self.tracking_mode = Messgebiet.TrackingMode.BLINDFAHRT
         self.punkt_anfahren = False
@@ -95,15 +92,19 @@ class Boot:
         for i, sensorname in enumerate(self.Sensornamen):
             if sensorname in json_daten:
                 takt.append(json_daten[sensorname]["takt"])
-                com = json_daten[sensorname]["COM"]
-                baud = json_daten[sensorname]["baud"]
-                timeout = json_daten[sensorname]["timeout"]
-                taktzeit = json_daten[sensorname]["takt"]
-                bytesize = json_daten[sensorname]["bytesize"]
-                parity = json_daten[sensorname]["parity"]
-                simulation = json_daten[sensorname]["simulation"]
-                sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity, simulation)
-                self.Sensorliste.append(sensor)
+
+                # Sensoren nur anlegen, falls ein echtes physisches Boot vorliegt (und keine Simulation)
+                if type(self).__name__ == "Boot":
+                    com = json_daten[sensorname]["COM"]
+                    baud = json_daten[sensorname]["baud"]
+                    timeout = json_daten[sensorname]["timeout"]
+                    taktzeit = json_daten[sensorname]["takt"]
+                    bytesize = json_daten[sensorname]["bytesize"]
+                    parity = json_daten[sensorname]["parity"]
+                    sensor = sensorklassen[i](com, baud, timeout, taktzeit, bytesize, parity)
+                    self.Sensorliste.append(sensor)
+                else:
+                    self.Sensorliste.append(None)
 
         self.AktuelleSensordaten = len(self.Sensorliste) * [False]
         self.db_takt = min(*takt)
@@ -128,7 +129,7 @@ class Boot:
         """
         self.Verbinden_mit_DB()
 
-        if not self.fortlaufende_aktualisierung:
+        if not self.auslesen:
             self.Datenaktualisierung()  # Funktion zum dauerhaften Überschreiben des aktuellen Zustands (neuer Thread wir aufgemacht)
 
         if self.db_mode == 0:
@@ -231,41 +232,43 @@ class Boot:
     # wird im self.akt_takt aufgerufen und überschreibt self.AktuelleSensordaten mit den neusten Sensordaten
     def Datenaktualisierung(self):
 
-        if not self.auslesen:
-            self.Sensorwerte_auslesen()
-
-        self.fortlaufende_aktualisierung = True
+        self.Sensorwerte_auslesen()
 
         def Ueberschreibungsfunktion(self):
 
             Letzte_Bodenpunkte = []
-            while self.fortlaufende_aktualisierung and self.boot_lebt:
+            while self.auslesen and self.boot_lebt:
                 t = time.time()
 
                 position_vor_Aktualisierung = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
 
-                # Aktualisierung des Attributs self.AktuelleSensordaten
-                for i in range(0, len(self.Sensorliste)):
-                    if self.Sensorliste[i]:
-                        sensor = self.Sensorliste[i]
-                        if sensor.aktdaten:
-                            self.AktuelleSensordaten[i] = sensor.aktdaten
-
-                aktuelle_Position = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0],self.AktuelleSensordaten[0].daten[1])
-                entfernung = aktuelle_Position.Abstand(position_vor_Aktualisierung)
-                self.gefahreneStrecke += entfernung
+                # auslesen der geteilten Variablen
+                with Messgebiet.schloss:
+                    # Aktualisierung des Attributs self.AktuelleSensordaten
+                    for i in range(len(self.Sensorliste)):
+                        if self.Sensorliste[i]:
+                            sensor = self.Sensorliste[i]
+                            if sensor.aktdaten:
+                                self.AktuelleSensordaten[i] = sensor.aktdaten
 
                 # Abgeleitete Daten berechnen und überschreiben
+                position = None
+                Bodenpunkt = None
 
-                # aktuelles Heading berechnen und zum Boot abspeichern
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:         # Headingberechnung
-                    self.heading = self.Headingberechnung()
+                # aktuelle Position und aktuelles Heading berechnen und zum Boot abspeichern
+                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1]:
+                    # Position und Streckenzähler aktualisieren
+                    position = Messgebiet.Punkt(self.AktuelleSensordaten[0].daten[0], self.AktuelleSensordaten[0].daten[1])
+                    entfernung = position.Abstand(position_vor_Aktualisierung)
+                    self.gefahreneStrecke += entfernung
 
-                # wenn ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
-                if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[1] and self.AktuelleSensordaten[3]:     #Uferpunktberechnung
-                    uferpunkt = self.Uferpunktberechnung()
-                    if self.messgebiet != None:
-                        self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
+                    self.heading = self.Headingberechnung() # Headingberechnung
+
+                    # wenn zusätzlich ein aktueller Entfernungsmesswert besteht, soll ein Uferpunkt berechnet werden
+                    if self.AktuelleSensordaten[3]:     #Uferpunktberechnung
+                        uferpunkt = self.Uferpunktberechnung()
+                        if self.messgebiet != None:
+                            self.messgebiet.Uferpunkt_abspeichern(uferpunkt)
 
                 # Tiefe berechnen und als Punktobjekt abspeichern (die letzten 10 Messwerte mitteln)
                 if self.AktuelleSensordaten[0] and self.AktuelleSensordaten[2]:
@@ -274,14 +277,22 @@ class Boot:
 
                     if len(Letzte_Bodenpunkte) > self.anz_Bodenpunkte:
                         Bodenpunkt = self.Bodenpunktberechnung(Letzte_Bodenpunkte)
+                        Letzte_Bodenpunkte = []
+
+                # setzen der geteilten Variablen
+                with Messgebiet.schloss:
+
+                    if position is not None:
+                        self.position = position
+
+                    # Letzte zwei Bodenpunkte zur Extrapolation zur Ufererkennung
+                    if Bodenpunkt is not None:
                         self.Bodenpunkte.append(Bodenpunkt)
                         if len(self.Bodenpunkte) > 2:
                             self.Bodenpunkte.pop(0)
                         # je nach Tracking Mode sollen die Median Punkte mitgeführt werden oder aus der Liste gelöscht werden (da sie ansonsten bei einem entfernt liegenden Profil mit berücksichtigt werden würden)
                         if self.tracking_mode.value < 2:
                             self.median_punkte.append(Bodenpunkt)
-                            self.median_punkte_alle.append(Bodenpunkt)
-                        Letzte_Bodenpunkte = []
 
                 schlafen = max(0, self.akt_takt - (time.time() - t))
                 time.sleep(schlafen)
@@ -303,10 +314,14 @@ class Boot:
             y = self.AktuelleSensordaten[0].daten[1]
             heading = self.heading
 
-        strecke = dist + self.Offset_GNSSmitte_Disto
+        #strecke = dist + self.Offset_GNSSmitte_Disto
+        # Alter (nicht ganz sauberer) Ansatz zur Uferpunktberechnung
+        #e = x + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        #n = y + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
 
-        e = x + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
-        n = y + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * strecke
+        # Neuer Ansatz zur Uferpunktberechnung
+        e = (x + numpy.sin(heading / (200 / numpy.pi)) * self.Offset_GNSSmitte_Disto) + numpy.sin((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * dist
+        n = (y + numpy.cos(heading / (200 / numpy.pi)) * self.Offset_GNSSmitte_Disto) + numpy.cos((heading + self.Winkeloffset_dist) / (200 / numpy.pi)) * dist
 
         return Messgebiet.Uferpunkt(e, n)
 
@@ -368,8 +383,8 @@ class Boot:
         self.ufererkennung_aktiv = True
 
         def ufererkennung_thread(self):
-            while not abs(sollheading-self.heading) < 20: # Boot soll sich zumindest in Richtung des neuen Punkts drehen
-                time.sleep(self.akt_takt)
+            while not (abs(sollheading-self.heading) < 20 or abs(sollheading-self.heading) > 380): # Boot soll sich zumindest in Richtung des neuen Punkts drehen
+                time.sleep(self.akt_takt/10)
             while self.boot_lebt and self.ufererkennung_aktiv:
                 t = time.time()
                 time.sleep(self.akt_takt)
@@ -431,10 +446,6 @@ class Boot:
             punktliste = []
             for i in range(len(richtungslinie_x)):
                 punktliste.append(Messgebiet.Punkt(richtungslinie_x[i], richtungslinie_y[i]))
-            self.stern = Messgebiet.Stern.SterneBilden(punktliste)
-            self.messgebiet.stern = self.stern
-
-        # Streifen abfahren
 
         def Streifen_abfahren(self):
             profilindex = 0
@@ -446,45 +457,29 @@ class Boot:
                     self.ufererkennung_aktiv = False
                     time.sleep(self.akt_takt)  # warten, bis der Thread zum Ansteuern eines Punktes terminiert
 
-                    if not abbruch_durch_ufer:
-                        if punktzaehler == 0:
-                            if profilindex == len(self.streifenprofile):
-                                break
-                            self.aktuelles_Profil = self.streifenprofile[profilindex]
-                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
-                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
-                            profilindex += 1
+                    if punktzaehler == 0: # gerade ein Streifenprofil abgefahren
+                        if profilindex == len(self.streifenprofile):
+                            break
+                        self.aktuelles_Profil = self.streifenprofile[profilindex]
+                        e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
+                        e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
+                        profilindex += 1
 
-                            if e_start > e_end:
-                                self.aktuelles_Profil.Flip()
+                        if e_start > e_end:
+                            self.aktuelles_Profil.Flip()
 
-                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
-                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-                            punktzaehler = 1
+                        self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
+                        self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
+                        punktzaehler = 1
 
-                        elif punktzaehler == 1:
+                    elif punktzaehler == 1: # gerade ein Verbindungsprofil abgefahren
+                        if not abbruch_durch_ufer:
                             self.tracking_mode = Messgebiet.TrackingMode.PROFIL
                             self.Punkt_anfahren(self.aktuelles_Profil.endpunkt)
                             punktzaehler = 0
-                    else:
-                        if punktzaehler == 1:
+                        else:
                             self.aktuelles_Profil.Flip()
                             self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-
-                        elif punktzaehler == 0:
-                            if profilindex == len(self.streifenprofile):
-                                break
-                            self.aktuelles_Profil = self.streifenprofile[profilindex]
-                            e_start = self.position.Abstand(self.aktuelles_Profil.startpunkt)
-                            e_end = self.position.Abstand(self.aktuelles_Profil.endpunkt)
-                            profilindex += 1
-
-                            if e_start > e_end:
-                                self.aktuelles_Profil.Flip()
-
-                            self.tracking_mode = Messgebiet.TrackingMode.VERBINDUNG
-                            self.Punkt_anfahren(self.aktuelles_Profil.startpunkt)
-                            punktzaehler = 1
 
                     if len(self.median_punkte) > 0:
                         self.aktuelles_Profil.MedianPunkteEinfuegen(self.median_punkte)
@@ -516,7 +511,6 @@ class Boot:
 
             # Erzeugen des TIN aus den aufgenommen Bodenpunkten
             self.messgebiet.TIN_berechnen()
-            #self.messgebiet.tin.mesh.plot(show_edges=True)
             gemessenes_tin = Messgebiet.TIN(self.alle_bodenpunkte, nurTIN=True)
             gemessenes_tin.Vergleich_mit_Original(self.originalmesh)
             self.messgebiet.tin.mesh.save("gemessenePunktwolke.ply")
@@ -534,7 +528,6 @@ class Boot:
             # Anlegen eines Sterns mit zeitgleicher Messung (Funktion "Erkunden" ist für die Dauer der Messung gefroren)
             self.SternAbfahren(self.position, self.heading, initial=True)
             print("Gefahrene Strecke:", self.gefahreneStrecke,"m nach Sternen")
-            self.messgebiet.stern = self.stern
             self.messgebiet.topographische_punkte = self.stern.TopographischBedeutsamePunkteAbfragen()
 
             # Definition der Profile und topographisch bedeutsamer Punkte
@@ -560,7 +553,6 @@ class Boot:
         self.messgebiet.Verdichtungsmode(Messgebiet.Verdichtungsmode.KANTEN)
         self.punkt_anfahren = False
         print("///////////////////////////////////////////////")
-        nummer = 0
         while self.boot_lebt:
             abbruch_durch_ufer = (self.ist_am_ufer[0] == UferPosition.AM_UFER and self.ist_am_ufer[1])
             if abbruch_durch_ufer or not self.punkt_anfahren:
@@ -587,14 +579,9 @@ class Boot:
                 #Prüfen, ob beim anfahren des neuen Punktes ein zuwachs erfolgt (mit bisherigen Profilen)
                 if neuer_punkt is None:
                     break
-                #self.messgebiet.aktuellesprofil anlegen
                 self.punkt_anfahren = True
                 self.Punkt_anfahren(neuer_punkt)
                 time.sleep(self.akt_takt * 10)  # beide Sleeps sind identisch mit denen in SternAbfahren()
-                # aktuelles mesh speichern
-                #string = "TIN" + str(nummer) + ".ply"
-                #self.messgebiet.tin.mesh.save(string)
-                nummer += 1
             time.sleep(self.akt_takt/2)
 
     # gibt alle weiteren anzufahrenden Kanten aus
@@ -624,18 +611,16 @@ class Boot:
         punkt_box = Messgebiet.Zelle(punkt.x, punkt.y,  self.anfahrtoleranz,  self.anfahrtoleranz)
         sollheading = self.Headingberechnung(punkt)
 
-        # Testet bei jedem Schleifendurchgang ob der Punkt erreicht wurde (hohe Frequnez wichtig)
+        # Testet bei jedem Schleifendurchgang ob der Punkt erreicht wurde (hohe Frequenz wichtig)
         def punkt_anfahren_test(self):
             if self.tracking_mode.value <= 10:
                 self.Ufererkennung(sollheading)
             self.punkt_anfahren = True
             while self.punkt_anfahren and self.boot_lebt:
-                t = time.time()
                 test = punkt_box.enthaelt_punkt(self.position)
                 if test:
                     self.punkt_anfahren = False
-                schlafen = max(0, (self.akt_takt / 2) - (time.time() - t))
-                time.sleep(schlafen)
+                time.sleep(self.akt_takt / 20)
         thread = threading.Thread(target=punkt_anfahren_test, args=(self, ), daemon=True)
         thread.start()
 
@@ -661,7 +646,6 @@ class Boot:
                 self.Punkt_anfahren(neuer_kurspunkt)
                 time.sleep(self.akt_takt*10) # die Threads zum Anfahren müssen erstmal anlaufen, sonst wird direkt oben wieder das if durchlaufen
             time.sleep(self.akt_takt/2)
-        self.stern_beendet = True
         self.median_punkte = []
 
     def Boot_stoppen(self):
@@ -675,8 +659,10 @@ class Boot:
     def Trennen(self):
         self.boot_lebt = False
         time.sleep(self.akt_takt)
-        for sensor in self.Sensorliste:
-            sensor.kill()
+        if type(self).__name__ == "Boot":
+            for sensor in self.Sensorliste:
+                sensor.kill()
+        self.auslesen = False
         self.datenbankbeschreiben = False
         time.sleep(0.2)
         if self.db_verbindung:
@@ -688,11 +674,14 @@ class Boot:
         self.boot_lebt = True
 
     def RTL(self):
-
         self.PixHawk.Return_to_launch()
 
     def Kalibrierung(self):
         pass
+
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # gibt ein Dict mit Wahrheitswerten zurück, je nachdem, ob der Sensor aktiv ist oder nicht, Schlüsselwert ist der Name des jeweiligen Sensors (echter Name, nicht Klassenname!)
     def Lebenzeichen(self):
@@ -701,8 +690,9 @@ class Boot:
             aktiv[self.Sensornamen[i]] = sensor.verbindung_hergestellt
         return aktiv
 
-    def postprocessing(self):
-        pass #Auswertung der gemessenen Daten findet ausßerhalb des Programms statt
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # Berechnet das Gefälle unterhalb des Bootes
     # sollte höchstens alle paar Sekunden aufgerufen werden, spätestens bei der Profilberechnung
@@ -813,6 +803,10 @@ class Boot:
             s0 = numpy.linalg.norm(v) / (numpy.sqrt(len(punkte[0])) - 3)
         return [max_steigung, flächenhaft, s0]
 
+
+    ###############################
+    ### ZURZEIT NICHT BENUTZT!!!###
+    ###############################
 
     # Fragt Daten aus der DB im "Umkreis" (Bounding Box) von radius Metern des punktes (Boot) ab
     # ST_Distance ist nicht sargable! (kann nicht zusammen mithilfe eines Index beschleunigt werden)
